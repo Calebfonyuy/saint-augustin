@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+
+/*
+ * SaintAugustin Auth Service – Artisan CLI
+ * Ref: https://laravel.com/docs/12.x/artisan
+ */
+
+define('LARAVEL_START', microtime(true));
+
+require __DIR__.'/vendor/autoload.php';
+
+$status = (require_once __DIR__.'/bootstrap/app.php')
+    ->handleCommand(new Symfony\Component\Console\Input\ArgvInput);
+
+exit($status);

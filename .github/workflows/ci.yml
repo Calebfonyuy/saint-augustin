@@ -1,0 +1,125 @@
+# =============================================================================
+# SaintAugustin CI Pipeline
+# Runs linters and tests on every push and pull request.
+#
+# Ref: https://docs.github.com/en/actions
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # Frontend: lint + type-check
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend (Vue 3)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # Projection Service: lint + test
+  # ---------------------------------------------------------------------------
+  projection:
+    name: Projection Service (NestJS)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/projection
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: services/projection/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test
+
+  # ---------------------------------------------------------------------------
+  # Auth Service: lint + test (Phase 1+)
+  # ---------------------------------------------------------------------------
+  # auth:
+  #   name: Auth Service (Laravel)
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: services/auth
+  #
+  #   services:
+  #     postgres:
+  #       image: postgres:16-alpine
+  #       env:
+  #         POSTGRES_USER: saintaugustin
+  #         POSTGRES_PASSWORD: testing
+  #         POSTGRES_DB: sa_auth_test
+  #       ports:
+  #         - 5432:5432
+  #       options: >-
+  #         --health-cmd pg_isready
+  #         --health-interval 5s
+  #         --health-timeout 3s
+  #         --health-retries 5
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - uses: shivammathur/setup-php@v2
+  #       with:
+  #         php-version: 8.3
+  #         extensions: pdo_pgsql, redis, mbstring, zip, intl
+  #         tools: composer:v2
+  #
+  #     - run: composer install --no-interaction --prefer-dist
+  #     - run: vendor/bin/pint --test
+  #     - run: vendor/bin/phpstan analyse
+  #     - run: vendor/bin/pest
+  #       env:
+  #         DB_CONNECTION: pgsql
+  #         DB_HOST: localhost
+  #         DB_PORT: 5432
+  #         DB_DATABASE: sa_auth_test
+  #         DB_USERNAME: saintaugustin
+  #         DB_PASSWORD: testing
+
+  # ---------------------------------------------------------------------------
+  # Docker build smoke test
+  # ---------------------------------------------------------------------------
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Projection Service image
+        run: docker build -t sa-projection:ci --target development services/projection
+
+      - name: Build Frontend image
+        run: docker build -t sa-frontend:ci --target development frontend
