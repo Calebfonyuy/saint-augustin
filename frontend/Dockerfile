@@ -13,7 +13,7 @@ FROM node:20-alpine AS development
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm i
 # Source mounted via volume in docker-compose
 
 EXPOSE 5173
@@ -25,7 +25,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm i
 COPY . .
 RUN npm run build
 

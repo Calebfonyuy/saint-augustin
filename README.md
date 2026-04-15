@@ -51,8 +51,8 @@ cp services/auth/.env.example services/auth/.env
 
 # 3. Install dependencies
 cd services/auth && composer install && cd ../..
-cd services/projection && npm ci && cd ../..
-cd frontend && npm ci && cd ..
+cd services/projection && npm i && cd ../..
+cd frontend && npm i && cd ..
 
 # 4. Generate Laravel app key
 cd services/auth

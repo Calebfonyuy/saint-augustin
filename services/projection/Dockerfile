@@ -14,7 +14,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm i
 COPY . .
 RUN npm run build
 
@@ -23,7 +23,7 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm i --omit=dev
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
@@ -35,7 +35,7 @@ FROM node:20-alpine AS development
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm i
 
 # Source is mounted via volume in docker-compose
 EXPOSE 3000

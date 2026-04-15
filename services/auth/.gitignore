@@ -9,3 +9,5 @@
 /.phpunit.result.cache
 /phpunit.xml
 .phpunit.cache/
+frankenphp
+/public/frankenphp-worker.php

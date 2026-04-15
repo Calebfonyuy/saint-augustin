@@ -69,12 +69,12 @@ cd ../..
 
 # Projection Service (NestJS)
 cd services/projection
-npm ci
+npm i
 cd ../..
 
 # Frontend (Vue 3)
 cd frontend
-npm ci
+npm i
 cd ..
 ```
 

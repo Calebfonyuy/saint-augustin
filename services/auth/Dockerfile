@@ -41,8 +41,8 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Copy composer files first for layer caching
-COPY composer.json composer.lock* ./
+# Copy application source
+COPY . .
 
 # Install dependencies (no dev in production, with dev in development)
 ARG APP_ENV=local
@@ -51,9 +51,6 @@ RUN if [ "$APP_ENV" = "production" ]; then \
     else \
         composer install --no-interaction; \
     fi
-
-# Copy application source
-COPY . .
 
 # Ensure storage and cache directories exist and are writable
 RUN mkdir -p storage/logs storage/framework/{cache,sessions,views} bootstrap/cache \

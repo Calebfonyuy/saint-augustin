@@ -28,6 +28,7 @@ class User extends Authenticatable
         'email',
         'display_name',
         'password',
+        'google_id',
         'roles',
     ];
 
@@ -43,6 +44,13 @@ class User extends Authenticatable
             'password'          => 'hashed',
             'roles'             => 'array',
         ];
+    }
+
+    // ── Relationships ─────────────────────────────────────────────────
+
+    public function invitations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Invitation::class, 'invited_by');
     }
 
     // ── Role helpers ─────────────────────────────────────────────────
