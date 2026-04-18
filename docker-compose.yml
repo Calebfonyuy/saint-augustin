@@ -122,6 +122,8 @@ services:
       CACHE_DRIVER: redis
       QUEUE_CONNECTION: redis
       JWT_SECRET: ${JWT_SECRET:-changeme_jwt_secret_at_least_32_chars}
+    ports:
+      - "${AUTH_SERVICE_PORT:-8000}:8000"
     volumes:
       - ./services/auth:/var/www
     depends_on:
