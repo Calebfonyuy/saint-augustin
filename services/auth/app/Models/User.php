@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -73,5 +74,15 @@ class User extends Authenticatable
     public function hasRole(string $role): bool
     {
         return in_array($role, $this->roles ?? [], true);
+    }
+
+    // ── Password reset ────────────────────────────────────────────────
+
+    /**
+     * Send the password reset notification using our branded email.
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 }

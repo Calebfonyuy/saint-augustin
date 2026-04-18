@@ -9,6 +9,7 @@
  * Ref: https://laravel.com/docs/12.x/structure#the-bootstrap-directory
  */
 
+use App\Http\Middleware\RequireAdminRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,8 +21,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/health',                    // <-- built-in /health endpoint
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Sanctum stateless token auth for API
-        $middleware->statefulApi();
+        // Stateless Bearer token auth — do NOT call statefulApi() here.
+        // statefulApi() adds Sanctum's EnsureFrontendRequestsAreStateful middleware
+        // which enables cookie/session auth and CSRF checks for SPAs.
+        // This service issues opaque API tokens only; CSRF protection is irrelevant.
+        // Ref: https://laravel.com/docs/12.x/sanctum#api-token-authentication
+        // $middleware->statefulApi();
+
+        $middleware->alias([
+            'admin' => RequireAdminRole::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

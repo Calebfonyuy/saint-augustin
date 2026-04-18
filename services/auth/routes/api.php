@@ -10,6 +10,10 @@
  * Ref: https://laravel.com/docs/12.x/routing
  */
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\StatusController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,18 +23,23 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('auth')->group(function () {
-    // Phase 1: these will be implemented with controllers
-    // Route::post('/register', [AuthController::class, 'register']);
-    // Route::post('/login',    [AuthController::class, 'login']);
-    // Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:sanctum');
-    // Route::get('/me',        [AuthController::class, 'me'])->middleware('auth:sanctum');
+    Route::get('/status', StatusController::class);
 
-    // Placeholder: confirm the service is routable
-    Route::get('/status', function () {
-        return response()->json([
-            'service' => 'auth-service',
-            'status'  => 'ok',
-            'version' => '0.1.0',
-        ]);
+    // Public
+    Route::post('/login',                        [AuthController::class, 'login']);
+    Route::post('/password/forgot',              [PasswordResetController::class, 'forgot']);
+    Route::post('/password/reset',               [PasswordResetController::class, 'reset']);
+    Route::get('/invitations/{token}',           [InvitationController::class, 'verify']);
+    Route::post('/register',                     [InvitationController::class, 'register']);
+
+    // Protected – require a valid Sanctum token
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout',  [AuthController::class, 'logout']);
+        Route::post('/refresh', [AuthController::class, 'refresh']);
+
+        // Admin only
+        Route::middleware('admin')->group(function () {
+            Route::post('/invitations', [InvitationController::class, 'store']);
+        });
     });
 });

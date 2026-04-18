@@ -1,0 +1,775 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "SaintAugustin Auth Service",
+        "description": "Authentication, user management, and role assignment for the SaintAugustin worship platform.",
+        "contact": {
+            "name": "SaintAugustin",
+            "email": "admin@saintaugustin.local"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api",
+            "description": "Local development (via API gateway)"
+        }
+    ],
+    "paths": {
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Log in and obtain a Bearer token",
+                "description": "Validates email and password, then returns a Sanctum API token. Include the token in subsequent requests as `Authorization: Bearer <token>`.",
+                "operationId": "8cb7742ae98d0990acb2907c4e00bf24",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "musician@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret1234"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Authenticated — token issued",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Revoke the current Bearer token",
+                "description": "Deletes the token that was used to authenticate this request. The client should discard the token.",
+                "operationId": "0d29c740dc06d77602af8095bf4654cc",
+                "responses": {
+                    "200": {
+                        "description": "Token revoked successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Logged out successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated — no valid token provided",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Rotate the Bearer token",
+                "description": "Revokes the current token and immediately issues a new one. Useful for proactive key rotation. The old token is invalidated.",
+                "operationId": "f6c9683ed975ace7d035a09e6e2a9332",
+                "responses": {
+                    "200": {
+                        "description": "New token issued",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated — no valid token provided",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/auth/invitations": {
+            "post": {
+                "tags": [
+                    "Invitations"
+                ],
+                "summary": "Create and send an invitation (Admin)",
+                "description": "Generates a one-time invitation token and emails a registration link to the specified address. Requires the `admin` role. Returns 409 if a pending invitation already exists for that email, or if the email is already registered.",
+                "operationId": "f14347d5fc5e7a50f006bd9459a0b24b",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "newuser@example.com"
+                                    },
+                                    "roles": {
+                                        "description": "Roles pre-assigned to the user on registration. Defaults to [musician].",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "admin",
+                                                "musician",
+                                                "projectionist"
+                                            ]
+                                        },
+                                        "example": [
+                                            "musician"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Invitation created and sent",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invitation sent to newuser@example.com."
+                                        },
+                                        "invitation": {
+                                            "$ref": "#/components/schemas/InvitationResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Email already registered or already has a pending invitation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/auth/invitations/{token}": {
+            "get": {
+                "tags": [
+                    "Invitations"
+                ],
+                "summary": "Verify an invitation token",
+                "description": "Returns the invitation details (email, roles, expiry) for a valid, unused token. The frontend calls this on page load to pre-fill the registration form and surface a clear error if the token is invalid or expired.",
+                "operationId": "33e274ca0d1da226821df7f9e8b8e165",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token is valid",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InvitationResource"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Token not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Token expired or already accepted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "tags": [
+                    "Invitations"
+                ],
+                "summary": "Register via invitation token",
+                "description": "Creates a new user account by consuming a valid invitation token. The email and roles are taken from the invitation — they cannot be overridden by the caller. The token is invalidated after use.",
+                "operationId": "5eadc5376d692fdb5cf4c8fc670d69f2",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "token",
+                                    "display_name",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "type": "string",
+                                        "example": "abc123..."
+                                    },
+                                    "display_name": {
+                                        "type": "string",
+                                        "example": "Jean Dupont"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "Secret99!",
+                                        "minLength": 8
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "Secret99!"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Account created — user must log in to obtain a token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Account created successfully. You can now log in."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Token expired or already used",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/password/forgot": {
+            "post": {
+                "tags": [
+                    "Password Reset"
+                ],
+                "summary": "Request a password reset link",
+                "description": "Sends a password reset link to the provided email address. The response is identical whether or not the email exists, to prevent user enumeration.",
+                "operationId": "ac443e3f09c358a5c598e8f651d9fe37",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "musician@example.com"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reset link sent (or silently ignored if the email is not registered)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "If that email is registered you will receive a reset link shortly."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many reset attempts — throttled",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/password/reset": {
+            "post": {
+                "tags": [
+                    "Password Reset"
+                ],
+                "summary": "Reset password using a token",
+                "description": "Consumes the one-time token from the reset email and sets a new password. The token is invalidated after use. All existing Sanctum tokens for the user are revoked.",
+                "operationId": "53b56f3707517b07c93ef828e3a4eac3",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "token",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "musician@example.com"
+                                    },
+                                    "token": {
+                                        "type": "string",
+                                        "example": "abc123def456..."
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newSecret99!",
+                                        "minLength": 8
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newSecret99!"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password updated — user must log in again",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Password reset successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid or expired token, or validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/status": {
+            "get": {
+                "tags": [
+                    "Status"
+                ],
+                "summary": "Service health check",
+                "description": "Returns the current status and version of the Auth Service.",
+                "operationId": "1172f02c7db56cf10dbba35b27616979",
+                "responses": {
+                    "200": {
+                        "description": "Service is running",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "service": {
+                                            "type": "string",
+                                            "example": "auth-service"
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "ok"
+                                        },
+                                        "version": {
+                                            "type": "string",
+                                            "example": "0.1.0"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "TokenResponse": {
+                "description": "Successful authentication response carrying a Sanctum Bearer token.",
+                "required": [
+                    "token_type",
+                    "access_token",
+                    "user"
+                ],
+                "properties": {
+                    "token_type": {
+                        "description": "Reusable OpenAPI schema definitions.\n\nThese are referenced via $ref across controller annotations so they are\ndefined once and stay consistent.",
+                        "type": "string",
+                        "example": "Bearer"
+                    },
+                    "access_token": {
+                        "type": "string",
+                        "example": "1|abc123..."
+                    },
+                    "user": {
+                        "required": [
+                            "id",
+                            "email",
+                            "display_name",
+                            "roles"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "example": "a1b2c3d4-..."
+                            },
+                            "email": {
+                                "type": "string",
+                                "format": "email",
+                                "example": "musician@example.com"
+                            },
+                            "display_name": {
+                                "type": "string",
+                                "example": "Jean Dupont"
+                            },
+                            "roles": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "enum": [
+                                        "admin",
+                                        "musician",
+                                        "projectionist"
+                                    ]
+                                },
+                                "example": [
+                                    "musician"
+                                ]
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "ErrorResponse": {
+                "description": "Generic error response.",
+                "required": [
+                    "message"
+                ],
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "Invalid credentials."
+                    }
+                },
+                "type": "object"
+            },
+            "ValidationErrorResponse": {
+                "description": "Laravel validation failure (HTTP 422).",
+                "required": [
+                    "message",
+                    "errors"
+                ],
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "The email field is required."
+                    },
+                    "errors": {
+                        "type": "object",
+                        "example": {
+                            "email": [
+                                "The email field is required."
+                            ]
+                        },
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "InvitationResource": {
+                "description": "An admin-issued invitation record.",
+                "required": [
+                    "id",
+                    "email",
+                    "roles",
+                    "expires_at",
+                    "accepted"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "newuser@example.com"
+                    },
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "admin",
+                                "musician",
+                                "projectionist"
+                            ]
+                        },
+                        "example": [
+                            "musician"
+                        ]
+                    },
+                    "invited_by": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "accepted": {
+                        "type": "boolean",
+                        "example": false
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "sanctum": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Enter your Bearer token. Obtain it from POST /api/auth/login."
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Authentication",
+            "description": "Login, logout, and token refresh endpoints."
+        },
+        {
+            "name": "Invitations",
+            "description": "Admin-issued invitation management and invitation-based user registration."
+        },
+        {
+            "name": "Password Reset",
+            "description": "Two-step email-based password reset."
+        },
+        {
+            "name": "Status",
+            "description": "Status"
+        }
+    ]
+}
