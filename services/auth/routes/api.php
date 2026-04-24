@@ -13,6 +13,8 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\SongbookController;
+use App\Http\Controllers\SongController;
 use App\Http\Controllers\StatusController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,5 +43,47 @@ Route::prefix('auth')->group(function () {
         Route::middleware('admin')->group(function () {
             Route::post('/invitations', [InvitationController::class, 'store']);
         });
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Songbook Routes (Phase 1 — merged into Auth Service)
+|--------------------------------------------------------------------------
+| Authorization per SRS 2.2 — Admin has "full CRUD on songbooks":
+|   • Read  — any authenticated user (needed for UI filtering/categorization)
+|   • Create/Update/Delete — admin only
+*/
+
+Route::middleware('auth:sanctum')->prefix('songbooks')->group(function () {
+    Route::get('/',     [SongbookController::class, 'index']);
+    Route::get('/{id}', [SongbookController::class, 'show']);
+
+    Route::middleware('admin')->group(function () {
+        Route::post('/',      [SongbookController::class, 'store']);
+        Route::put('/{id}',   [SongbookController::class, 'update']);
+        Route::delete('/{id}', [SongbookController::class, 'destroy']);
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Song Routes (Phase 1 — merged into Auth Service)
+|--------------------------------------------------------------------------
+| Authorization per SRS 3.1.2:
+|   • Read  — any authenticated user
+|   • Create/Update — admin OR musician (enforced in SongController)
+|   • Delete/Restore — admin only (enforced via the `admin` middleware)
+*/
+
+Route::middleware('auth:sanctum')->prefix('songs')->group(function () {
+    Route::get('/',            [SongController::class, 'index']);
+    Route::get('/{id}',        [SongController::class, 'show']);
+    Route::post('/',           [SongController::class, 'store']);
+    Route::put('/{id}',        [SongController::class, 'update']);
+
+    Route::middleware('admin')->group(function () {
+        Route::delete('/{id}',         [SongController::class, 'destroy']);
+        Route::post('/{id}/restore',   [SongController::class, 'restore']);
     });
 });

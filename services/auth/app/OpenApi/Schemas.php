@@ -83,4 +83,101 @@ use OpenApi\Attributes as OA;
     ],
     type: 'object',
 )]
+#[OA\Schema(
+    schema: 'SongbookResource',
+    description: 'A songbook — a named collection of songs.',
+    required: ['id', 'name', 'is_default', 'songs_count'],
+    properties: [
+        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+        new OA\Property(property: 'name', type: 'string', example: 'Christmas 2026'),
+        new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Songs for Advent and Christmas services.'),
+        new OA\Property(property: 'is_default', type: 'boolean', example: false),
+        new OA\Property(property: 'created_by', type: 'string', format: 'uuid', nullable: true),
+        new OA\Property(property: 'songs_count', type: 'integer', example: 42, description: 'Number of (non-soft-deleted) songs in this songbook.'),
+        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+        new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
+    ],
+    type: 'object',
+)]
+#[OA\Schema(
+    schema: 'SongInput',
+    description: 'Payload for creating or updating a song. On create, `title`, `lyrics`, and `songbook_id` are required; on update, any field may be omitted.',
+    properties: [
+        new OA\Property(property: 'title', type: 'string', example: 'Amazing Grace'),
+        new OA\Property(property: 'author', type: 'string', nullable: true, example: 'John Newton'),
+        new OA\Property(
+            property: 'lyrics',
+            type: 'string',
+            description: 'ChordPro content — chord symbols live inline in brackets.',
+            example: "{start_of_verse}\n[C]Amazing [G]grace, how [Am]sweet the [F]sound\n{end_of_verse}",
+        ),
+        new OA\Property(property: 'original_key', type: 'string', nullable: true, example: 'G', description: 'Musical key (e.g. C, F#, Am, Bbm)'),
+        new OA\Property(property: 'tempo', type: 'integer', nullable: true, minimum: 20, maximum: 300, example: 72),
+        new OA\Property(property: 'time_signature', type: 'string', nullable: true, enum: ['2/4', '3/4', '4/4', '5/4', '6/4', '3/8', '6/8', '9/8', '12/8'], example: '3/4'),
+        new OA\Property(property: 'songbook_id', type: 'string', format: 'uuid'),
+        new OA\Property(
+            property: 'tags',
+            type: 'array',
+            items: new OA\Items(type: 'string'),
+            nullable: true,
+            example: ['praise', 'communion'],
+        ),
+        new OA\Property(property: 'preview_url', type: 'string', format: 'uri', nullable: true, example: 'https://www.youtube.com/watch?v=CDdvReNKVuk'),
+        new OA\Property(property: 'ccli_number', type: 'string', nullable: true, example: '22025'),
+    ],
+    type: 'object',
+)]
+#[OA\Schema(
+    schema: 'SongResource',
+    description: 'A song record.',
+    required: ['id', 'title', 'lyrics', 'songbook_id', 'tags', 'version'],
+    properties: [
+        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+        new OA\Property(property: 'title', type: 'string', example: 'Amazing Grace'),
+        new OA\Property(property: 'author', type: 'string', nullable: true, example: 'John Newton'),
+        new OA\Property(property: 'lyrics', type: 'string', description: 'ChordPro content with chords inline.'),
+        new OA\Property(property: 'original_key', type: 'string', nullable: true, example: 'G'),
+        new OA\Property(property: 'tempo', type: 'integer', nullable: true, example: 72),
+        new OA\Property(property: 'time_signature', type: 'string', nullable: true, example: '3/4'),
+        new OA\Property(property: 'songbook_id', type: 'string', format: 'uuid'),
+        new OA\Property(
+            property: 'tags',
+            type: 'array',
+            items: new OA\Items(type: 'string'),
+            example: ['praise', 'communion'],
+        ),
+        new OA\Property(property: 'preview_url', type: 'string', format: 'uri', nullable: true),
+        new OA\Property(property: 'ccli_number', type: 'string', nullable: true),
+        new OA\Property(property: 'created_by', type: 'string', format: 'uuid', nullable: true),
+        new OA\Property(property: 'version', type: 'integer', example: 1, description: 'Increments on every update (audit trail).'),
+        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+        new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
+        new OA\Property(property: 'deleted_at', type: 'string', format: 'date-time', nullable: true),
+    ],
+    type: 'object',
+)]
+#[OA\Schema(
+    schema: 'SongCollection',
+    description: 'Paginated collection of songs.',
+    required: ['data', 'meta'],
+    properties: [
+        new OA\Property(
+            property: 'data',
+            type: 'array',
+            items: new OA\Items(ref: '#/components/schemas/SongResource'),
+        ),
+        new OA\Property(
+            property: 'meta',
+            type: 'object',
+            required: ['current_page', 'per_page', 'total', 'last_page'],
+            properties: [
+                new OA\Property(property: 'current_page', type: 'integer', example: 1),
+                new OA\Property(property: 'per_page', type: 'integer', example: 25),
+                new OA\Property(property: 'total', type: 'integer', example: 142),
+                new OA\Property(property: 'last_page', type: 'integer', example: 6),
+            ],
+        ),
+    ],
+    type: 'object',
+)]
 class Schemas {}

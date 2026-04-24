@@ -37,12 +37,12 @@
                                     "email": {
                                         "type": "string",
                                         "format": "email",
-                                        "example": "musician@example.com"
+                                        "example": "admin@saintaugustin.local"
                                     },
                                     "password": {
                                         "type": "string",
                                         "format": "password",
-                                        "example": "secret1234"
+                                        "example": "password"
                                     }
                                 },
                                 "type": "object"
@@ -556,6 +556,811 @@
                 }
             }
         },
+        "/songs": {
+            "get": {
+                "tags": [
+                    "Songs"
+                ],
+                "summary": "List and search songs",
+                "description": "Returns a paginated list of songs. Supports full-text search across title, author, lyrics, and tags, plus filtering by songbook, key, and tag. Soft-deleted songs are excluded by default; pass `trashed=only` to list only soft-deleted songs (admin view) or `trashed=with` to include them.",
+                "operationId": "7cff74aca8adedf68f8a9248996cdc0d",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "description": "Search term (title, author, lyrics, tags)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "songbook",
+                        "in": "query",
+                        "description": "Filter by songbook UUID",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "key",
+                        "in": "query",
+                        "description": "Filter by original key (e.g. C, Am, F#)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "tag",
+                        "in": "query",
+                        "description": "Filter by tag",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "trashed",
+                        "in": "query",
+                        "description": "One of: with, only",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "with",
+                                "only"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 25,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of songs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SongCollection"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Songs"
+                ],
+                "summary": "Create a new song",
+                "description": "Creates a new song. Requires the `admin` or `musician` role. The `songbook_id` must reference an existing songbook.",
+                "operationId": "a28be4ced5c180620b197c9144c70376",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SongInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Song created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SongResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Role not permitted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/songs/{id}": {
+            "get": {
+                "tags": [
+                    "Songs"
+                ],
+                "summary": "Fetch a single song",
+                "operationId": "485f590f1416afbb2a0aab6b12305004",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Song found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SongResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Song not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Songs"
+                ],
+                "summary": "Update a song",
+                "description": "Updates an existing song. Requires the `admin` or `musician` role. The `version` field increments automatically on every update (SRS NFR-8 audit trail).",
+                "operationId": "caa5ed09d1ac8aeae370bbe30ae55004",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SongInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Song updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SongResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Role not permitted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Song not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Songs"
+                ],
+                "summary": "Soft-delete a song (Admin)",
+                "description": "Soft-deletes a song. The record is retained for 30 days and can be restored via `POST /songs/{id}/restore`. Requires the `admin` role.",
+                "operationId": "ede008b9ebf14f39a6479db6065feaea",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Song soft-deleted"
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Song not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/songs/{id}/restore": {
+            "post": {
+                "tags": [
+                    "Songs"
+                ],
+                "summary": "Restore a soft-deleted song (Admin)",
+                "description": "Restores a song that was previously soft-deleted. Requires the `admin` role.",
+                "operationId": "5fe189b6452c06e02588fa0dad1a8550",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Song restored",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SongResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Song not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/songbooks": {
+            "get": {
+                "tags": [
+                    "Songbooks"
+                ],
+                "summary": "List all songbooks",
+                "description": "Returns every songbook. Available to any authenticated user so songs can be grouped/filtered in the UI.",
+                "operationId": "594c6c8631ec23315921eeda2773d3c6",
+                "responses": {
+                    "200": {
+                        "description": "Array of songbooks",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SongbookResource"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Songbooks"
+                ],
+                "summary": "Create a new songbook (Admin)",
+                "description": "Creates a new songbook. Requires the `admin` role. The `is_default` flag is reserved for the system-seeded default songbook and cannot be set via this endpoint.",
+                "operationId": "18a1fe59b1d2e28848f11c9a7f1b10cd",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Christmas 2026",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Songs for Advent and Christmas services.",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Songbook created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SongbookResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Name already taken",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/songbooks/{id}": {
+            "get": {
+                "tags": [
+                    "Songbooks"
+                ],
+                "summary": "Fetch a single songbook",
+                "operationId": "0ed13e1e8496b8f2ef0454de4354338d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Songbook found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SongbookResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Songbook not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Songbooks"
+                ],
+                "summary": "Update a songbook (Admin)",
+                "description": "Updates name and/or description. Requires the `admin` role. `is_default` cannot be changed.",
+                "operationId": "99f8563e4c8e6b697c84d4ddbfef6dfd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Songbook updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SongbookResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Songbook not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Name already taken",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Songbooks"
+                ],
+                "summary": "Delete a songbook (Admin)",
+                "description": "Deletes a songbook. Requires the `admin` role. The default songbook cannot be deleted, and a songbook that still contains songs cannot be deleted — move its songs to another songbook first.",
+                "operationId": "32464e0ee046291d3eebf18485aaa576",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Songbook deleted"
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Songbook not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Songbook is default or still contains songs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/auth/status": {
             "get": {
                 "tags": [
@@ -743,6 +1548,263 @@
                     }
                 },
                 "type": "object"
+            },
+            "SongbookResource": {
+                "description": "A songbook — a named collection of songs.",
+                "required": [
+                    "id",
+                    "name",
+                    "is_default",
+                    "songs_count"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Christmas 2026"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Songs for Advent and Christmas services.",
+                        "nullable": true
+                    },
+                    "is_default": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "created_by": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "songs_count": {
+                        "description": "Number of (non-soft-deleted) songs in this songbook.",
+                        "type": "integer",
+                        "example": 42
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "SongInput": {
+                "description": "Payload for creating or updating a song. On create, `title`, `lyrics`, and `songbook_id` are required; on update, any field may be omitted.",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "example": "Amazing Grace"
+                    },
+                    "author": {
+                        "type": "string",
+                        "example": "John Newton",
+                        "nullable": true
+                    },
+                    "lyrics": {
+                        "description": "ChordPro content — chord symbols live inline in brackets.",
+                        "type": "string",
+                        "example": "{start_of_verse}\n[C]Amazing [G]grace, how [Am]sweet the [F]sound\n{end_of_verse}"
+                    },
+                    "original_key": {
+                        "description": "Musical key (e.g. C, F#, Am, Bbm)",
+                        "type": "string",
+                        "example": "G",
+                        "nullable": true
+                    },
+                    "tempo": {
+                        "type": "integer",
+                        "example": 72,
+                        "nullable": true,
+                        "maximum": 300,
+                        "minimum": 20
+                    },
+                    "time_signature": {
+                        "type": "string",
+                        "example": "3/4",
+                        "nullable": true,
+                        "enum": [
+                            "2/4",
+                            "3/4",
+                            "4/4",
+                            "5/4",
+                            "6/4",
+                            "3/8",
+                            "6/8",
+                            "9/8",
+                            "12/8"
+                        ]
+                    },
+                    "songbook_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "praise",
+                            "communion"
+                        ],
+                        "nullable": true
+                    },
+                    "preview_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://www.youtube.com/watch?v=CDdvReNKVuk",
+                        "nullable": true
+                    },
+                    "ccli_number": {
+                        "type": "string",
+                        "example": "22025",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "SongResource": {
+                "description": "A song record.",
+                "required": [
+                    "id",
+                    "title",
+                    "lyrics",
+                    "songbook_id",
+                    "tags",
+                    "version"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Amazing Grace"
+                    },
+                    "author": {
+                        "type": "string",
+                        "example": "John Newton",
+                        "nullable": true
+                    },
+                    "lyrics": {
+                        "description": "ChordPro content with chords inline.",
+                        "type": "string"
+                    },
+                    "original_key": {
+                        "type": "string",
+                        "example": "G",
+                        "nullable": true
+                    },
+                    "tempo": {
+                        "type": "integer",
+                        "example": 72,
+                        "nullable": true
+                    },
+                    "time_signature": {
+                        "type": "string",
+                        "example": "3/4",
+                        "nullable": true
+                    },
+                    "songbook_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "praise",
+                            "communion"
+                        ]
+                    },
+                    "preview_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
+                    },
+                    "ccli_number": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_by": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "version": {
+                        "description": "Increments on every update (audit trail).",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "deleted_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "SongCollection": {
+                "description": "Paginated collection of songs.",
+                "required": [
+                    "data",
+                    "meta"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SongResource"
+                        }
+                    },
+                    "meta": {
+                        "required": [
+                            "current_page",
+                            "per_page",
+                            "total",
+                            "last_page"
+                        ],
+                        "properties": {
+                            "current_page": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "per_page": {
+                                "type": "integer",
+                                "example": 25
+                            },
+                            "total": {
+                                "type": "integer",
+                                "example": 142
+                            },
+                            "last_page": {
+                                "type": "integer",
+                                "example": 6
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -766,6 +1828,14 @@
         {
             "name": "Password Reset",
             "description": "Two-step email-based password reset."
+        },
+        {
+            "name": "Songs",
+            "description": "Song library CRUD, full-text search, and soft-delete recovery."
+        },
+        {
+            "name": "Songbooks",
+            "description": "Songbook (song collection) management."
         },
         {
             "name": "Status",
