@@ -1,23 +1,101 @@
-// Ref: https://router.vuejs.org/guide/
+// App routing with auth guards.
+//
+// Two guard rules:
+//   - Any route with `meta.requiresAuth` sends unauthenticated users to
+//     /login, preserving the attempted path in `?redirect=`.
+//   - /login and /register redirect already-authenticated users to /.
+//
+// Admin-only routes additionally check the `admin` role; non-admins are
+// bounced to / with no destructive navigation.
+//
+// Ref: https://router.vuejs.org/guide/advanced/navigation-guards.html
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '@/views/HomeView.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
-      name: 'home',
-      component: HomeView,
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/LoginView.vue'),
+      meta: { public: true, hideForAuthed: true },
     },
-    // Phase 1: login, register, song-library, song-editor
-    // Phase 2: musician-view
-    // Phase 3: playlist-builder
-    // Phase 4: projection-controller, projection-display
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/views/RegisterView.vue'),
+      meta: { public: true, hideForAuthed: true },
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('@/views/ForgotPasswordView.vue'),
+      meta: { public: true, hideForAuthed: true },
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('@/views/ResetPasswordView.vue'),
+      meta: { public: true, hideForAuthed: true },
+    },
+    {
+      path: '/',
+      name: 'dashboard',
+      component: () => import('@/views/DashboardView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/library',
+      name: 'library',
+      component: () => import('@/views/SongLibraryView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/songs/new',
+      name: 'song-new',
+      component: () => import('@/views/SongEditorView.vue'),
+      meta: { requiresAuth: true, requiresEditor: true },
+    },
+    {
+      path: '/songs/:id',
+      name: 'song-edit',
+      component: () => import('@/views/SongEditorView.vue'),
+      meta: { requiresAuth: true, requiresEditor: true },
+    },
+    {
+      path: '/admin/songbooks',
+      name: 'admin-songbooks',
+      component: () => import('@/views/SongbookAdminView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/',
+    },
   ],
 })
 
-// Route guards for auth will be added in Phase 1
-// router.beforeEach((to, from, next) => { ... })
+router.beforeEach((to) => {
+  const auth = useAuthStore()
+
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  if (to.meta.hideForAuthed && auth.isAuthenticated) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.meta.requiresAdmin && !auth.isAdmin) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.meta.requiresEditor && !auth.canEditSongs) {
+    return { name: 'dashboard' }
+  }
+
+  return true
+})
 
 export default router

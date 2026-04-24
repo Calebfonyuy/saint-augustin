@@ -1,0 +1,72 @@
+/* SaintAugustin design tokens — Direction A (Conservative · warm parchment + deep indigo).
+   Ported from the interactive prototype (saint-augustin-design/tokens.css).
+
+   Exposes CSS custom properties consumed by Tailwind utility classes and by
+   the hand-authored component styles in main.css. Dark mode is enabled by
+   adding `.dark` to an ancestor (used for the Projection Controller/Display
+   surfaces in later phases).
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Typography */
+  --font-text: 'IBM Plex Sans', -apple-system, system-ui, sans-serif;
+  --font-display: 'Crimson Pro', 'Iowan Old Style', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+  /* Warm-parchment light palette */
+  --bg: oklch(98% 0.008 85);
+  --bg-sunken: oklch(96% 0.010 85);
+  --bg-raised: oklch(100% 0 0);
+  --border: oklch(88% 0.010 85);
+  --border-strong: oklch(80% 0.012 85);
+  --text: oklch(22% 0.010 65);
+  --text-muted: oklch(48% 0.010 70);
+  --text-faint: oklch(62% 0.010 70);
+
+  /* Indigo accent */
+  --accent: oklch(42% 0.12 270);
+  --accent-soft: oklch(94% 0.04 270);
+  --accent-fg: oklch(98% 0.005 85);
+
+  /* Terracotta chord / status hues */
+  --chord: oklch(44% 0.14 35);
+  --success: oklch(55% 0.10 150);
+  --danger: oklch(55% 0.15 25);
+
+  /* Density (default = regular) */
+  --row-py: 10px;
+  --pad: 20px;
+  --font-body: 14px;
+  --font-lyric: 17px;
+}
+
+.dark {
+  --bg: oklch(18% 0.008 65);
+  --bg-sunken: oklch(14% 0.008 65);
+  --bg-raised: oklch(22% 0.010 65);
+  --border: oklch(28% 0.010 65);
+  --border-strong: oklch(36% 0.012 65);
+  --text: oklch(94% 0.008 85);
+  --text-muted: oklch(68% 0.010 70);
+  --text-faint: oklch(52% 0.010 70);
+  --accent: oklch(68% 0.14 270);
+  --accent-soft: oklch(28% 0.06 270);
+  --accent-fg: oklch(14% 0.008 65);
+  --chord: oklch(72% 0.14 35);
+}
+
+[data-density='compact'] {
+  --row-py: 6px;
+  --pad: 14px;
+  --font-body: 13px;
+  --font-lyric: 16px;
+}
+
+[data-density='comfy'] {
+  --row-py: 14px;
+  --pad: 26px;
+  --font-body: 15px;
+  --font-lyric: 19px;
+}
