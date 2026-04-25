@@ -144,6 +144,13 @@ function songbookName(id: string): string {
             </div>
           </div>
           <router-link
+            :to="`/songs/${selected.id}/play`"
+            class="btn btn-primary"
+            data-testid="library-play"
+          >
+            Switch to musician view
+          </router-link>
+          <router-link
             v-if="auth.canEditSongs"
             :to="`/songs/${selected.id}`"
             class="btn"

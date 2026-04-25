@@ -64,6 +64,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresEditor: true },
     },
     {
+      path: '/songs/:id/play',
+      name: 'song-play',
+      component: () => import('@/views/MusicianView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/admin/songbooks',
       name: 'admin-songbooks',
       component: () => import('@/views/SongbookAdminView.vue'),

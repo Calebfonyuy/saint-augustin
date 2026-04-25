@@ -50,6 +50,7 @@ function makeRouter() {
       { path: '/library', component: SongLibraryView },
       { path: '/songs/new', component: { template: '<div />' } },
       { path: '/songs/:id', component: { template: '<div />' } },
+      { path: '/songs/:id/play', component: { template: '<div />' } },
     ],
   })
 }
