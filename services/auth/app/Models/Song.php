@@ -67,4 +67,9 @@ class Song extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function sheets(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SongSheet::class)->orderByDesc('created_at');
+    }
 }

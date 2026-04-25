@@ -157,6 +157,25 @@ use OpenApi\Attributes as OA;
     type: 'object',
 )]
 #[OA\Schema(
+    schema: 'SongSheetResource',
+    description: 'Metadata for a file attached to a song, plus a short-lived presigned download URL.',
+    required: ['id', 'song_id', 'original_filename', 'file_type', 'mime_type', 'size_bytes', 'url'],
+    properties: [
+        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+        new OA\Property(property: 'song_id', type: 'string', format: 'uuid'),
+        new OA\Property(property: 'original_filename', type: 'string', example: 'amazing-grace-lead-sheet.pdf'),
+        new OA\Property(property: 'file_type', type: 'string', enum: ['pdf', 'image'], example: 'pdf'),
+        new OA\Property(property: 'mime_type', type: 'string', example: 'application/pdf'),
+        new OA\Property(property: 'size_bytes', type: 'integer', example: 184320),
+        new OA\Property(property: 'uploaded_by', type: 'string', format: 'uuid', nullable: true),
+        new OA\Property(property: 'url', type: 'string', format: 'uri', description: 'Presigned download URL — expires after SONG_SHEET_URL_TTL minutes.'),
+        new OA\Property(property: 'url_expires_at', type: 'string', format: 'date-time', nullable: true, description: 'Null when the disk does not support presigned URLs (e.g. local disk in tests).'),
+        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+        new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
+    ],
+    type: 'object',
+)]
+#[OA\Schema(
     schema: 'SongCollection',
     description: 'Paginated collection of songs.',
     required: ['data', 'meta'],

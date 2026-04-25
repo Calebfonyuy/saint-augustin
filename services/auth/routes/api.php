@@ -15,6 +15,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\SongbookController;
 use App\Http\Controllers\SongController;
+use App\Http\Controllers\SongSheetController;
 use App\Http\Controllers\StatusController;
 use Illuminate\Support\Facades\Route;
 
@@ -85,5 +86,28 @@ Route::middleware('auth:sanctum')->prefix('songs')->group(function () {
     Route::middleware('admin')->group(function () {
         Route::delete('/{id}',         [SongController::class, 'destroy']);
         Route::post('/{id}/restore',   [SongController::class, 'restore']);
+    });
+
+    // Sheet attachments nested under a song (Phase 2, FR5).
+    // Role checks for upload happen inside SongSheetController::store.
+    Route::get('/{songId}/sheets',  [SongSheetController::class, 'index']);
+    Route::post('/{songId}/sheets', [SongSheetController::class, 'store']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Song Sheet Routes (Phase 2 — File Service merged into Auth Service)
+|--------------------------------------------------------------------------
+| Authorization per SRS 2.2 + FR5:
+|   • List/Show     — any authenticated user
+|   • Upload        — admin or musician (enforced in SongSheetController)
+|   • Delete        — admin only (enforced via the `admin` middleware)
+*/
+
+Route::middleware('auth:sanctum')->prefix('sheets')->group(function () {
+    Route::get('/{id}', [SongSheetController::class, 'show']);
+
+    Route::middleware('admin')->group(function () {
+        Route::delete('/{id}', [SongSheetController::class, 'destroy']);
     });
 });

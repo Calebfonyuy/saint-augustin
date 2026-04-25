@@ -1,23 +1,30 @@
 <script setup lang="ts">
 // Song Editor — handles both `/songs/new` (create) and `/songs/:id` (edit).
 // Phase 1 scope: title, author, lyrics (ChordPro), key, tempo, time signature,
-// songbook, tags, preview_url, CCLI number. No PDF sheet uploads yet
-// (File Service lands in Phase 5).
+// songbook, tags, preview_url, CCLI number.
+// Phase 2 (FR5) adds the Sheets panel: PDF / image attachments via the File Service.
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import ChordProPreview from '@/components/ChordProPreview.vue'
 import Icon from '@/components/Icon.vue'
 import Toast from '@/components/Toast.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useSongsStore } from '@/stores/songs'
 import { useSongbooksStore } from '@/stores/songbooks'
+import { useSongSheetsStore } from '@/stores/songSheets'
 import { extractErrorMessage } from '@/api/client'
 import type { SongInput } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 const songs = useSongsStore()
 const songbooks = useSongbooksStore()
+const sheets = useSongSheetsStore()
+
+const fileInput = ref<HTMLInputElement | null>(null)
+const sheetError = ref<string | null>(null)
 
 const isNew = computed(() => route.name === 'song-new')
 const songId = computed(() => (isNew.value ? null : (route.params.id as string)))
@@ -70,13 +77,55 @@ onMounted(async () => {
       form.preview_url = song.preview_url
       form.ccli_number = song.ccli_number
       tagsText.value = song.tags.join(', ')
+      // Sheets only exist for an already-saved song.
+      sheets.fetchList(songId.value).catch(() => {
+        // Non-fatal — the rest of the editor still works.
+      })
     } catch (err) {
       error.value = extractErrorMessage(err, 'Failed to load song.')
     } finally {
       loading.value = false
     }
+  } else {
+    sheets.reset()
   }
 })
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function pickSheet(): void {
+  sheetError.value = null
+  fileInput.value?.click()
+}
+
+async function onSheetSelected(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || !songId.value) return
+
+  try {
+    await sheets.upload(songId.value, file)
+    success.value = 'Sheet uploaded.'
+  } catch (err) {
+    sheetError.value = extractErrorMessage(err, 'Could not upload sheet.')
+  } finally {
+    // Reset so picking the same file twice still triggers `change`.
+    input.value = ''
+  }
+}
+
+async function onSheetDelete(id: string): Promise<void> {
+  if (!confirm('Delete this sheet? This permanently removes the file.')) return
+  try {
+    await sheets.remove(id)
+  } catch (err) {
+    sheetError.value = extractErrorMessage(err, 'Could not delete sheet.')
+  }
+}
 
 function cleanPayload(): SongInput {
   return {
@@ -243,6 +292,75 @@ async function onDelete() {
           <label class="field-label">Live preview</label>
           <div class="card p-4 max-h-[380px] overflow-auto">
             <ChordProPreview :source="form.lyrics" />
+          </div>
+        </div>
+
+        <!-- Phase 2 / FR5 — sheet attachments. Only available once the song
+             has been saved (we need an id to attach to). -->
+        <div v-if="!isNew" data-testid="sheets-panel">
+          <label class="field-label">Sheets</label>
+          <div class="card p-4 flex flex-col gap-3">
+            <div v-if="auth.canEditSongs" class="flex items-center gap-2">
+              <input
+                ref="fileInput"
+                type="file"
+                accept="application/pdf,image/png,image/jpeg,image/webp"
+                class="hidden"
+                data-testid="sheet-file-input"
+                @change="onSheetSelected"
+              />
+              <button
+                type="button"
+                class="btn btn-secondary"
+                :disabled="sheets.uploading"
+                data-testid="sheet-upload"
+                @click="pickSheet"
+              >
+                <Icon name="upload" />
+                {{ sheets.uploading ? 'Uploading…' : 'Upload sheet' }}
+              </button>
+              <span class="text-[12px] text-text-faint">PDF or image, max 10 MB.</span>
+            </div>
+
+            <p v-if="sheetError" data-testid="sheet-error" class="field-error">{{ sheetError }}</p>
+
+            <div v-if="sheets.loading" class="text-text-faint text-[12px]">Loading sheets…</div>
+            <div
+              v-else-if="sheets.list.length === 0"
+              class="text-text-faint text-[12px]"
+              data-testid="sheets-empty"
+            >
+              No sheets attached.
+            </div>
+            <ul v-else class="flex flex-col gap-2" data-testid="sheets-list">
+              <li
+                v-for="sheet in sheets.list"
+                :key="sheet.id"
+                class="flex items-center gap-2 border border-border rounded p-2"
+              >
+                <Icon :name="sheet.file_type === 'pdf' ? 'list' : 'eye'" />
+                <a
+                  :href="sheet.url"
+                  target="_blank"
+                  rel="noopener"
+                  class="flex-1 truncate text-[13px]"
+                  :title="sheet.original_filename"
+                >
+                  {{ sheet.original_filename }}
+                </a>
+                <span class="text-[11px] text-text-faint">{{ formatBytes(sheet.size_bytes) }}</span>
+                <button
+                  v-if="auth.isAdmin"
+                  type="button"
+                  class="btn btn-icon btn-danger-ghost"
+                  :title="`Delete ${sheet.original_filename}`"
+                  data-testid="sheet-delete"
+                  @click="onSheetDelete(sheet.id)"
+                >
+                  <Icon name="trash" />
+                </button>
+              </li>
+            </ul>
           </div>
         </div>
       </aside>

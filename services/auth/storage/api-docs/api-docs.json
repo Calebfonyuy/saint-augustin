@@ -999,6 +999,279 @@
                 ]
             }
         },
+        "/songs/{songId}/sheets": {
+            "get": {
+                "tags": [
+                    "SongSheets"
+                ],
+                "summary": "List a song's sheets",
+                "description": "Returns metadata for every sheet attached to the given song. Each entry includes a short-lived presigned `url` for inline viewing/download.",
+                "operationId": "d380fc27bb975fded952e972f807eed1",
+                "parameters": [
+                    {
+                        "name": "songId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of sheets",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SongSheetResource"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Song not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "SongSheets"
+                ],
+                "summary": "Upload a song sheet",
+                "description": "Uploads a PDF or image (PNG/JPEG/WebP) and attaches it to the song. Multipart form-data; the file goes in the `file` field. Max 10 MiB.",
+                "operationId": "f77c185429783263920cc873341872eb",
+                "parameters": [
+                    {
+                        "name": "songId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Sheet uploaded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SongSheetResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Role not permitted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Song not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/sheets/{id}": {
+            "get": {
+                "tags": [
+                    "SongSheets"
+                ],
+                "summary": "Fetch sheet metadata + presigned URL",
+                "description": "Returns metadata for a single sheet plus a fresh presigned `url`. Use this when the URL on a previously fetched record has expired.",
+                "operationId": "2e936bfada71f518baadc2f9e4802914",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sheet metadata",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SongSheetResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Sheet not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "SongSheets"
+                ],
+                "summary": "Delete a sheet (Admin)",
+                "description": "Hard-deletes the sheet record and removes the underlying file from object storage. Requires the `admin` role.",
+                "operationId": "d0d0aa3ad6a067fdf237ac9c3e970ec1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Sheet deleted"
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Sheet not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/songbooks": {
             "get": {
                 "tags": [
@@ -1763,6 +2036,73 @@
                 },
                 "type": "object"
             },
+            "SongSheetResource": {
+                "description": "Metadata for a file attached to a song, plus a short-lived presigned download URL.",
+                "required": [
+                    "id",
+                    "song_id",
+                    "original_filename",
+                    "file_type",
+                    "mime_type",
+                    "size_bytes",
+                    "url"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "song_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "original_filename": {
+                        "type": "string",
+                        "example": "amazing-grace-lead-sheet.pdf"
+                    },
+                    "file_type": {
+                        "type": "string",
+                        "example": "pdf",
+                        "enum": [
+                            "pdf",
+                            "image"
+                        ]
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "example": "application/pdf"
+                    },
+                    "size_bytes": {
+                        "type": "integer",
+                        "example": 184320
+                    },
+                    "uploaded_by": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "url": {
+                        "description": "Presigned download URL — expires after SONG_SHEET_URL_TTL minutes.",
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "url_expires_at": {
+                        "description": "Null when the disk does not support presigned URLs (e.g. local disk in tests).",
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "SongCollection": {
                 "description": "Paginated collection of songs.",
                 "required": [
@@ -1832,6 +2172,10 @@
         {
             "name": "Songs",
             "description": "Song library CRUD, full-text search, and soft-delete recovery."
+        },
+        {
+            "name": "SongSheets",
+            "description": "PDF and image attachments on songs (lead sheets, choir parts)."
         },
         {
             "name": "Songbooks",

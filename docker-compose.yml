@@ -122,6 +122,14 @@ services:
       CACHE_DRIVER: redis
       QUEUE_CONNECTION: redis
       JWT_SECRET: ${JWT_SECRET:-changeme_jwt_secret_at_least_32_chars}
+      # MinIO / Object Storage (Phase 2 — song sheets)
+      FILESYSTEM_DISK: minio
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin_changeme}
+      MINIO_BUCKET: ${MINIO_BUCKET:-saintaugustin}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      SONG_SHEET_URL_TTL: ${SONG_SHEET_URL_TTL:-15}
     ports:
       - "${AUTH_SERVICE_PORT:-8000}:8000"
     volumes:
@@ -130,6 +138,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]

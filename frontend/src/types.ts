@@ -71,6 +71,22 @@ export type SongInput = Omit<
   'id' | 'created_by' | 'version' | 'created_at' | 'updated_at' | 'deleted_at'
 >
 
+/** Phase 2 — file attachments on a song (PDF lead sheets, choir-part scans). */
+export interface SongSheet {
+  id: string
+  song_id: string
+  original_filename: string
+  file_type: 'pdf' | 'image'
+  mime_type: string
+  size_bytes: number
+  uploaded_by: string | null
+  /** Short-lived presigned download URL — re-fetch via GET /sheets/{id} once expired. */
+  url: string
+  url_expires_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface Invitation {
   id: string
   email: string
