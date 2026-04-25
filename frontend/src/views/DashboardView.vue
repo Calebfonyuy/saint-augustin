@@ -54,11 +54,14 @@ onMounted(() => {
           <div class="text-[14px] font-semibold">New song</div>
           <div class="text-[12px] text-text-faint mt-[2px]">Add to the library</div>
         </router-link>
-        <div class="card p-4 opacity-50 cursor-not-allowed">
+        <router-link
+          to="/playlists"
+          class="card p-4 text-left block hover:bg-bg-sunken transition-colors"
+        >
           <div class="text-accent mb-2"><Icon name="list" /></div>
-          <div class="text-[14px] font-semibold">New playlist</div>
-          <div class="text-[12px] text-text-faint mt-[2px]">Phase 3</div>
-        </div>
+          <div class="text-[14px] font-semibold">Playlists</div>
+          <div class="text-[12px] text-text-faint mt-[2px]">Plan a service</div>
+        </router-link>
         <div class="card p-4 opacity-50 cursor-not-allowed">
           <div class="text-accent mb-2"><Icon name="cast" /></div>
           <div class="text-[14px] font-semibold">Go live</div>

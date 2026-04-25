@@ -29,7 +29,7 @@ interface NavItem {
 const items = computed<NavItem[]>(() => [
   { id: 'dashboard', label: 'Dashboard', icon: 'list', to: '/' },
   { id: 'library', label: 'Song Library', icon: 'music', to: '/library' },
-  { id: 'playlists', label: 'Playlists', icon: 'list', disabled: true },
+  { id: 'playlists', label: 'Playlists', icon: 'list', to: '/playlists' },
   { id: 'projection', label: 'Projection', icon: 'cast', disabled: true },
   { id: 'admin', label: 'Admin', icon: 'cog', to: '/admin/songbooks', adminOnly: true },
 ])
@@ -37,6 +37,7 @@ const items = computed<NavItem[]>(() => [
 const activeId = computed(() => {
   const path = router.currentRoute.value.path
   if (path.startsWith('/library') || path.startsWith('/songs')) return 'library'
+  if (path.startsWith('/playlists')) return 'playlists'
   if (path.startsWith('/admin')) return 'admin'
   if (path === '/' || path.startsWith('/dashboard')) return 'dashboard'
   return ''

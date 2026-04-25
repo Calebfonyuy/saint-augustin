@@ -101,3 +101,88 @@ export interface ValidationError {
   message: string
   errors: Record<string, string[]>
 }
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Phase 3 — Playlists, items, share links
+ * Ref: services/auth/app/Http/Controllers/PlaylistController.php
+ *      services/auth/app/Http/Controllers/PlaylistItemController.php
+ *      services/auth/app/Http/Controllers/ShareLinkController.php
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface PlaylistSummary {
+  id: string
+  name: string
+  event_date: string | null
+  tags: string[]
+  created_by: string | null
+  item_count: number
+  created_at: string
+  updated_at: string
+}
+
+/** Slim song shape returned inside playlist items. */
+export interface PlaylistItemSong {
+  id: string
+  title: string
+  author: string | null
+  original_key: string | null
+  tempo: number | null
+  time_signature: string | null
+  /** True when the underlying song was soft-deleted. */
+  deleted?: boolean
+  /** Only present on share-link payloads (musician mode). */
+  lyrics?: string
+  preview_url?: string | null
+}
+
+export interface PlaylistItem {
+  id: string
+  song_id: string
+  position: number
+  target_key: string | null
+  notes: string | null
+  song: PlaylistItemSong | null
+}
+
+export interface Playlist extends PlaylistSummary {
+  duplicated_from_id: string | null
+  items: PlaylistItem[]
+}
+
+export interface PlaylistInput {
+  name: string
+  event_date?: string | null
+  tags?: string[]
+}
+
+export interface PlaylistListQuery {
+  q?: string
+  tag?: string
+  mine?: boolean
+  per_page?: number
+  page?: number
+}
+
+export type ShareMode = 'musician' | 'projection'
+
+export interface ShareLink {
+  id: string
+  playlist_id: string
+  token: string
+  mode: ShareMode
+  expires_at: string | null
+  revoked_at: string | null
+  created_at: string
+}
+
+/** Public payload returned by GET /api/share/:token. */
+export interface SharedPlaylistResponse {
+  mode: ShareMode
+  playlist: {
+    id: string
+    name: string
+    event_date: string | null
+    tags: string[]
+    items: PlaylistItem[]
+  }
+}

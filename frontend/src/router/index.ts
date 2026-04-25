@@ -76,6 +76,26 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/playlists',
+      name: 'playlists',
+      component: () => import('@/views/PlaylistsListView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/playlists/:id',
+      name: 'playlist-builder',
+      component: () => import('@/views/PlaylistBuilderView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      // Public share view — no auth guard, no AppShell. The token is the
+      // sole authorisation token; the server returns 404 if it's invalid.
+      path: '/s/:token',
+      name: 'shared-playlist',
+      component: () => import('@/views/SharedPlaylistView.vue'),
+      meta: { public: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },
