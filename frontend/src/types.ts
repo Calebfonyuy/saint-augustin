@@ -186,3 +186,43 @@ export interface SharedPlaylistResponse {
     items: PlaylistItem[]
   }
 }
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Phase 4 — Projection sessions.
+ * Mirror of the NestJS projection service contract. Slide is exported
+ * from `@/lib/projection`; the rest are HTTP / WebSocket payload shapes.
+ * Ref: services/projection/src/sessions/session.types.ts
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface ProjectionSlide {
+  id: string
+  itemIndex: number
+  slideIndex: number
+  songTitle: string
+  section: string | null
+  body: string
+}
+
+export interface ProjectionSessionState {
+  id: string
+  playlistId: string | null
+  playlistName: string
+  slides: ProjectionSlide[]
+  currentIndex: number
+  blackout: boolean
+  fontScale: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateProjectionSessionInput {
+  playlistName: string
+  playlistId?: string
+  slides: ProjectionSlide[]
+}
+
+export interface CreateProjectionSessionResponse {
+  sessionId: string
+  controlToken: string
+  state: ProjectionSessionState
+}

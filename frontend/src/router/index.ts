@@ -96,6 +96,23 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      // Projection controller (worship leader). Requires auth and pulls
+      // the controlToken from the projection store after Go Live.
+      path: '/projection/control/:id',
+      name: 'projection-control',
+      component: () => import('@/views/ProjectionControlView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      // Public projector view: no auth, no chrome. The session id is
+      // the sole authorisation token (un-guessable UUID). Operators load
+      // this URL on the projector machine or in a second browser window.
+      path: '/projection/display/:id',
+      name: 'projection-display',
+      component: () => import('@/views/ProjectionDisplayView.vue'),
+      meta: { public: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },

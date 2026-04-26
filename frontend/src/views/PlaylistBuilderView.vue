@@ -13,6 +13,7 @@ import ShareDialog from '@/components/ShareDialog.vue'
 import Toast from '@/components/Toast.vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePlaylistsStore } from '@/stores/playlists'
+import { useProjectionStore } from '@/stores/projection'
 import { useSongsStore } from '@/stores/songs'
 import { downloadPlaylistExport } from '@/api/playlists'
 import { extractErrorMessage } from '@/api/client'
@@ -22,6 +23,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const playlists = usePlaylistsStore()
+const projection = useProjectionStore()
 const songs = useSongsStore()
 
 const id = computed(() => route.params.id as string)
@@ -187,6 +189,25 @@ async function onDelete(): Promise<void> {
   }
 }
 
+/**
+ * Open a fresh projection session and route the worship leader straight
+ * to the controller view. The display URL is shown there so they can
+ * cast it to the projector or another browser tab.
+ */
+async function onGoLive(): Promise<void> {
+  if (!playlist.value) return
+  if (items.value.length === 0) {
+    error.value = 'Add at least one song before going live.'
+    return
+  }
+  try {
+    const created = await projection.createFromPlaylist(playlist.value)
+    await router.push({ name: 'projection-control', params: { id: created.sessionId } })
+  } catch (err) {
+    error.value = extractErrorMessage(err, 'Could not start projection session.')
+  }
+}
+
 async function onExport(format: 'pdf' | 'txt'): Promise<void> {
   exportMenuOpen.value = false
   try {
@@ -263,6 +284,15 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
           @click="shareOpen = true"
         >
           Share
+        </button>
+        <button
+          v-if="canEdit"
+          type="button"
+          class="btn btn-primary"
+          data-testid="playlist-go-live"
+          @click="onGoLive"
+        >
+          <Icon name="cast" /> Go Live
         </button>
         <div class="relative">
           <button
