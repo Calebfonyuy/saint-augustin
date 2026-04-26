@@ -556,6 +556,1123 @@
                 }
             }
         },
+        "/playlists": {
+            "get": {
+                "tags": [
+                    "Playlists"
+                ],
+                "summary": "List playlists",
+                "description": "Returns a paginated list of playlist summaries. Items are not hydrated — fetch a single playlist by ID to get its items. Supports filtering by name search, tag, and ownership.",
+                "operationId": "c83e676680386f4f85886d12621ae7b7",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "description": "Search term matched against playlist name (case-insensitive)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "tag",
+                        "in": "query",
+                        "description": "Filter by tag",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "mine",
+                        "in": "query",
+                        "description": "When true, return only playlists owned by the authenticated user",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 25,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated playlist list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlaylistCollection"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Playlists"
+                ],
+                "summary": "Create a playlist",
+                "description": "Creates a new playlist owned by the authenticated user. Any authenticated role may create playlists.",
+                "operationId": "206df3847e4b7d04a2bb273d97abef2e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlaylistInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Playlist created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlaylistResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/playlists/{id}": {
+            "get": {
+                "tags": [
+                    "Playlists"
+                ],
+                "summary": "Fetch a single playlist",
+                "description": "Returns the full playlist including all items with their referenced songs.",
+                "operationId": "447977cee3ae7f3a1b85aae2c183ea56",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Playlist found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlaylistResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Playlist not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Playlists"
+                ],
+                "summary": "Update a playlist",
+                "description": "Updates the metadata (name, event_date, tags) of an existing playlist. Requires ownership or the `admin` role.",
+                "operationId": "ae0181bd860fe3727dda51729eb7a0c7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlaylistInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Playlist updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlaylistResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not the playlist owner or admin",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Playlist not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Playlists"
+                ],
+                "summary": "Delete a playlist",
+                "description": "Permanently deletes a playlist along with its items and share links (cascade). Requires ownership or the `admin` role.",
+                "operationId": "91a467eefc09d3524ed83bfe66898996",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Playlist deleted"
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not the playlist owner or admin",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Playlist not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/playlists/{id}/duplicate": {
+            "post": {
+                "tags": [
+                    "Playlists"
+                ],
+                "summary": "Duplicate a playlist",
+                "description": "Creates an independent copy of the playlist. Items (including target keys and notes) are cloned; share links are not. The caller becomes the owner of the copy. Any authenticated user may duplicate any visible playlist.",
+                "operationId": "fa5e00a7236f9a6af9ccfa1d83f1b454",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DuplicatePlaylistInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Duplicate created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlaylistResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Source playlist not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/playlists/{id}/export": {
+            "get": {
+                "tags": [
+                    "Playlists"
+                ],
+                "summary": "Export a playlist",
+                "description": "Downloads a formatted song list for the playlist. The `format` query parameter controls the output: `pdf` (default) renders a printable PDF via DomPDF; `txt` returns a plain-text setlist. Each entry contains the song title, author, and key (target key if set, otherwise original key). Lyrics and chord charts are not included. Any authenticated user may export any playlist.",
+                "operationId": "e787db3d288618db84ad03e922f4ef17",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "description": "Export format. Defaults to `pdf`.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "pdf",
+                            "enum": [
+                                "pdf",
+                                "txt"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Export file download",
+                        "headers": {
+                            "Content-Disposition": {
+                                "description": "attachment; filename=\"{playlist-name}.pdf\"",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            },
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Playlist not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Unsupported format",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/playlists/{playlistId}/items": {
+            "post": {
+                "tags": [
+                    "Playlist Items"
+                ],
+                "summary": "Add a song to a playlist",
+                "description": "Inserts a song into the playlist at the given position (defaults to end). Subsequent items shift down by one. Requires ownership or the `admin` role.",
+                "operationId": "1f9ed3c17c71d18538589f6a41b39bba",
+                "parameters": [
+                    {
+                        "name": "playlistId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlaylistItemInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Item added",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlaylistItem"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not the playlist owner or admin",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Playlist not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/playlists/{playlistId}/items/{itemId}": {
+            "put": {
+                "tags": [
+                    "Playlist Items"
+                ],
+                "summary": "Update a playlist item",
+                "description": "Updates the `target_key` and/or `notes` on an existing playlist item. Sending `null` for either field clears it. Requires ownership or the `admin` role.",
+                "operationId": "b5963606b782234f4c7af4a11eda78c2",
+                "parameters": [
+                    {
+                        "name": "playlistId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlaylistItemUpdateInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Item updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlaylistItem"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not the playlist owner or admin",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Playlist or item not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Playlist Items"
+                ],
+                "summary": "Remove a song from a playlist",
+                "description": "Deletes the item and compacts the position sequence so there are no gaps. Requires ownership or the `admin` role.",
+                "operationId": "c7fc680a47d401863888c8491e686aa6",
+                "parameters": [
+                    {
+                        "name": "playlistId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Item removed"
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not the playlist owner or admin",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Playlist or item not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/playlists/{playlistId}/items/reorder": {
+            "put": {
+                "tags": [
+                    "Playlist Items"
+                ],
+                "summary": "Reorder all items in a playlist",
+                "description": "Accepts an ordered array of every item UUID in the playlist. The array index becomes the new zero-based position. The submitted set must exactly match the current item set — no missing IDs, no foreign IDs. Requires ownership or the `admin` role.",
+                "operationId": "0dbba39fb3c649515c18fa5646b79fdd",
+                "parameters": [
+                    {
+                        "name": "playlistId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlaylistReorderInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Items reordered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlaylistItemCollection"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not the playlist owner or admin",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Playlist not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Item set mismatch or validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/playlists/{playlistId}/share": {
+            "get": {
+                "tags": [
+                    "Share Links"
+                ],
+                "summary": "List a playlist's share links",
+                "description": "Returns all share links (including revoked and expired) for the given playlist, ordered newest first. Requires ownership or the `admin` role.",
+                "operationId": "cec643673b4a81a2e51c5096cc34a174",
+                "parameters": [
+                    {
+                        "name": "playlistId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Share link list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ShareLinkCollection"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not the playlist owner or admin",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Playlist not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Share Links"
+                ],
+                "summary": "Create a share link",
+                "description": "Generates a new URL-safe token that grants public read access to the playlist. `mode` controls the payload shape: `musician` includes full song lyrics and preview URLs; `projection` includes lyrics but omits preview URLs. Requires ownership or the `admin` role.",
+                "operationId": "beb269727232d7487b07e4e361b1dd7e",
+                "parameters": [
+                    {
+                        "name": "playlistId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ShareLinkInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Share link created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ShareLinkResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not the playlist owner or admin",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Playlist not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/share-links/{id}": {
+            "delete": {
+                "tags": [
+                    "Share Links"
+                ],
+                "summary": "Revoke a share link",
+                "description": "Soft-revokes the share link by setting `revoked_at`. The token becomes immediately unusable but the row is retained for audit purposes. Requires ownership of the associated playlist or the `admin` role.",
+                "operationId": "d821fb773e87114410c3c56ae208cd24",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Share link UUID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Share link revoked"
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not the playlist owner or admin",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Share link not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/share/{token}": {
+            "get": {
+                "tags": [
+                    "Share Links"
+                ],
+                "summary": "Resolve a public share link",
+                "description": "No authentication required. Returns the playlist payload shaped for the link's `mode`. A flat 404 is returned for any token that is invalid, revoked, or expired — the response gives no indication of which condition applies. Rate-limited to 60 requests per minute.",
+                "operationId": "f689fb9038bb91920f632d41f1d0f39c",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "description": "URL-safe share token",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Playlist payload",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SharedPlaylistResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Token invalid, revoked, or expired",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/songs": {
             "get": {
                 "tags": [
@@ -2145,6 +3262,598 @@
                     }
                 },
                 "type": "object"
+            },
+            "PlaylistItemSong": {
+                "description": "Slim song shape embedded inside a playlist item.",
+                "required": [
+                    "id",
+                    "title"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Amazing Grace"
+                    },
+                    "author": {
+                        "type": "string",
+                        "example": "John Newton",
+                        "nullable": true
+                    },
+                    "original_key": {
+                        "type": "string",
+                        "example": "G",
+                        "nullable": true
+                    },
+                    "tempo": {
+                        "type": "integer",
+                        "example": 72,
+                        "nullable": true
+                    },
+                    "time_signature": {
+                        "type": "string",
+                        "example": "4/4",
+                        "nullable": true
+                    },
+                    "deleted": {
+                        "description": "True when the underlying song has been soft-deleted.",
+                        "type": "boolean",
+                        "example": false
+                    }
+                },
+                "type": "object"
+            },
+            "PlaylistItem": {
+                "description": "A single song slot within a playlist.",
+                "required": [
+                    "id",
+                    "song_id",
+                    "position"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "song_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "position": {
+                        "description": "Zero-based position within the playlist.",
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "target_key": {
+                        "description": "Transpose target key for this performance. Overrides the song's original_key.",
+                        "type": "string",
+                        "example": "D",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "Start with just piano.",
+                        "nullable": true
+                    },
+                    "song": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/PlaylistItemSong"
+                            }
+                        ],
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "PlaylistSummary": {
+                "description": "Lightweight playlist row returned by the list endpoint. Items are not hydrated.",
+                "required": [
+                    "id",
+                    "name",
+                    "tags",
+                    "item_count",
+                    "created_at",
+                    "updated_at"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Sunday Service — 27 April"
+                    },
+                    "event_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-04-27",
+                        "nullable": true
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "easter",
+                            "morning"
+                        ]
+                    },
+                    "created_by": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "item_count": {
+                        "type": "integer",
+                        "example": 6
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "PlaylistCollection": {
+                "description": "Paginated collection of playlist summaries.",
+                "required": [
+                    "data",
+                    "meta"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlaylistSummary"
+                        }
+                    },
+                    "meta": {
+                        "required": [
+                            "current_page",
+                            "per_page",
+                            "total",
+                            "last_page"
+                        ],
+                        "properties": {
+                            "current_page": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "per_page": {
+                                "type": "integer",
+                                "example": 25
+                            },
+                            "total": {
+                                "type": "integer",
+                                "example": 12
+                            },
+                            "last_page": {
+                                "type": "integer",
+                                "example": 1
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "PlaylistResource": {
+                "description": "Full playlist with hydrated items. Returned by show, store, update, and duplicate.",
+                "required": [
+                    "id",
+                    "name",
+                    "tags",
+                    "items",
+                    "created_at",
+                    "updated_at"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Sunday Service — 27 April"
+                    },
+                    "event_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-04-27",
+                        "nullable": true
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "easter"
+                        ]
+                    },
+                    "created_by": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "duplicated_from_id": {
+                        "description": "Source playlist UUID when this is a duplicate; null otherwise.",
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlaylistItem"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "PlaylistInput": {
+                "description": "Payload for creating or updating a playlist. `name` is required on create; on update any field may be omitted.",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Sunday Service — 27 April"
+                    },
+                    "event_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-04-27",
+                        "nullable": true
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "easter",
+                            "morning"
+                        ],
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "DuplicatePlaylistInput": {
+                "description": "Optional body for the duplicate endpoint. Omit `name` to accept the default \"{original} (copy)\".",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Evening Service — 27 April"
+                    }
+                },
+                "type": "object"
+            },
+            "PlaylistItemInput": {
+                "description": "Payload for adding a song to a playlist.",
+                "required": [
+                    "song_id"
+                ],
+                "properties": {
+                    "song_id": {
+                        "description": "ID of the song to add.",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "position": {
+                        "description": "Zero-based insertion index. Defaults to end of list; subsequent items shift down.",
+                        "type": "integer",
+                        "example": 2,
+                        "nullable": true
+                    },
+                    "target_key": {
+                        "description": "Transpose target key (e.g. C, Am, F#). Overrides the song's original_key for this slot.",
+                        "type": "string",
+                        "example": "D",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "Start with just piano.",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "PlaylistItemUpdateInput": {
+                "description": "Partial update for a playlist item. Only `target_key` and `notes` are editable after insertion.",
+                "properties": {
+                    "target_key": {
+                        "type": "string",
+                        "example": "Am",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "Capo 2.",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "PlaylistReorderInput": {
+                "description": "Ordered array of every item ID in the playlist. The array index becomes the new zero-based position.",
+                "required": [
+                    "item_ids"
+                ],
+                "properties": {
+                    "item_ids": {
+                        "description": "Every current item UUID exactly once, in the desired order.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "example": [
+                            "uuid-a",
+                            "uuid-b",
+                            "uuid-c"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "PlaylistItemCollection": {
+                "description": "List of playlist items returned after a reorder.",
+                "required": [
+                    "data"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlaylistItem"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ShareLinkResource": {
+                "description": "A share link granting public read access to a playlist.",
+                "required": [
+                    "id",
+                    "playlist_id",
+                    "token",
+                    "mode",
+                    "created_at"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "playlist_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "token": {
+                        "description": "URL-safe token used in GET /share/{token}.",
+                        "type": "string",
+                        "example": "AbCdEfGhIjKl"
+                    },
+                    "mode": {
+                        "type": "string",
+                        "example": "musician",
+                        "enum": [
+                            "musician",
+                            "projection"
+                        ]
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "revoked_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "ShareLinkCollection": {
+                "description": "List of a playlist's share links.",
+                "required": [
+                    "data"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ShareLinkResource"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ShareLinkInput": {
+                "required": [
+                    "mode"
+                ],
+                "properties": {
+                    "mode": {
+                        "description": "`musician` — full lyrics included in the resolved payload. `projection` — lyrics included but `preview_url` is omitted.",
+                        "type": "string",
+                        "example": "musician",
+                        "enum": [
+                            "musician",
+                            "projection"
+                        ]
+                    },
+                    "expires_at": {
+                        "description": "UTC expiry. Omit for a non-expiring link.",
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-05-01T23:59:59Z",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "SharedPlaylistItemSong": {
+                "description": "Song data in the public share-link payload. Always includes full ChordPro lyrics. `preview_url` is only present in `musician` mode.",
+                "required": [
+                    "id",
+                    "title",
+                    "lyrics"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Amazing Grace"
+                    },
+                    "author": {
+                        "type": "string",
+                        "example": "John Newton",
+                        "nullable": true
+                    },
+                    "lyrics": {
+                        "description": "Full ChordPro source.",
+                        "type": "string"
+                    },
+                    "original_key": {
+                        "type": "string",
+                        "example": "G",
+                        "nullable": true
+                    },
+                    "tempo": {
+                        "type": "integer",
+                        "example": 72,
+                        "nullable": true
+                    },
+                    "time_signature": {
+                        "type": "string",
+                        "example": "3/4",
+                        "nullable": true
+                    },
+                    "preview_url": {
+                        "description": "Only present in `musician` mode.",
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "SharedPlaylistItem": {
+                "required": [
+                    "id",
+                    "position"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "position": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "target_key": {
+                        "type": "string",
+                        "example": "D",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "song": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/SharedPlaylistItemSong"
+                            }
+                        ],
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "SharedPlaylistResponse": {
+                "description": "Payload returned by the public share-link resolution endpoint.",
+                "required": [
+                    "mode",
+                    "playlist"
+                ],
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "example": "musician",
+                        "enum": [
+                            "musician",
+                            "projection"
+                        ]
+                    },
+                    "playlist": {
+                        "required": [
+                            "id",
+                            "name",
+                            "tags",
+                            "items"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "Sunday Service — 27 April"
+                            },
+                            "event_date": {
+                                "type": "string",
+                                "format": "date",
+                                "example": "2026-04-27",
+                                "nullable": true
+                            },
+                            "tags": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/SharedPlaylistItem"
+                                }
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -2168,6 +3877,18 @@
         {
             "name": "Password Reset",
             "description": "Two-step email-based password reset."
+        },
+        {
+            "name": "Playlists",
+            "description": "Playlist CRUD, item management, share links, and export."
+        },
+        {
+            "name": "Playlist Items",
+            "description": "Add, update, remove, and reorder items within a playlist."
+        },
+        {
+            "name": "Share Links",
+            "description": "Create, list, and revoke share links for playlists, plus the public token-resolution endpoint."
         },
         {
             "name": "Songs",

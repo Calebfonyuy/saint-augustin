@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use OpenApi\Attributes as OA;
 
 /**
  * Playlist CRUD + duplication (SRS 3.3 — Playlist Management).
@@ -26,6 +27,10 @@ use Illuminate\Support\Facades\DB;
  *
  * Tag filtering uses whereJsonContains, mirroring the Song service.
  */
+#[OA\Tag(
+    name: 'Playlists',
+    description: 'Playlist CRUD, item management, share links, and export.',
+)]
 class PlaylistController
 {
     /** Re-used by both Playlist and PlaylistItem validation. */
@@ -33,6 +38,24 @@ class PlaylistController
 
     // ── List + filter ─────────────────────────────────────────────────
 
+    #[OA\Get(
+        path: '/playlists',
+        summary: 'List playlists',
+        description: 'Returns a paginated list of playlist summaries. Items are not hydrated — fetch a single playlist by ID to get its items. Supports filtering by name search, tag, and ownership.',
+        tags: ['Playlists'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'q', in: 'query', required: false, description: 'Search term matched against playlist name (case-insensitive)', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'tag', in: 'query', required: false, description: 'Filter by tag', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'mine', in: 'query', required: false, description: 'When true, return only playlists owned by the authenticated user', schema: new OA\Schema(type: 'boolean')),
+            new OA\Parameter(name: 'per_page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 25, maximum: 100)),
+            new OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 1)),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Paginated playlist list', content: new OA\JsonContent(ref: '#/components/schemas/PlaylistCollection')),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+        ],
+    )]
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -75,6 +98,21 @@ class PlaylistController
 
     // ── Show one (with items hydrated) ────────────────────────────────
 
+    #[OA\Get(
+        path: '/playlists/{id}',
+        summary: 'Fetch a single playlist',
+        description: 'Returns the full playlist including all items with their referenced songs.',
+        tags: ['Playlists'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Playlist found', content: new OA\JsonContent(ref: '#/components/schemas/PlaylistResource')),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Playlist not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+        ],
+    )]
     public function show(string $id): JsonResponse
     {
         $playlist = Playlist::with(['items.song'])->find($id);
@@ -88,6 +126,19 @@ class PlaylistController
 
     // ── Create ────────────────────────────────────────────────────────
 
+    #[OA\Post(
+        path: '/playlists',
+        summary: 'Create a playlist',
+        description: 'Creates a new playlist owned by the authenticated user. Any authenticated role may create playlists.',
+        tags: ['Playlists'],
+        security: [['sanctum' => []]],
+        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/PlaylistInput')),
+        responses: [
+            new OA\Response(response: 201, description: 'Playlist created', content: new OA\JsonContent(ref: '#/components/schemas/PlaylistResource')),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 422, description: 'Validation error', content: new OA\JsonContent(ref: '#/components/schemas/ValidationErrorResponse')),
+        ],
+    )]
     public function store(Request $request): JsonResponse
     {
         $validated = $this->validatePlaylistPayload($request, creating: true);
@@ -102,6 +153,24 @@ class PlaylistController
 
     // ── Update ────────────────────────────────────────────────────────
 
+    #[OA\Put(
+        path: '/playlists/{id}',
+        summary: 'Update a playlist',
+        description: 'Updates the metadata (name, event_date, tags) of an existing playlist. Requires ownership or the `admin` role.',
+        tags: ['Playlists'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/PlaylistInput')),
+        responses: [
+            new OA\Response(response: 200, description: 'Playlist updated', content: new OA\JsonContent(ref: '#/components/schemas/PlaylistResource')),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Not the playlist owner or admin', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Playlist not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 422, description: 'Validation error', content: new OA\JsonContent(ref: '#/components/schemas/ValidationErrorResponse')),
+        ],
+    )]
     public function update(Request $request, string $id): JsonResponse
     {
         $playlist = Playlist::find($id);
@@ -123,6 +192,22 @@ class PlaylistController
 
     // ── Delete ────────────────────────────────────────────────────────
 
+    #[OA\Delete(
+        path: '/playlists/{id}',
+        summary: 'Delete a playlist',
+        description: 'Permanently deletes a playlist along with its items and share links (cascade). Requires ownership or the `admin` role.',
+        tags: ['Playlists'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 204, description: 'Playlist deleted'),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Not the playlist owner or admin', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Playlist not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+        ],
+    )]
     public function destroy(Request $request, string $id): JsonResponse
     {
         $playlist = Playlist::find($id);
@@ -147,6 +232,25 @@ class PlaylistController
     // (target_key, notes, position) preserved. Share links are NOT
     // copied — duplicates start with no public visibility.
 
+    #[OA\Post(
+        path: '/playlists/{id}/duplicate',
+        summary: 'Duplicate a playlist',
+        description: 'Creates an independent copy of the playlist. Items (including target keys and notes) are cloned; share links are not. The caller becomes the owner of the copy. Any authenticated user may duplicate any visible playlist.',
+        tags: ['Playlists'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: false,
+            content: new OA\JsonContent(ref: '#/components/schemas/DuplicatePlaylistInput'),
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Duplicate created', content: new OA\JsonContent(ref: '#/components/schemas/PlaylistResource')),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Source playlist not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+        ],
+    )]
     public function duplicate(Request $request, string $id): JsonResponse
     {
         $source = Playlist::with('items')->find($id);

@@ -8,6 +8,7 @@ use App\Models\Song;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use OpenApi\Attributes as OA;
 
 /**
  * Playlist item management — add/remove/reorder/update items on a playlist.
@@ -21,12 +22,34 @@ use Illuminate\Support\Facades\DB;
  * Adding: position defaults to "end of list" when not specified; otherwise
  * the requested slot is reserved by shifting subsequent items down.
  */
+#[OA\Tag(
+    name: 'Playlist Items',
+    description: 'Add, update, remove, and reorder items within a playlist.',
+)]
 class PlaylistItemController
 {
     private const KEY_PATTERN = '/^[A-G][#b]?m?$/';
 
     // ── Add an item to a playlist ─────────────────────────────────────
 
+    #[OA\Post(
+        path: '/playlists/{playlistId}/items',
+        summary: 'Add a song to a playlist',
+        description: 'Inserts a song into the playlist at the given position (defaults to end). Subsequent items shift down by one. Requires ownership or the `admin` role.',
+        tags: ['Playlist Items'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'playlistId', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/PlaylistItemInput')),
+        responses: [
+            new OA\Response(response: 201, description: 'Item added', content: new OA\JsonContent(ref: '#/components/schemas/PlaylistItem')),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Not the playlist owner or admin', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Playlist not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 422, description: 'Validation error', content: new OA\JsonContent(ref: '#/components/schemas/ValidationErrorResponse')),
+        ],
+    )]
     public function store(Request $request, string $playlistId): JsonResponse
     {
         $playlist = Playlist::find($playlistId);
@@ -84,6 +107,25 @@ class PlaylistItemController
 
     // ── Update an item (target_key / notes) ───────────────────────────
 
+    #[OA\Put(
+        path: '/playlists/{playlistId}/items/{itemId}',
+        summary: 'Update a playlist item',
+        description: 'Updates the `target_key` and/or `notes` on an existing playlist item. Sending `null` for either field clears it. Requires ownership or the `admin` role.',
+        tags: ['Playlist Items'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'playlistId', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+            new OA\Parameter(name: 'itemId', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/PlaylistItemUpdateInput')),
+        responses: [
+            new OA\Response(response: 200, description: 'Item updated', content: new OA\JsonContent(ref: '#/components/schemas/PlaylistItem')),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Not the playlist owner or admin', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Playlist or item not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 422, description: 'Validation error', content: new OA\JsonContent(ref: '#/components/schemas/ValidationErrorResponse')),
+        ],
+    )]
     public function update(Request $request, string $playlistId, string $itemId): JsonResponse
     {
         [$playlist, $item, $error] = $this->resolvePair($playlistId, $itemId);
@@ -109,6 +151,23 @@ class PlaylistItemController
 
     // ── Remove an item ────────────────────────────────────────────────
 
+    #[OA\Delete(
+        path: '/playlists/{playlistId}/items/{itemId}',
+        summary: 'Remove a song from a playlist',
+        description: 'Deletes the item and compacts the position sequence so there are no gaps. Requires ownership or the `admin` role.',
+        tags: ['Playlist Items'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'playlistId', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+            new OA\Parameter(name: 'itemId', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 204, description: 'Item removed'),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Not the playlist owner or admin', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Playlist or item not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+        ],
+    )]
     public function destroy(Request $request, string $playlistId, string $itemId): JsonResponse
     {
         [$playlist, $item, $error] = $this->resolvePair($playlistId, $itemId);
@@ -142,6 +201,24 @@ class PlaylistItemController
     // Body: { "item_ids": ["uuid", "uuid", ...] }
     // The order of the array becomes the new (0-based) positions.
 
+    #[OA\Put(
+        path: '/playlists/{playlistId}/items/reorder',
+        summary: 'Reorder all items in a playlist',
+        description: 'Accepts an ordered array of every item UUID in the playlist. The array index becomes the new zero-based position. The submitted set must exactly match the current item set — no missing IDs, no foreign IDs. Requires ownership or the `admin` role.',
+        tags: ['Playlist Items'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'playlistId', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/PlaylistReorderInput')),
+        responses: [
+            new OA\Response(response: 200, description: 'Items reordered', content: new OA\JsonContent(ref: '#/components/schemas/PlaylistItemCollection')),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Not the playlist owner or admin', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Playlist not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 422, description: 'Item set mismatch or validation error', content: new OA\JsonContent(ref: '#/components/schemas/ValidationErrorResponse')),
+        ],
+    )]
     public function reorder(Request $request, string $playlistId): JsonResponse
     {
         $playlist = Playlist::find($playlistId);

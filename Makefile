@@ -99,6 +99,37 @@ env: ## Create .env from .env.example
 	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example")
 	@test -f services/auth/.env || (cp services/auth/.env.example services/auth/.env && echo "Created services/auth/.env")
 
+# ── Documentation ────────────────────────────────────────────────────────────
+
+DOCS_DIR  := docs
+DOCS_OUT  := $(DOCS_DIR)/saintaugustin.pdf
+DOCS_SRC  := $(DOCS_DIR)/overview.md \
+             $(DOCS_DIR)/auth-service.md \
+             $(DOCS_DIR)/projection-service.md \
+             $(DOCS_DIR)/frontend.md \
+             $(DOCS_DIR)/infrastructure.md \
+             $(DOCS_DIR)/SETUP.md
+
+.PHONY: docs
+
+docs: ## Generate docs/saintaugustin.pdf from Markdown sources (requires pandoc + a LaTeX engine or wkhtmltopdf)
+	@command -v pandoc >/dev/null 2>&1 || { echo "Error: pandoc is not installed. Run: sudo apt install pandoc texlive-latex-recommended texlive-xetex texlive-fonts-recommended"; exit 1; }
+	pandoc $(DOCS_SRC) \
+		--from markdown \
+		--to pdf \
+		--output $(DOCS_OUT) \
+		--pdf-engine=xelatex \
+		--toc \
+		--toc-depth=2 \
+		-V geometry:margin=2.5cm \
+		-V fontsize=11pt \
+		-V mainfont="DejaVu Serif" \
+		-V monofont="DejaVu Sans Mono" \
+		-V colorlinks=true \
+		-V linkcolor=blue \
+		--highlight-style=tango
+	@echo "✓ Generated $(DOCS_OUT)"
+
 # ── Help ─────────────────────────────────────────────────────────────────────
 
 .PHONY: help

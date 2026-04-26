@@ -7,6 +7,7 @@ use App\Models\PlaylistItem;
 use App\Models\ShareLink;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use OpenApi\Attributes as OA;
 
 /**
  * Share-link CRUD + public token resolution (SRS 3.3 / 7.1).
@@ -29,10 +30,30 @@ use Illuminate\Http\Request;
  * frontend render either Musician View or Projection View entirely
  * client-side based on `mode`.
  */
+#[OA\Tag(
+    name: 'Share Links',
+    description: 'Create, list, and revoke share links for playlists, plus the public token-resolution endpoint.',
+)]
 class ShareLinkController
 {
     // ── Authenticated: list this playlist's share links ──────────────
 
+    #[OA\Get(
+        path: '/playlists/{playlistId}/share',
+        summary: "List a playlist's share links",
+        description: 'Returns all share links (including revoked and expired) for the given playlist, ordered newest first. Requires ownership or the `admin` role.',
+        tags: ['Share Links'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'playlistId', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Share link list', content: new OA\JsonContent(ref: '#/components/schemas/ShareLinkCollection')),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Not the playlist owner or admin', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Playlist not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+        ],
+    )]
     public function index(Request $request, string $playlistId): JsonResponse
     {
         $playlist = Playlist::find($playlistId);
@@ -54,6 +75,24 @@ class ShareLinkController
 
     // ── Authenticated: create a share link ────────────────────────────
 
+    #[OA\Post(
+        path: '/playlists/{playlistId}/share',
+        summary: 'Create a share link',
+        description: 'Generates a new URL-safe token that grants public read access to the playlist. `mode` controls the payload shape: `musician` includes full song lyrics and preview URLs; `projection` includes lyrics but omits preview URLs. Requires ownership or the `admin` role.',
+        tags: ['Share Links'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'playlistId', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/ShareLinkInput')),
+        responses: [
+            new OA\Response(response: 201, description: 'Share link created', content: new OA\JsonContent(ref: '#/components/schemas/ShareLinkResource')),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Not the playlist owner or admin', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Playlist not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 422, description: 'Validation error', content: new OA\JsonContent(ref: '#/components/schemas/ValidationErrorResponse')),
+        ],
+    )]
     public function store(Request $request, string $playlistId): JsonResponse
     {
         $playlist = Playlist::find($playlistId);
@@ -84,6 +123,22 @@ class ShareLinkController
 
     // ── Authenticated: revoke ─────────────────────────────────────────
 
+    #[OA\Delete(
+        path: '/share-links/{id}',
+        summary: 'Revoke a share link',
+        description: 'Soft-revokes the share link by setting `revoked_at`. The token becomes immediately unusable but the row is retained for audit purposes. Requires ownership of the associated playlist or the `admin` role.',
+        tags: ['Share Links'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: 'Share link UUID', schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 204, description: 'Share link revoked'),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Not the playlist owner or admin', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Share link not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+        ],
+    )]
     public function destroy(Request $request, string $shareLinkId): JsonResponse
     {
         $link = ShareLink::with('playlist')->find($shareLinkId);
@@ -107,6 +162,20 @@ class ShareLinkController
     // No auth. Bots & link-sharers can hit this freely. Rate-limiting is
     // applied at the route definition (throttle:share-public).
 
+    #[OA\Get(
+        path: '/share/{token}',
+        summary: 'Resolve a public share link',
+        description: 'No authentication required. Returns the playlist payload shaped for the link\'s `mode`. A flat 404 is returned for any token that is invalid, revoked, or expired — the response gives no indication of which condition applies. Rate-limited to 60 requests per minute.',
+        tags: ['Share Links'],
+        parameters: [
+            new OA\Parameter(name: 'token', in: 'path', required: true, description: 'URL-safe share token', schema: new OA\Schema(type: 'string')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Playlist payload', content: new OA\JsonContent(ref: '#/components/schemas/SharedPlaylistResponse')),
+            new OA\Response(response: 404, description: 'Token invalid, revoked, or expired', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 429, description: 'Rate limit exceeded', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+        ],
+    )]
     public function resolve(string $token): JsonResponse
     {
         $link = ShareLink::where('token', $token)->first();
