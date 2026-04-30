@@ -10,11 +10,17 @@
  *   │                │ Toolbar: Prev · Next · Blackout · Font · Display │
  *   └────────────────┴──────────────────────────────────────────────────┘
  *
- * Keyboard shortcuts (also documented in the panel):
- *   Right / Space / PageDown → next slide
- *   Left / PageUp            → previous slide
- *   B                        → toggle blackout
- *   + / -                    → font scale up / down
+ * The stage area uses the `.dark` design-token scope so slide previews
+ * sit on a dark canvas that matches the projector screen aesthetic.
+ * The header and service-order sidebar remain in the light theme.
+ *
+ * Keyboard shortcuts (documented in the panel and in SRS §8.2):
+ *   Right / Space / PageDown  → next slide
+ *   Left / PageUp             → previous slide
+ *   B                         → toggle blackout
+ *   F                         → toggle fullscreen
+ *   +/=                       → font scale up
+ *   - / _                     → font scale down
  *
  * Connection lifecycle:
  *   • If the projection store already holds the controlToken (we just
@@ -37,6 +43,7 @@ const projection = useProjectionStore()
 
 const sessionId = computed(() => route.params.id as string)
 const error = ref<string | null>(null)
+const isFullscreen = ref(false)
 
 const displayUrl = computed(() => {
   if (!sessionId.value) return ''
@@ -54,7 +61,25 @@ async function copyDisplayUrl(): Promise<void> {
   }
 }
 
-// ── Keyboard shortcuts ─────────────────────────────────────────────
+// ── Fullscreen ──────────────────────────────────────────────────────
+
+async function toggleFullscreen(): Promise<void> {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen()
+    } else {
+      await document.exitFullscreen()
+    }
+  } catch {
+    /* not supported; ignore */
+  }
+}
+
+function onFullscreenChange(): void {
+  isFullscreen.value = !!document.fullscreenElement
+}
+
+// ── Keyboard shortcuts ──────────────────────────────────────────────
 
 function onKey(e: KeyboardEvent): void {
   if (projection.role !== 'controller') return
@@ -79,6 +104,11 @@ function onKey(e: KeyboardEvent): void {
       e.preventDefault()
       projection.setBlackout(!(projection.state?.blackout ?? false))
       break
+    case 'f':
+    case 'F':
+      e.preventDefault()
+      void toggleFullscreen()
+      break
     case '+':
     case '=':
       e.preventDefault()
@@ -92,7 +122,12 @@ function onKey(e: KeyboardEvent): void {
   }
 }
 
+// ── Lifecycle ───────────────────────────────────────────────────────
+
 onMounted(async () => {
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+  window.addEventListener('keydown', onKey)
+
   // Reuse the existing connection if we already joined as controller for
   // this session (e.g. created via Go Live and routed here).
   const alreadyConnected =
@@ -108,10 +143,10 @@ onMounted(async () => {
       error.value = result.error || 'Could not connect to the projection session.'
     }
   }
-  window.addEventListener('keydown', onKey)
 })
 
 onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
   window.removeEventListener('keydown', onKey)
   // Don't disconnect — the leader may navigate to a different tab and
   // come back. Disconnect happens on End Session.
@@ -131,11 +166,11 @@ async function endSession(): Promise<void> {
 <template>
   <AppShell>
     <div class="flex flex-col min-h-0 h-full">
-      <!-- Header -->
+      <!-- ── Header ──────────────────────────────────────────────── -->
       <div class="px-6 py-3 border-b border-border flex items-center gap-3 flex-wrap">
         <Icon name="cast" />
         <div class="flex-1 min-w-[280px]">
-          <div class="text-[18px] font-semibold leading-tight">
+          <div class="text-[18px] font-semibold leading-tight" data-testid="ctrl-playlist-name">
             {{ projection.state?.playlistName ?? 'Projection' }}
           </div>
           <div class="text-[11px] text-text-faint mono uppercase tracking-[0.12em]">
@@ -151,11 +186,13 @@ async function endSession(): Promise<void> {
             :value="displayUrl"
             data-testid="projection-display-url"
           />
-          <button type="button" class="btn" @click="copyDisplayUrl">Copy display URL</button>
+          <button type="button" class="btn" data-testid="ctrl-copy-url" @click="copyDisplayUrl">
+            Copy display URL
+          </button>
           <button
             v-if="projection.role === 'controller'"
             type="button"
-            class="btn"
+            class="btn btn-danger"
             data-testid="projection-end"
             @click="endSession"
           >
@@ -164,14 +201,20 @@ async function endSession(): Promise<void> {
         </div>
       </div>
 
-      <div v-if="projection.role !== 'controller'" class="px-6 py-2 bg-bg-sunken text-[12px] text-text-muted border-b border-border">
+      <!-- ── View-only banner ──────────────────────────────────────── -->
+      <div
+        v-if="projection.role !== 'controller'"
+        class="px-6 py-2 bg-bg-sunken text-[12px] text-text-muted border-b border-border"
+        data-testid="ctrl-viewonly-banner"
+      >
         You are joined as a view-only display. To control this session, return to the
         playlist and click Go Live.
       </div>
 
-      <!-- Body -->
+      <!-- ── Body ─────────────────────────────────────────────────── -->
       <div class="flex-1 min-h-0 grid grid-cols-[280px_1fr] overflow-hidden">
-        <!-- Service order / jump-to-song -->
+
+        <!-- Service order / jump-to-song (light theme) -->
         <aside class="border-r border-border overflow-y-auto p-3 flex flex-col gap-1">
           <div class="mono uppercase tracking-[0.14em] text-[10px] text-text-faint px-2 pt-1 pb-2">
             Service order
@@ -195,11 +238,12 @@ async function endSession(): Promise<void> {
           </button>
         </aside>
 
-        <!-- Stage area -->
-        <section class="flex flex-col min-h-0 overflow-hidden p-4 gap-3 bg-bg-sunken">
-          <!-- Current -->
+        <!-- Stage area — dark token scope for cinema-style feel -->
+        <section class="dark flex flex-col min-h-0 overflow-hidden p-4 gap-3 bg-bg-sunken">
+          <!-- Current + next + shortcuts row -->
           <div class="flex-1 min-h-0 flex gap-3">
-            <div class="flex-1 min-h-0 card overflow-hidden bg-black" data-testid="current-slide">
+            <!-- Current slide -->
+            <div class="flex-1 min-h-0 card overflow-hidden" data-testid="current-slide">
               <SlideRenderer
                 :slide="projection.currentSlide"
                 :blackout="projection.state?.blackout ?? false"
@@ -207,19 +251,27 @@ async function endSession(): Promise<void> {
                 variant="preview"
               />
             </div>
-            <!-- Next + shortcuts -->
+
+            <!-- Next slide + shortcuts -->
             <div class="w-[300px] flex flex-col gap-3">
-              <div class="card overflow-hidden bg-black/80 h-[170px]" data-testid="next-slide">
+              <div class="card overflow-hidden h-[170px]" data-testid="next-slide">
                 <SlideRenderer :slide="projection.nextSlide" variant="thumb" />
               </div>
+              <!-- Keyboard shortcuts reference card -->
               <div class="card p-3 text-[11px] text-text-muted leading-relaxed">
-                <div class="mono uppercase tracking-[0.14em] text-text-faint mb-2">
-                  Shortcuts
+                <div class="mono uppercase tracking-[0.14em] text-text-faint mb-2">Shortcuts</div>
+                <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                  <span><kbd>→</kbd> <kbd>Space</kbd> <kbd>PgDn</kbd></span>
+                  <span>Next slide</span>
+                  <span><kbd>←</kbd> <kbd>PgUp</kbd></span>
+                  <span>Previous slide</span>
+                  <span><kbd>B</kbd></span>
+                  <span>Blackout</span>
+                  <span><kbd>F</kbd></span>
+                  <span>Fullscreen</span>
+                  <span><kbd>+</kbd> <kbd>-</kbd></span>
+                  <span>Font size</span>
                 </div>
-                <div><kbd>→</kbd> / <kbd>Space</kbd> next</div>
-                <div><kbd>←</kbd> previous</div>
-                <div><kbd>B</kbd> blackout</div>
-                <div><kbd>+</kbd> / <kbd>-</kbd> font size</div>
               </div>
             </div>
           </div>
@@ -242,13 +294,19 @@ async function endSession(): Promise<void> {
               data-testid="ctrl-next"
               @click="projection.next()"
             >
-              Next <Icon name="arrow-left" style="transform: rotate(180deg)" />
+              Next <Icon name="arrow-right" />
             </button>
-            <div class="flex items-center gap-1 text-[12px] text-text-faint mono">
+            <div
+              class="flex items-center gap-1 text-[12px] text-text-faint mono"
+              data-testid="ctrl-slide-count"
+            >
               {{ (projection.state?.currentIndex ?? 0) + 1 }} /
               {{ projection.state?.slides.length ?? 0 }}
             </div>
-            <div class="flex-1"></div>
+
+            <div class="flex-1" />
+
+            <!-- Blackout toggle -->
             <button
               type="button"
               class="btn"
@@ -259,6 +317,8 @@ async function endSession(): Promise<void> {
             >
               {{ projection.state?.blackout ? 'Blackout ON' : 'Blackout' }}
             </button>
+
+            <!-- Font scale -->
             <div class="flex items-center gap-1">
               <button
                 type="button"
@@ -267,9 +327,12 @@ async function endSession(): Promise<void> {
                 data-testid="ctrl-font-down"
                 @click="projection.setFontScale(Math.max(0.5, (projection.state?.fontScale ?? 1) - 0.1))"
               >
-                A-
+                A−
               </button>
-              <span class="text-[11px] text-text-faint mono w-10 text-center">
+              <span
+                class="text-[11px] text-text-faint mono w-10 text-center"
+                data-testid="ctrl-font-pct"
+              >
                 {{ ((projection.state?.fontScale ?? 1) * 100).toFixed(0) }}%
               </span>
               <button
@@ -282,6 +345,17 @@ async function endSession(): Promise<void> {
                 A+
               </button>
             </div>
+
+            <!-- Fullscreen toggle -->
+            <button
+              type="button"
+              class="btn"
+              :title="isFullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'"
+              data-testid="ctrl-fullscreen"
+              @click="toggleFullscreen"
+            >
+              {{ isFullscreen ? '⛶ Exit' : '⛶ Full' }}
+            </button>
           </div>
         </section>
       </div>
@@ -295,11 +369,12 @@ async function endSession(): Promise<void> {
 kbd {
   display: inline-block;
   padding: 1px 5px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border, var(--border));
   border-bottom-width: 2px;
   border-radius: 3px;
   font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
   font-size: 10px;
-  background: var(--color-bg);
+  background: var(--bg-raised);
+  color: var(--text-muted);
 }
 </style>

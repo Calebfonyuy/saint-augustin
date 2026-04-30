@@ -5,7 +5,16 @@
 // lyrics still produce a placeholder title slide so the controller can
 // jump to them and the worship leader knows where they are in the
 // service order.
+//
+// Per-song `target_key` overrides are honoured: when a playlist item
+// carries a different key than the song's stored `original_key`, the
+// ChordPro source is transposed before splitting. Chords are stripped
+// from the final slide body (projection shows plain lyrics), so the
+// transposition doesn't change the visible text — but it keeps the
+// pipeline consistent with the Musician View and ensures the correct
+// key metadata is available if the slide model is ever extended.
 import type { Playlist } from '@/types'
+import { transposeChordPro } from '@/lib/chordpro'
 import { splitSongIntoSlides, type Slide } from './slides'
 
 export function buildSlidesForPlaylist(playlist: Playlist): Slide[] {
@@ -15,7 +24,15 @@ export function buildSlidesForPlaylist(playlist: Playlist): Slide[] {
     const it = items[i]
     const song = it.song
     const title = song?.title ?? 'Untitled'
-    const lyrics = song?.lyrics ?? ''
+    let lyrics = song?.lyrics ?? ''
+
+    // Apply per-item key override if one is set and differs from the
+    // song's stored key. Both keys must be known for transposition to
+    // be possible; if either is missing we use the lyrics as-is.
+    if (it.target_key && song?.original_key && it.target_key !== song.original_key) {
+      lyrics = transposeChordPro(lyrics, song.original_key, it.target_key)
+    }
+
     const slides = splitSongIntoSlides({
       itemIndex: i,
       idPrefix: it.id,

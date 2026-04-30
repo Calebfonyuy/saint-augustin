@@ -106,6 +106,73 @@ describe('buildSlidesForPlaylist', () => {
     expect(slides[slides.length - 1].songTitle).toBe('Second')
   })
 
+  it('applies target_key transposition before splitting', () => {
+    // The source has chord tokens; after transposing G→A the chord names
+    // shift but are then stripped. The body is unchanged in projection
+    // output — this test verifies the pipeline doesn't error out and still
+    // produces clean lyrics when a key override is set.
+    const pl = playlist([
+      item({
+        id: 'a',
+        target_key: 'A',
+        song: {
+          id: 'song-1',
+          title: 'Song',
+          author: null,
+          original_key: 'G',
+          tempo: null,
+          time_signature: null,
+          lyrics: '[G]Amazing [C]grace\n\n[G]through many [D]dangers',
+        },
+      }),
+    ])
+    const slides = buildSlidesForPlaylist(pl)
+    expect(slides).toHaveLength(2)
+    // Chords stripped — body should be plain text regardless of key
+    expect(slides[0].body).toBe('Amazing grace')
+    expect(slides[1].body).toBe('through many dangers')
+  })
+
+  it('skips transposition when target_key equals original_key', () => {
+    const pl = playlist([
+      item({
+        id: 'a',
+        target_key: 'G',
+        song: {
+          id: 'song-1',
+          title: 'Song',
+          author: null,
+          original_key: 'G',
+          tempo: null,
+          time_signature: null,
+          lyrics: '[G]line one',
+        },
+      }),
+    ])
+    const slides = buildSlidesForPlaylist(pl)
+    expect(slides[0].body).toBe('line one')
+  })
+
+  it('skips transposition when original_key is missing', () => {
+    const pl = playlist([
+      item({
+        id: 'a',
+        target_key: 'A',
+        song: {
+          id: 'song-1',
+          title: 'Song',
+          author: null,
+          original_key: null,
+          tempo: null,
+          time_signature: null,
+          lyrics: '[G]line one',
+        },
+      }),
+    ])
+    const slides = buildSlidesForPlaylist(pl)
+    expect(slides[0].body).toBe('line one')
+  })
+
   it('numbers itemIndex by 0-based playlist position', () => {
     const pl = playlist([
       item({ id: 'a', position: 0 }),
