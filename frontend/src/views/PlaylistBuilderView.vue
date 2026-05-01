@@ -341,7 +341,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
       <!-- Body -->
       <div class="grid grid-cols-[1fr_360px] flex-1 min-h-0">
         <!-- LEFT: ordered item list -->
-        <div class="overflow-auto px-6 py-5">
+        <div class="px-6 py-5 overflow-auto">
           <div
             v-if="items.length === 0"
             class="text-text-faint text-[13px] py-12 text-center"
@@ -363,13 +363,13 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
           >
             <template #item="{ element, index }: { element: PlaylistItem; index: number }">
               <li
-                class="card px-3 py-3 flex items-start gap-3"
+                class="flex items-start gap-3 px-3 py-3 card"
                 :class="element.song?.deleted ? 'opacity-60' : ''"
                 data-testid="playlist-item"
               >
                 <span
                   v-if="canEdit"
-                  class="drag-handle cursor-grab text-text-faint pt-1"
+                  class="pt-1 drag-handle cursor-grab text-text-faint"
                   aria-label="Drag to reorder"
                 >
                   <Icon name="dots" />
@@ -381,7 +381,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
                   {{ index + 1 }}
                 </span>
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 flex-wrap">
+                  <div class="flex flex-wrap items-center gap-2">
                     <span class="text-[14px] font-semibold truncate">
                       {{ element.song?.title ?? 'Untitled' }}
                     </span>
@@ -444,7 +444,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
         </div>
 
         <!-- RIGHT: song picker -->
-        <aside v-if="canEdit" class="border-l border-border flex flex-col min-h-0">
+        <aside v-if="canEdit" class="flex flex-col min-h-0 border-l border-border">
           <div class="px-4 pt-4 pb-2 border-b border-border">
             <div class="mono uppercase tracking-[0.14em] text-[10px] text-text-faint mb-2">
               Add songs
@@ -462,7 +462,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
               />
             </div>
           </div>
-          <div class="overflow-auto flex-1" data-testid="picker-list">
+          <div class="flex-1 overflow-auto" data-testid="picker-list">
             <div
               v-if="songs.loading && songs.list.length === 0"
               class="p-4 text-[12px] text-text-faint"
@@ -479,7 +479,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
               v-for="s in songs.list"
               :key="s.id"
               type="button"
-              class="w-full text-left px-4 py-2 border-b border-border flex items-center gap-2 hover:bg-bg-sunken"
+              class="flex items-center w-full gap-2 px-4 py-2 text-left border-b border-border hover:bg-bg-sunken"
               data-testid="picker-item"
               @click="onAddSong(s.id)"
             >

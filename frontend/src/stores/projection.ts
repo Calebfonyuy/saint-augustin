@@ -44,12 +44,14 @@ interface MutationResult {
 
 /** Resolve the gateway socket URL. Falls back to localhost in dev. */
 function resolveSocketUrl(): string {
-  const wsUrl = import.meta.env.VITE_WS_URL
+  // const wsUrl = import.meta.env.VITE_WS_URL
+  const wsUrl = import.meta.env.VITE_PROJECTION_BASE_URL
   if (wsUrl) {
     // socket.io-client accepts both ws:// and http:// — prefer http:// so
     // the polling transport works during the upgrade dance.
     return wsUrl.replace(/^ws:/, 'http:').replace(/^wss:/, 'https:')
   }
+  console.log('WS URL NOT CONFIGURED, FALLING BACK TO LOCALHOST')
   return 'http://localhost:8080'
 }
 
@@ -214,7 +216,7 @@ export const useProjectionStore = defineStore('projection', () => {
    * controlToken / sessionId for routing or sharing the display URL.
    */
   async function createFromPlaylist(playlist: Playlist): Promise<CreateProjectionSessionResponse> {
-    const slides = buildSlidesForPlaylist(playlist)
+    const slides = await buildSlidesForPlaylist(playlist)
     const created = await projectionApi.createSession({
       playlistName: playlist.name,
       playlistId: playlist.id,

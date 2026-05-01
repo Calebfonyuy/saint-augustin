@@ -28,9 +28,10 @@ COPY package*.json ./
 RUN npm i
 ARG VITE_API_BASE_URL
 ARG VITE_WS_URL
+ARG VITE_PROJECTION_BASE_URL
 
 COPY . .
-RUN printf "VITE_API_BASE_URL=%s\nVITE_WS_URL=%s\n" "$VITE_API_BASE_URL" "$VITE_WS_URL" > ./.env
+RUN printf "VITE_API_BASE_URL=%s\nVITE_WS_URL=%s\nVITE_PROJECTION_BASE_URL=%s\n" "$VITE_API_BASE_URL" "$VITE_WS_URL" "$VITE_PROJECTION_BASE_URL" > ./.env
 RUN npm run build
 
 # --- Production stage ---

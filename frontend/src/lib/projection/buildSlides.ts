@@ -16,15 +16,20 @@
 import type { Playlist } from '@/types'
 import { transposeChordPro } from '@/lib/chordpro'
 import { splitSongIntoSlides, type Slide } from './slides'
+import { getSong } from '@/api/songs'
 
-export function buildSlidesForPlaylist(playlist: Playlist): Slide[] {
+export async function buildSlidesForPlaylist(playlist: Playlist): Promise<Slide[]> {
   const out: Slide[] = []
   const items = [...playlist.items].sort((a, b) => a.position - b.position)
   for (let i = 0; i < items.length; i++) {
     const it = items[i]
-    const song = it.song
+    const song = await getSong(it.song_id).catch((_) => {
+      // console.error(`Failed to fetch song ${it.song_id} for playlist item ${it.id}:`, err)
+      return null
+    })
+
     const title = song?.title ?? 'Untitled'
-    let lyrics = song?.lyrics ?? ''
+    let lyrics = song?.lyrics ?? 'Unknown song (lyrics unavailable)'
 
     // Apply per-item key override if one is set and differs from the
     // song's stored key. Both keys must be known for transposition to

@@ -7,8 +7,11 @@
 // Ref: https://axios-http.com/docs/interceptors
 import axios, { type AxiosError, type AxiosInstance } from 'axios'
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
-// export const API_BASE_URL = 'http://localhost:8000/api'
+// VITE_API_BASE_URL should point at the Nginx gateway, NOT directly at a
+// backend service port. The gateway routes /api/* to the correct service.
+// Default: same origin (relative URL) so Vite's dev proxy or the gateway
+// on port 80 handles routing without any env var required.
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001/api'
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

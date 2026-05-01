@@ -32,8 +32,12 @@ async function bootstrap() {
 
   app.enableCors({
     origin: '*',
-    methods: ['GET', 'POST', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'X-Control-Token'],
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    // Authorization must be listed here: the frontend apiClient attaches
+    // `Authorization: Bearer <token>` on every request, which causes the
+    // browser to send a CORS preflight. Without this entry the preflight
+    // is rejected and the actual POST /sessions call never reaches NestJS.
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Control-Token'],
   });
 
   await app.listen(port);
