@@ -26,7 +26,7 @@ Open `.env` and set at minimum:
 |---|---|---|
 | `DB_HOST` | PostgreSQL host | `127.0.0.1` |
 | `DB_PORT` | PostgreSQL port | `5432` |
-| `DB_DATABASE` | Database name | `sa_auth` |
+| `DB_DATABASE` | Database name | `saintaugustin_db` |
 | `DB_USERNAME` | DB user | `saintaugustin` |
 | `DB_PASSWORD` | DB password | *(see root .env.example)* |
 | `REDIS_HOST` | Redis host | `127.0.0.1` |
@@ -144,7 +144,7 @@ Tests use **Pest** (a Laravel-native PHPUnit wrapper). A dedicated test database
 
 ```bash
 # Create the test database (once)
-psql -U saintaugustin -c "CREATE DATABASE sa_auth_test;"
+psql -U saintaugustin -c "CREATE DATABASE saintaugustin_db_test;"
 
 # Run migrations against the test database
 php artisan migrate --env=testing
@@ -224,10 +224,10 @@ use RefreshDatabase;
 use DatabaseTransactions; // or remove the trait entirely
 ```
 
-Then connect to `sa_auth_test` and inspect the tables:
+Then connect to `saintaugustin_db_test` and inspect the tables:
 
 ```bash
-psql -U saintaugustin -d sa_auth_test
+psql -U saintaugustin -d saintaugustin_db_test
 ```
 
 ### Authentication failures in feature tests

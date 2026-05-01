@@ -20,7 +20,7 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="DB_CONNECTION" value="pgsql"/>
-        <env name="DB_DATABASE" value="sa_auth_test"/>
+        <env name="DB_DATABASE" value="saintaugustin_db_test"/>
         <env name="CACHE_DRIVER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

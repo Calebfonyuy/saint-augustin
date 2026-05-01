@@ -109,7 +109,7 @@ function stop(): void {
 }
 
 function toggle(): void {
-  isRunning.value ? stop() : start()
+  if (isRunning.value) { stop() } else { start() }
 }
 
 // If the user changes BPM mid-run, restart the interval at the new rate.

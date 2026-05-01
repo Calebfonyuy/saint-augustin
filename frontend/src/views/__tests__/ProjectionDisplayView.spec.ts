@@ -31,7 +31,7 @@ function makeState(over: Partial<ProjectionSessionState> = {}): ProjectionSessio
   }
 }
 
-function makeRouter(query = '') {
+function makeRouter() {
   return createRouter({
     history: createMemoryHistory(),
     routes: [

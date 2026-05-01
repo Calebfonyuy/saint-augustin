@@ -11,7 +11,7 @@ return [
     'table'           => env('SESSION_TABLE', 'sessions'),
     'store'           => env('SESSION_STORE'),
     'lottery'         => [2, 100],
-    'cookie'          => env('SESSION_COOKIE', 'sa_auth_session'),
+    'cookie'          => env('SESSION_COOKIE', 'saintaugustin_db_session'),
     'path'            => env('SESSION_PATH', '/'),
     'domain'          => env('SESSION_DOMAIN'),
     'secure'          => env('SESSION_SECURE_COOKIE'),

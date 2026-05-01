@@ -49,7 +49,7 @@ All HTTP traffic from the browser passes through the Nginx gateway on port 8080.
 
 | Service            | Language / Framework | Database     | Storage |
 |--------------------|----------------------|--------------|---------|
-| Auth Service       | PHP 8.3 / Laravel 12 | PostgreSQL (`sa_auth`) | MinIO (song sheets) |
+| Auth Service       | PHP 8.3 / Laravel 12 | PostgreSQL (`saintaugustin_db`) | MinIO (song sheets) |
 | Projection Service | TypeScript / NestJS 10 | Redis 7 (session state) | — |
 | Frontend           | TypeScript / Vue 3 + Vite | — | — |
 
@@ -96,7 +96,7 @@ Registration is invitation-only. Admins issue invitations that carry a pre-assig
 saint-augustin/
 ├── docker/
 │   ├── nginx/default.conf      Nginx gateway config
-│   └── postgres/init-databases.sh  Creates sa_auth DB on first start
+│   └── postgres/init-databases.sh  Creates saintaugustin_db DB on first start
 ├── docs/                       This documentation folder
 ├── frontend/                   Vue 3 + Vite + Tailwind SPA
 │   └── src/

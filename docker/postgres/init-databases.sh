@@ -11,14 +11,10 @@ set -e
 echo ">>> Creating SaintAugustin databases..."
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_USER" <<-EOSQL
-    CREATE DATABASE sa_auth;
-    CREATE DATABASE sa_songs;
-    CREATE DATABASE sa_playlists;
+    CREATE DATABASE "$DB_AUTH_NAME" OWNER $POSTGRES_USER;
 
     -- Grant full privileges to the app user on each database
-    GRANT ALL PRIVILEGES ON DATABASE sa_auth TO $POSTGRES_USER;
-    GRANT ALL PRIVILEGES ON DATABASE sa_songs TO $POSTGRES_USER;
-    GRANT ALL PRIVILEGES ON DATABASE sa_playlists TO $POSTGRES_USER;
+    GRANT ALL PRIVILEGES ON DATABASE "$DB_AUTH_NAME" TO $POSTGRES_USER;
 EOSQL
 
-echo ">>> Databases created: sa_auth, sa_songs, sa_playlists"
+echo ">>> Databases created: $DB_AUTH_NAME"

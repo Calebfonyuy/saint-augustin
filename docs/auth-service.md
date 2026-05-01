@@ -3,7 +3,7 @@
 The Auth Service is a Laravel 12 application that acts as the primary backend for SaintAugustin. It handles authentication, user management, songs, songbooks, song sheets, playlists, and share links — capabilities that will be split into separate microservices as the project scales.
 
 - **Runtime:** PHP 8.3 with Laravel Octane (FrankenPHP worker)
-- **Database:** PostgreSQL 16 (`sa_auth` schema)
+- **Database:** PostgreSQL 16 (`saintaugustin_db` schema)
 - **Object storage:** MinIO (S3-compatible) for song sheet files
 - **Auth mechanism:** Laravel Sanctum — stateless Bearer tokens
 - **Container port:** 8000 (exposed via Nginx gateway at `/api/...`)

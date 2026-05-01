@@ -14,7 +14,7 @@
 // Ref: services/projection/src/projection/projection.gateway.ts
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { io, Socket } from 'socket.io-client'
+import { io, type Socket } from 'socket.io-client'
 import * as projectionApi from '@/api/projection'
 import { buildSlidesForPlaylist } from '@/lib/projection'
 import type {

@@ -24,16 +24,15 @@ Startup order is enforced via `depends_on` with `condition: service_healthy` che
 ## PostgreSQL
 
 - **Image:** `postgres:16-alpine`
-- **Database created:** `sa_auth` (the init script at `docker/postgres/init-databases.sh` runs once on volume creation)
+- **Database created:** `saintaugustin_db` (the init script at `docker/postgres/init-databases.sh` runs once on volume creation)
 - **User:** configured via `POSTGRES_USER` env var (default `saintaugustin`)
-- **Stub databases** for future services (`sa_songs`, `sa_playlists`) can be added to the init script when those services are extracted
 
 **Connecting directly:**
 
 ```bash
 make db-shell
 # or:
-docker compose exec postgres psql -U saintaugustin -d sa_auth
+docker compose exec postgres psql -U saintaugustin -d saintaugustin_db
 ```
 
 ---

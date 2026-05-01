@@ -174,8 +174,8 @@ make db-shell          # Open psql console
 make db-shell
 
 # Inside psql:
-\l                    -- list databases (sa_auth, sa_songs, sa_playlists)
-\c sa_auth            -- connect to auth database
+\l                    -- list databases (saintaugustin_db)
+\c saintaugustin_db            -- connect to auth database
 \dt                   -- list tables
 SELECT * FROM users;  -- query users
 ```

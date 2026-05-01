@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Database-per-service pattern: Auth Service owns sa_auth.
+ * Database-per-service pattern: Auth Service owns saintaugustin_db.
  * Ref: https://laravel.com/docs/12.x/database
  * Ref: https://www.postgresql.org/docs/16/
  */
@@ -15,7 +15,7 @@ return [
             'driver'         => 'pgsql',
             'host'           => env('DB_HOST', 'postgres'),
             'port'           => env('DB_PORT', '5432'),
-            'database'       => env('DB_DATABASE', 'sa_auth'),
+            'database'       => env('DB_DATABASE', 'saintaugustin_db'),
             'username'       => env('DB_USERNAME', 'saintaugustin'),
             'password'       => env('DB_PASSWORD', ''),
             'charset'        => 'utf8',

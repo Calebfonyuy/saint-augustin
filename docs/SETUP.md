@@ -92,7 +92,7 @@ docker compose logs -f postgres   # watch for "ready to accept connections"
 Verify databases were created:
 ```bash
 docker compose exec postgres psql -U saintaugustin -c '\l'
-# Should show: sa_auth, sa_songs, sa_playlists
+# Should show: saintaugustin_db
 ```
 
 ## Step 6: Start All Services
