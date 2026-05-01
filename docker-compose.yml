@@ -24,6 +24,8 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-saintaugustin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_dev_only}
+      # Required by docker/postgres/init-databases.sh to create the auth DB.
+      DB_AUTH_NAME: ${DB_AUTH_NAME:-saintaugustin_db}
     ports:
       - "5432:5432"
     volumes:
@@ -133,6 +135,7 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET:-saintaugustin}
       MINIO_REGION: ${MINIO_REGION:-us-east-1}
       SONG_SHEET_URL_TTL: ${SONG_SHEET_URL_TTL:-15}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-http://localhost:5173}
     ports:
       - "${AUTH_SERVICE_PORT:-8000}:8000"
     volumes:
@@ -144,6 +147,12 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    # Run migrations before starting Octane so the schema is always current
+    # on every container start. `migrate --force` is required in non-interactive
+    # environments; it is safe here because this is a dev-only compose file.
+    command: >
+      sh -c "php artisan migrate --force &&
+             php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=8000 --watch"
     # healthcheck:
     #   test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
     #   interval: 10s

@@ -11,3 +11,5 @@
 .phpunit.cache/
 frankenphp
 /public/frankenphp-worker.php
+
+**/caddy

@@ -9,6 +9,7 @@
  * Ref: https://laravel.com/docs/12.x/structure#the-bootstrap-directory
  */
 
+use App\Http\Middleware\ForwardAuthorizationHeader;
 use App\Http\Middleware\RequireAdminRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -27,6 +28,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // This service issues opaque API tokens only; CSRF protection is irrelevant.
         // Ref: https://laravel.com/docs/12.x/sanctum#api-token-authentication
         // $middleware->statefulApi();
+
+        // FrankenPHP worker mode does not always forward the Authorization header
+        // into $_SERVER, which Symfony's HeaderBag reads to expose it to Laravel.
+        // This middleware backfills it from getallheaders() before any auth guard
+        // runs. It is a no-op on servers that already propagate the header.
+        $middleware->prependToGroup('api', ForwardAuthorizationHeader::class);
 
         $middleware->alias([
             'admin' => RequireAdminRole::class,
