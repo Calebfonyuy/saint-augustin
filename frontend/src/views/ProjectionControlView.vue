@@ -165,9 +165,9 @@ async function endSession(): Promise<void> {
 
 <template>
   <AppShell>
-    <div class="flex flex-col min-h-0 h-full">
+    <div class="flex flex-col h-full min-h-0">
       <!-- ── Header ──────────────────────────────────────────────── -->
-      <div class="px-6 py-3 border-b border-border flex items-center gap-3 flex-wrap">
+      <div class="flex flex-wrap items-center gap-3 px-6 py-3 border-b border-border">
         <Icon name="cast" />
         <div class="flex-1 min-w-[280px]">
           <div class="text-[18px] font-semibold leading-tight" data-testid="ctrl-playlist-name">
@@ -189,6 +189,15 @@ async function endSession(): Promise<void> {
           <button type="button" class="btn" data-testid="ctrl-copy-url" @click="copyDisplayUrl">
             Copy display URL
           </button>
+          <a
+            :href="displayUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-primary"
+            data-testid="ctrl-open-display"
+          >
+            <Icon name="cast" /> Open Display
+          </a>
           <button
             v-if="projection.role === 'controller'"
             type="button"
@@ -215,7 +224,7 @@ async function endSession(): Promise<void> {
       <div class="flex-1 min-h-0 grid grid-cols-[280px_1fr] overflow-hidden">
 
         <!-- Service order / jump-to-song (light theme) -->
-        <aside class="border-r border-border overflow-y-auto p-3 flex flex-col gap-1">
+        <aside class="flex flex-col gap-1 p-3 overflow-y-auto border-r border-border">
           <div class="mono uppercase tracking-[0.14em] text-[10px] text-text-faint px-2 pt-1 pb-2">
             Service order
           </div>
@@ -239,11 +248,11 @@ async function endSession(): Promise<void> {
         </aside>
 
         <!-- Stage area — dark token scope for cinema-style feel -->
-        <section class="dark flex flex-col min-h-0 overflow-hidden p-4 gap-3 bg-bg-sunken">
+        <section class="flex flex-col min-h-0 gap-3 p-4 overflow-hidden dark bg-bg-sunken">
           <!-- Current + next + shortcuts row -->
-          <div class="flex-1 min-h-0 flex gap-3">
+          <div class="flex flex-1 min-h-0 gap-3">
             <!-- Current slide -->
-            <div class="flex-1 min-h-0 card overflow-hidden" data-testid="current-slide">
+            <div class="flex-1 min-h-0 overflow-hidden card" data-testid="current-slide">
               <SlideRenderer
                 :slide="projection.currentSlide"
                 :blackout="projection.state?.blackout ?? false"
@@ -277,7 +286,7 @@ async function endSession(): Promise<void> {
           </div>
 
           <!-- Toolbar -->
-          <div class="card p-3 flex items-center gap-3 flex-wrap">
+          <div class="flex flex-wrap items-center gap-3 p-3 card">
             <button
               type="button"
               class="btn"

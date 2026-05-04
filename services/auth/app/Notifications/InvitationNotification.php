@@ -29,10 +29,19 @@ class InvitationNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
+        // The invitation flow uses an `AnonymousNotifiable` (no User row exists
+        // yet at invitation time), which exposes `routeNotificationFor()` but
+        // *not* `routeNotificationForMail()`. The latter is a convention on
+        // models using the `Notifiable` trait; calling it on an anonymous
+        // notifiable throws "undefined method". `routeNotificationFor('mail')`
+        // works on both, so we use it unconditionally.
+        $emailRoute = $notifiable->routeNotificationFor('mail');
+        $email = is_array($emailRoute) ? (string) ($emailRoute[0] ?? '') : (string) $emailRoute;
+
         $registerUrl = rtrim(config('app.frontend_url', config('app.url')), '/')
             .'/register'
             .'?token='.urlencode($this->token)
-            .'&email='.urlencode($notifiable->routeNotificationForMail());
+            .'&email='.urlencode($email);
 
         return (new MailMessage)
             ->subject(__('You have been invited to SaintAugustin'))

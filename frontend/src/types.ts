@@ -10,6 +10,16 @@ export interface User {
   roles: Role[]
 }
 
+/**
+ * Full user record returned by the admin user-management endpoints
+ * (GET /api/users, PUT /api/users/:id). Carries timestamps that the
+ * Admin → Users screen renders as "Joined" / "Last updated".
+ */
+export interface UserDetail extends User {
+  created_at: string
+  updated_at: string
+}
+
 export interface TokenResponse {
   token_type: 'Bearer'
   access_token: string

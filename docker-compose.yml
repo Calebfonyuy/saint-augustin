@@ -116,6 +116,7 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
       APP_KEY: ${APP_KEY:-base64:GENERATE_ME_WITH_php_artisan_key_generate}
+      APP_NAME: ${APP_NAME:-SaintAugustin}
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
@@ -136,6 +137,15 @@ services:
       MINIO_REGION: ${MINIO_REGION:-us-east-1}
       SONG_SHEET_URL_TTL: ${SONG_SHEET_URL_TTL:-15}
       APP_FRONTEND_URL: ${APP_FRONTEND_URL:-http://localhost:5173}
+      # Email settings
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_HOST: ${MAIL_HOST:-sandbox.smtp.mailtrap.io}
+      MAIL_PORT: ${MAIL_PORT:-2525}
+      MAIL_USERNAME: ${MAIL_USERNAME:-a3267a5074290e}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-6f5f3ca2cff388}
+    #   MAIL_SCHEME: ${MAIL_SCHEME:-tls}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@saintaugustin.local}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-"SaintAugustin"}
     ports:
       - "${AUTH_SERVICE_PORT:-8000}:8000"
     volumes:

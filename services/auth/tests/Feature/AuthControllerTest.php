@@ -141,3 +141,149 @@ test('refresh rotates the token — old token is revoked, new one works', functi
         ->postJson('/api/auth/logout')
         ->assertOk();
 });
+
+// ── PATCH /auth/me (self-service profile) ────────────────────────────
+
+test('updateProfile requires authentication', function () {
+    $this->patchJson('/api/auth/me', ['display_name' => 'Anyone'])
+        ->assertStatus(401);
+});
+
+test('updateProfile updates the display_name', function () {
+    $user  = User::factory()->create(['display_name' => 'Old Name']);
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->patchJson('/api/auth/me', ['display_name' => 'New Name'])
+        ->assertOk()
+        ->assertJsonPath('user.id', $user->id)
+        ->assertJsonPath('user.display_name', 'New Name');
+
+    expect($user->fresh()->display_name)->toBe('New Name');
+});
+
+test('updateProfile rejects an empty body silently — nothing changes', function () {
+    $user  = User::factory()->create(['display_name' => 'Untouched']);
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->patchJson('/api/auth/me', [])
+        ->assertOk()
+        ->assertJsonPath('user.display_name', 'Untouched');
+});
+
+test('updateProfile changes the password when current_password matches', function () {
+    $user = User::factory()->create([
+        'password' => Hash::make('OldSecret99!'),
+    ]);
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->patchJson('/api/auth/me', [
+            'current_password'      => 'OldSecret99!',
+            'password'              => 'NewSecret88!',
+            'password_confirmation' => 'NewSecret88!',
+        ])
+        ->assertOk();
+
+    expect(Hash::check('NewSecret88!', $user->fresh()->password))->toBeTrue();
+});
+
+test('updateProfile rejects password change when current_password is wrong', function () {
+    $user = User::factory()->create([
+        'password' => Hash::make('OldSecret99!'),
+    ]);
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->patchJson('/api/auth/me', [
+            'current_password'      => 'WrongPassword',
+            'password'              => 'NewSecret88!',
+            'password_confirmation' => 'NewSecret88!',
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['current_password']);
+
+    expect(Hash::check('OldSecret99!', $user->fresh()->password))->toBeTrue();
+});
+
+test('updateProfile requires current_password when password is provided', function () {
+    $user  = User::factory()->create();
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->patchJson('/api/auth/me', [
+            'password'              => 'NewSecret88!',
+            'password_confirmation' => 'NewSecret88!',
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['current_password']);
+});
+
+test('updateProfile rejects weak passwords', function () {
+    $user  = User::factory()->create(['password' => Hash::make('OldSecret99!')]);
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->patchJson('/api/auth/me', [
+            'current_password'      => 'OldSecret99!',
+            'password'              => 'short',
+            'password_confirmation' => 'short',
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['password']);
+});
+
+test('updateProfile requires confirmation to match', function () {
+    $user  = User::factory()->create(['password' => Hash::make('OldSecret99!')]);
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->patchJson('/api/auth/me', [
+            'current_password'      => 'OldSecret99!',
+            'password'              => 'NewSecret88!',
+            'password_confirmation' => 'Mismatch99!',
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['password']);
+});
+
+test('updateProfile revokes other tokens but keeps the current one after password change', function () {
+    $user = User::factory()->create(['password' => Hash::make('OldSecret99!')]);
+
+    // Two stale tokens (e.g. other devices) plus the one we'll authenticate with.
+    $user->createToken('phone')->plainTextToken;
+    $user->createToken('tablet')->plainTextToken;
+    $current = $user->createToken('api-token')->plainTextToken;
+
+    $this->assertDatabaseCount('personal_access_tokens', 3);
+
+    $this->withHeader('Authorization', "Bearer {$current}")
+        ->patchJson('/api/auth/me', [
+            'current_password'      => 'OldSecret99!',
+            'password'              => 'NewSecret88!',
+            'password_confirmation' => 'NewSecret88!',
+        ])->assertOk();
+
+    // Only the current token should remain.
+    $this->assertDatabaseCount('personal_access_tokens', 1);
+    $this->assertDatabaseHas('personal_access_tokens', ['name' => 'api-token']);
+
+    // The current token still works after the change.
+    Auth::forgetGuards();
+    $this->withHeader('Authorization', "Bearer {$current}")
+        ->postJson('/api/auth/logout')
+        ->assertOk();
+});
+
+test('updateProfile does not touch tokens when only display_name changes', function () {
+    $user = User::factory()->create();
+    $user->createToken('phone')->plainTextToken;
+    $current = $user->createToken('api-token')->plainTextToken;
+
+    $this->withHeader('Authorization', "Bearer {$current}")
+        ->patchJson('/api/auth/me', ['display_name' => 'Renamed'])
+        ->assertOk();
+
+    $this->assertDatabaseCount('personal_access_tokens', 2);
+});

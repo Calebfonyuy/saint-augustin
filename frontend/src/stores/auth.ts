@@ -33,6 +33,16 @@ export const useAuthStore = defineStore('auth', () => {
     storeToken(res.access_token)
   }
 
+  /**
+   * Self-service profile update (display_name and/or password). The backend
+   * keeps the current Sanctum token alive, so no token rotation is needed —
+   * we only need to refresh the cached `user` object.
+   */
+  async function updateProfile(payload: authApi.UpdateProfilePayload): Promise<void> {
+    const res = await authApi.updateProfile(payload)
+    user.value = res.user
+  }
+
   async function logout(): Promise<void> {
     try {
       if (token.value) await authApi.logout()
@@ -84,5 +94,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     clearLocal,
     init,
+    updateProfile,
   }
 })

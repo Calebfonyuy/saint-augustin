@@ -31,7 +31,7 @@ const items = computed<NavItem[]>(() => [
   { id: 'library', label: 'Song Library', icon: 'music', to: '/library' },
   { id: 'playlists', label: 'Playlists', icon: 'list', to: '/playlists' },
   { id: 'projection', label: 'Projection', icon: 'cast', to: '/playlists' },
-  { id: 'admin', label: 'Admin', icon: 'cog', to: '/admin/songbooks', adminOnly: true },
+  { id: 'admin', label: 'Admin', icon: 'cog', to: '/admin/users', adminOnly: true },
 ])
 
 const activeId = computed(() => {
@@ -70,6 +70,10 @@ async function onLogout() {
 function go(item: NavItem) {
   if (item.disabled || !item.to) return
   router.push(item.to)
+}
+
+function goToAccount() {
+  router.push('/account')
 }
 </script>
 
@@ -113,17 +117,24 @@ function go(item: NavItem) {
       class="fixed-bottom left-0 right-0 h-[48px] border-t border-border bg-bg z-20 flex items-center justify-between px-[18px] gap-5"
     >
       <div class="flex items-center gap-[10px] min-w-0">
-        <div
-          class="w-[26px] h-[26px] rounded-full bg-accent-soft text-accent grid place-items-center text-[11px] font-bold shrink-0"
+        <button
+          type="button"
+          class="flex items-center gap-[10px] min-w-0 border-0 bg-transparent p-0 cursor-pointer text-left rounded hover:opacity-80 transition-opacity"
+          aria-label="Account settings"
+          @click="goToAccount"
         >
-          {{ initials }}
-        </div>
-        <div class="hidden min-w-0 sm:block">
-          <div class="text-[12px] font-semibold text-text leading-tight truncate">
-            {{ auth.user?.display_name ?? 'Anonymous' }}
+          <div
+            class="w-[26px] h-[26px] rounded-full bg-accent-soft text-accent grid place-items-center text-[11px] font-bold shrink-0"
+          >
+            {{ initials }}
           </div>
-          <div class="text-[10.5px] text-text-faint truncate">{{ roleSummary }}</div>
-        </div>
+          <div class="hidden min-w-0 sm:block">
+            <div class="text-[12px] font-semibold text-text leading-tight truncate">
+              {{ auth.user?.display_name ?? 'Anonymous' }}
+            </div>
+            <div class="text-[10.5px] text-text-faint truncate">{{ roleSummary }}</div>
+          </div>
+        </button>
         <button
           type="button"
           class="p-1 rounded text-text-faint hover:text-text shrink-0"

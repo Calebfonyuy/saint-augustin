@@ -30,6 +30,36 @@ class InvitationController
 {
     private const VALID_ROLES = ['admin', 'musician', 'projectionist'];
 
+    // ── Admin: list invitations ───────────────────────────────────────
+
+    #[OA\Get(
+        path: '/auth/invitations',
+        summary: 'List invitations (Admin)',
+        description: 'Returns all invitations — pending, accepted, and expired — newest first. Used by the Admin → Users screen to merge pending invites into the same list as registered users. Requires the `admin` role.',
+        tags: ['Invitations'],
+        security: [['sanctum' => []]],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Array of invitations',
+                content: new OA\JsonContent(
+                    type: 'array',
+                    items: new OA\Items(ref: '#/components/schemas/InvitationResource'),
+                ),
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Admin role required', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+        ],
+    )]
+    public function index(): JsonResponse
+    {
+        $invitations = Invitation::orderByDesc('created_at')
+            ->get()
+            ->map(fn (Invitation $i) => $this->formatInvitation($i));
+
+        return response()->json($invitations);
+    }
+
     // ── Admin: create invitation ──────────────────────────────────────
 
     #[OA\Post(
@@ -230,6 +260,104 @@ class InvitationController
         return response()->json([
             'message' => 'Account created successfully. You can now log in.',
         ], 201);
+    }
+
+    // ── Admin: cancel a pending invitation ────────────────────────────
+
+    #[OA\Delete(
+        path: '/auth/invitations/{id}',
+        summary: 'Cancel a pending invitation (Admin)',
+        description: 'Deletes an invitation, invalidating its token immediately. Requires the `admin` role. Cancelling an already-accepted invitation is allowed (it just removes the audit row); the user account itself is unaffected.',
+        tags: ['Invitations'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 204, description: 'Invitation deleted'),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Admin role required', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Invitation not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+        ],
+    )]
+    public function destroy(string $id): JsonResponse
+    {
+        $invitation = Invitation::find($id);
+
+        if (! $invitation) {
+            return response()->json(['message' => 'Invitation not found.'], 404);
+        }
+
+        $invitation->delete();
+
+        return response()->json(null, 204);
+    }
+
+    // ── Admin: resend a pending invitation ────────────────────────────
+
+    #[OA\Post(
+        path: '/auth/invitations/{id}/resend',
+        summary: 'Resend a pending invitation (Admin)',
+        description: 'Re-emails the invitation link and refreshes the expiry. Requires the `admin` role. Returns 410 if the invitation has already been accepted (the recipient already has an account).',
+        tags: ['Invitations'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Invitation resent',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Invitation re-sent.'),
+                        new OA\Property(property: 'invitation', ref: '#/components/schemas/InvitationResource'),
+                    ],
+                    type: 'object',
+                ),
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 403, description: 'Admin role required', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 404, description: 'Invitation not found', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+            new OA\Response(response: 410, description: 'Invitation already accepted', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
+        ],
+    )]
+    public function resend(Request $request, string $id): JsonResponse
+    {
+        $invitation = Invitation::find($id);
+
+        if (! $invitation) {
+            return response()->json(['message' => 'Invitation not found.'], 404);
+        }
+
+        if ($invitation->isAccepted()) {
+            return response()->json([
+                'message' => 'This invitation has already been accepted.',
+            ], 410);
+        }
+
+        $expireHours = (int) config('invitation.expire_hours', 48);
+
+        // Rotate the token on resend so any prior copies of the email become
+        // useless — protects against an admin clicking "resend" specifically
+        // because the previous link leaked.
+        $invitation->update([
+            'token'      => Str::random(64),
+            'expires_at' => now()->addHours($expireHours),
+        ]);
+
+        (new AnonymousNotifiable)
+            ->route('mail', $invitation->email)
+            ->notify(new InvitationNotification(
+                token: $invitation->token,
+                inviterName: $request->user()->display_name,
+                expireHours: $expireHours,
+            ));
+
+        return response()->json([
+            'message'    => "Invitation re-sent to {$invitation->email}.",
+            'invitation' => $this->formatInvitation($invitation),
+        ]);
     }
 
     // ── Private helpers ───────────────────────────────────────────────

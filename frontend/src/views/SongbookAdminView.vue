@@ -5,6 +5,7 @@
 // the returned message.
 import { onMounted, reactive, ref } from 'vue'
 import AppShell from '@/components/AppShell.vue'
+import AdminTabs from '@/components/admin/AdminTabs.vue'
 import Icon from '@/components/Icon.vue'
 import Toast from '@/components/Toast.vue'
 import { useSongbooksStore } from '@/stores/songbooks'
@@ -76,10 +77,7 @@ async function onDelete(sb: Songbook) {
 
 <template>
   <AppShell>
-    <div class="px-8 py-6 border-b border-border flex items-center gap-3">
-      <div class="font-display font-semibold text-[24px]">Songbooks</div>
-      <div class="text-[12px] text-text-faint">Admin · collection management</div>
-    </div>
+    <AdminTabs active="songbooks" subtitle="Collection management" />
 
     <div class="px-8 py-6 overflow-auto flex-1">
       <!-- Create form -->

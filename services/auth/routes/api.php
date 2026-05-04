@@ -21,6 +21,7 @@ use App\Http\Controllers\SongbookController;
 use App\Http\Controllers\SongController;
 use App\Http\Controllers\SongSheetController;
 use App\Http\Controllers\StatusController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -43,12 +44,32 @@ Route::prefix('auth')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout',  [AuthController::class, 'logout']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
+        // Self-service profile editing — change display_name and/or password.
+        Route::patch('/me',     [AuthController::class, 'updateProfile']);
 
         // Admin only
         Route::middleware('admin')->group(function () {
-            Route::post('/invitations', [InvitationController::class, 'store']);
+            Route::get('/invitations',              [InvitationController::class, 'index']);
+            Route::post('/invitations',             [InvitationController::class, 'store']);
+            Route::post('/invitations/{id}/resend', [InvitationController::class, 'resend']);
+            Route::delete('/invitations/{id}',      [InvitationController::class, 'destroy']);
         });
     });
+});
+
+/*
+|--------------------------------------------------------------------------
+| User Management Routes (Admin)
+|--------------------------------------------------------------------------
+| Admin → Users screen (FR3). All routes require both Sanctum auth and the
+| `admin` middleware. List/edit/delete a user; invitations live under
+| /auth/invitations because they belong to the auth flow.
+*/
+
+Route::middleware(['auth:sanctum', 'admin'])->prefix('users')->group(function () {
+    Route::get('/',        [UserController::class, 'index']);
+    Route::put('/{id}',    [UserController::class, 'update']);
+    Route::delete('/{id}', [UserController::class, 'destroy']);
 });
 
 /*

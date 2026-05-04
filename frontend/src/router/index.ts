@@ -46,6 +46,14 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      // Self-service profile settings: any signed-in user can change their
+      // own display name and password without going through an admin.
+      path: '/account',
+      name: 'account-settings',
+      component: () => import('@/views/AccountSettingsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/library',
       name: 'library',
       component: () => import('@/views/SongLibraryView.vue'),
@@ -68,6 +76,17 @@ const router = createRouter({
       name: 'song-play',
       component: () => import('@/views/MusicianView.vue'),
       meta: { requiresAuth: true },
+    },
+    {
+      // Default admin landing — Users is the first tab in the prototype.
+      path: '/admin',
+      redirect: '/admin/users',
+    },
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: () => import('@/views/AdminUsersView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/admin/songbooks',
