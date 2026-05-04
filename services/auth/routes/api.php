@@ -19,6 +19,7 @@ use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\ShareLinkController;
 use App\Http\Controllers\SongbookController;
 use App\Http\Controllers\SongController;
+use App\Http\Controllers\SongImportController;
 use App\Http\Controllers\SongSheetController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\UserController;
@@ -70,6 +71,18 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('users')->group(function ()
     Route::get('/',        [UserController::class, 'index']);
     Route::put('/{id}',    [UserController::class, 'update']);
     Route::delete('/{id}', [UserController::class, 'destroy']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Bulk Song Import (Admin)
+|--------------------------------------------------------------------------
+| Used by the Admin → Import screen to dry-run + commit imports of
+| third-party song libraries (currently VideoPsalm `.vpagd` archives).
+*/
+
+Route::middleware(['auth:sanctum', 'admin'])->prefix('imports')->group(function () {
+    Route::post('/videopsalm', [SongImportController::class, 'videopsalm']);
 });
 
 /*

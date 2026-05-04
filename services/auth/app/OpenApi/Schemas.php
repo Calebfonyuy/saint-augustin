@@ -12,6 +12,24 @@ use OpenApi\Attributes as OA;
  */
 
 #[OA\Schema(
+    schema: 'UserResource',
+    description: 'A user record returned by the API. Does not include sensitive fields like `password` or `remember_token`.',
+    required: ['id', 'email', 'display_name', 'roles'],
+    properties: [
+        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+        new OA\Property(property: 'email', type: 'string', format: 'email', example: 'musician@example.com'),
+        new OA\Property(property: 'display_name', type: 'string', example: 'Jean Dupont'),
+        new OA\Property(
+            property: 'roles',
+            type: 'array',
+            items: new OA\Items(type: 'string', enum: ['admin', 'musician', 'projectionist']),
+            example: ['musician'],
+        ),
+    ],
+    type: 'object',
+)]
+
+#[OA\Schema(
     schema: 'TokenResponse',
     description: 'Successful authentication response carrying a Sanctum Bearer token.',
     required: ['token_type', 'access_token', 'user'],

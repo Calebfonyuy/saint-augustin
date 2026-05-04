@@ -3,9 +3,9 @@
  * Shared header bar for the admin section: title, tab strip, optional CTA.
  * Mirrors the prototype's admin layout (proto-screens.jsx — AdminScreen).
  *
- * Tabs that don't have a real screen yet (Import / Settings) are kept in
- * the strip so the navigation chrome stays stable as later phases land —
- * they emit a console hint instead of routing.
+ * The Settings tab is still a placeholder (no screen yet). Tabs without a
+ * `to` are rendered disabled so the navigation chrome stays stable as
+ * later phases land.
  */
 import { useRouter } from 'vue-router'
 
@@ -29,7 +29,7 @@ interface Tab {
 const tabs: Tab[] = [
   { id: 'users', label: 'Users', to: '/admin/users' },
   { id: 'songbooks', label: 'Songbooks', to: '/admin/songbooks' },
-  { id: 'import', label: 'Import / Export' },
+  { id: 'import', label: 'Import / Export', to: '/admin/import' },
   { id: 'settings', label: 'Settings' },
 ]
 

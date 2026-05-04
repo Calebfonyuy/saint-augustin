@@ -164,7 +164,140 @@
                 ]
             }
         },
+        "/auth/me": {
+            "patch": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Update your own profile",
+                "description": "Authenticated self-service update of `display_name` and/or `password`. Changing the password requires `current_password` and revokes all other Sanctum tokens for the user (the current session keeps working).",
+                "operationId": "e1f91f95d0eb41ad887ccab5d4bfb947",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "display_name": {
+                                        "type": "string",
+                                        "example": "Jane Doe",
+                                        "maxLength": 255
+                                    },
+                                    "current_password": {
+                                        "description": "Required when `password` is provided.",
+                                        "type": "string",
+                                        "format": "password"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newSecret99!",
+                                        "minLength": 8
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newSecret99!"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Profile updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "user": {
+                                            "$ref": "#/components/schemas/UserResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error (bad current password, weak new password, etc.)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/auth/invitations": {
+            "get": {
+                "tags": [
+                    "Invitations"
+                ],
+                "summary": "List invitations (Admin)",
+                "description": "Returns all invitations — pending, accepted, and expired — newest first. Used by the Admin → Users screen to merge pending invites into the same list as registered users. Requires the `admin` role.",
+                "operationId": "5921e771ae9002ec05307c4bbaa43d5d",
+                "responses": {
+                    "200": {
+                        "description": "Array of invitations",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/InvitationResource"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
             "post": {
                 "tags": [
                     "Invitations"
@@ -410,6 +543,154 @@
                         }
                     }
                 }
+            }
+        },
+        "/auth/invitations/{id}": {
+            "delete": {
+                "tags": [
+                    "Invitations"
+                ],
+                "summary": "Cancel a pending invitation (Admin)",
+                "description": "Deletes an invitation, invalidating its token immediately. Requires the `admin` role. Cancelling an already-accepted invitation is allowed (it just removes the audit row); the user account itself is unaffected.",
+                "operationId": "2dab720d72541c2bbda74c920b776ac1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Invitation deleted"
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Invitation not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/auth/invitations/{id}/resend": {
+            "post": {
+                "tags": [
+                    "Invitations"
+                ],
+                "summary": "Resend a pending invitation (Admin)",
+                "description": "Re-emails the invitation link and refreshes the expiry. Requires the `admin` role. Returns 410 if the invitation has already been accepted (the recipient already has an account).",
+                "operationId": "879dc6c7eab8c0c95b0573029418227a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invitation resent",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invitation re-sent."
+                                        },
+                                        "invitation": {
+                                            "$ref": "#/components/schemas/InvitationResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Invitation not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Invitation already accepted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/auth/password/forgot": {
@@ -2116,6 +2397,136 @@
                 ]
             }
         },
+        "/imports/videopsalm": {
+            "post": {
+                "tags": [
+                    "Imports"
+                ],
+                "summary": "Import (or preview) songs from a VideoPsalm `.vpagd` archive",
+                "description": "Accepts a multipart upload of a `.vpagd` file. With `dry_run=true` the parser returns the song list without writing anything; without it (or with `dry_run=false`), the songs are persisted and the response reports `created` / `skipped` counts. Songs are de-duplicated by case-insensitive (title, songbook) — re-running a previous import skips existing rows rather than overwriting hand-edits. Requires the `admin` role.",
+                "operationId": "fe1b2212612cd8082c550160fbba3fee",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "description": "The `.vpagd` archive (a ZIP of Song_*.json files).",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "dry_run": {
+                                        "description": "If true, only parse and return preview rows; nothing is persisted.",
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "guids": {
+                                        "description": "Optional Guid filter — only songs whose Guid is in the list are imported.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Preview (dry run) — list of songs that would be imported, plus a per-songbook count.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "songs": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "songbooks": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Import committed — counts of created/skipped songs.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "created": {
+                                            "type": "integer"
+                                        },
+                                        "skipped": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        },
+                                        "songbooks": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "File missing, too large, or unparseable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/songs/{songId}/sheets": {
             "get": {
                 "tags": [
@@ -2786,10 +3197,285 @@
                     }
                 }
             }
+        },
+        "/users": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "List all users (Admin)",
+                "description": "Returns every registered user. Requires the `admin` role. Used to populate the Admin → Users table.",
+                "operationId": "7e2f5799553ec93c9c43e2a58490d447",
+                "responses": {
+                    "200": {
+                        "description": "Array of users",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/UserResource"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/users/{id}": {
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update a user (Admin)",
+                "description": "Updates display name and/or roles. Email cannot be changed (it is the primary identifier). Requires the `admin` role. An admin cannot strip the `admin` role from themselves — at least one admin must always remain on the account, and self-demotion would lock the admin out of this very screen.",
+                "operationId": "ddfe232db1870b82493bf8bd25596d37",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "display_name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "roles": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "admin",
+                                                "musician",
+                                                "projectionist"
+                                            ]
+                                        },
+                                        "minItems": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Cannot demote yourself from admin",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Remove a user from the workspace (Admin)",
+                "description": "Deletes a user account. Requires the `admin` role. An admin cannot delete themselves — that would lock them out of the admin screen.",
+                "operationId": "43dd20becb1f47444e484cbb18ce345c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "User removed"
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Cannot delete yourself",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
         }
     },
     "components": {
         "schemas": {
+            "UserResource": {
+                "description": "A user record returned by the API. Does not include sensitive fields like `password` or `remember_token`.",
+                "required": [
+                    "id",
+                    "email",
+                    "display_name",
+                    "roles"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Reusable OpenAPI schema definitions.\n\nThese are referenced via $ref across controller annotations so they are\ndefined once and stay consistent.",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "musician@example.com"
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "example": "Jean Dupont"
+                    },
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "admin",
+                                "musician",
+                                "projectionist"
+                            ]
+                        },
+                        "example": [
+                            "musician"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
             "TokenResponse": {
                 "description": "Successful authentication response carrying a Sanctum Bearer token.",
                 "required": [
@@ -2799,7 +3485,6 @@
                 ],
                 "properties": {
                     "token_type": {
-                        "description": "Reusable OpenAPI schema definitions.\n\nThese are referenced via $ref across controller annotations so they are\ndefined once and stay consistent.",
                         "type": "string",
                         "example": "Bearer"
                     },
@@ -3895,12 +4580,20 @@
             "description": "Song library CRUD, full-text search, and soft-delete recovery."
         },
         {
+            "name": "Imports",
+            "description": "Bulk song imports from third-party worship software."
+        },
+        {
             "name": "SongSheets",
             "description": "PDF and image attachments on songs (lead sheets, choir parts)."
         },
         {
             "name": "Songbooks",
             "description": "Songbook (song collection) management."
+        },
+        {
+            "name": "Users",
+            "description": "Admin-only user management."
         },
         {
             "name": "Status",

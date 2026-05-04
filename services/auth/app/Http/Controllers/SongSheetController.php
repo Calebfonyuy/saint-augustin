@@ -30,8 +30,17 @@ use OpenApi\Attributes as OA;
 )]
 class SongSheetController
 {
-    /** Hard cap on upload size (SRS implies a reasonable limit; PDFs of full songs rarely exceed this). */
-    private const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MiB
+    /**
+     * Hard cap on upload size (SRS implies a reasonable limit; PDFs of full
+     * songs rarely exceed this). The actual value lives in config/uploads.php
+     * so it stays in sync with the PHP-level `upload_max_filesize` directive
+     * (docker/php/uploads.ini). The default below is the safety net for
+     * tests / config:clear scenarios where the config isn't bound yet.
+     */
+    private function maxUploadBytes(): int
+    {
+        return (int) config('uploads.sheet_max_size_bytes', 10 * 1024 * 1024);
+    }
 
     /** Mime allow-list. Anything outside this is rejected at validation time. */
     private const ALLOWED_MIME_TYPES = [
@@ -129,7 +138,7 @@ class SongSheetController
             'file' => [
                 'required',
                 'file',
-                'max:'.intdiv(self::MAX_UPLOAD_BYTES, 1024), // Laravel "max" is in KiB
+                'max:'.intdiv($this->maxUploadBytes(), 1024), // Laravel "max" is in KiB
                 'mimetypes:'.implode(',', $allowedMimes),
             ],
         ]);

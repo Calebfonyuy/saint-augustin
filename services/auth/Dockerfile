@@ -36,6 +36,12 @@ RUN docker-php-ext-install \
 # Redis extension via PECL
 RUN pecl install redis && docker-php-ext-enable redis
 
+# Custom php.ini overrides — bumps upload/post limits + memory_limit so
+# bulk imports (e.g. VideoPsalm .vpagd archives) aren't rejected by PHP
+# before Laravel sees them. Prefixed `zz-` so it loads after the
+# docker-php-ext-*.ini extension files and our values win on any conflict.
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/zz-uploads.ini
+
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
