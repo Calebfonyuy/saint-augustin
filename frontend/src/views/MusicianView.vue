@@ -23,6 +23,7 @@
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import AppShell from '@/components/AppShell.vue'
 import ChordProPreview from '@/components/ChordProPreview.vue'
 import Icon from '@/components/Icon.vue'
@@ -43,6 +44,7 @@ const route = useRoute()
 const auth = useAuthStore()
 const songs = useSongsStore()
 const sheets = useSongSheetsStore()
+const { t } = useI18n()
 
 const song = ref<Song | null>(null)
 const loading = ref(false)
@@ -91,7 +93,7 @@ onMounted(async () => {
       // Non-fatal — chord display still works without sheets.
     })
   } catch (err) {
-    errorToast.value = extractErrorMessage(err, 'Failed to load song.')
+    errorToast.value = extractErrorMessage(err, t('musician.failedLoad'))
   } finally {
     loading.value = false
   }
@@ -104,9 +106,9 @@ function resetKey(): void {
 
 <template>
   <AppShell>
-    <div class="px-6 py-[14px] border-b border-border flex items-center gap-3">
+    <div class="px-4 md:px-6 py-[14px] border-b border-border flex items-center gap-3">
       <router-link to="/library" class="text-[12px] text-text-faint flex items-center gap-1">
-        <Icon name="arrow-left" /> Library
+        <Icon name="arrow-left" /> {{ t('musician.library') }}
       </router-link>
       <div class="flex-1" />
       <router-link
@@ -115,38 +117,38 @@ function resetKey(): void {
         class="btn"
         data-testid="musician-edit"
       >
-        Edit
+        {{ t('musician.edit') }}
       </router-link>
     </div>
 
-    <div v-if="loading" class="p-8 text-text-faint">Loading…</div>
+    <div v-if="loading" class="p-8 text-text-faint">{{ t('musician.loading') }}</div>
 
     <div
       v-else-if="song"
-      class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 px-8 py-6 overflow-auto flex-1"
+      class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 md:gap-6 px-4 py-4 md:px-8 md:py-6 overflow-auto flex-1"
     >
       <!-- LEFT: header + chord/lyrics body -->
       <section class="flex flex-col min-w-0">
         <header class="flex flex-wrap items-end gap-x-5 gap-y-3 pb-4 border-b border-border">
           <div class="min-w-0 flex-1">
             <h1
-              class="font-display font-semibold text-[28px] leading-tight truncate"
+              class="font-display font-semibold text-[22px] md:text-[28px] leading-tight truncate"
               data-testid="musician-title"
             >
               {{ song.title }}
             </h1>
             <div class="text-[13px] text-text-faint mt-[2px] truncate">
-              {{ song.author ?? 'Unknown' }}
-              <span v-if="song.tempo"> · {{ song.tempo }} bpm</span>
+              {{ song.author ?? t('musician.unknownAuthor') }}
+              <span v-if="song.tempo"> · {{ song.tempo }} {{ t('musician.bpm') }}</span>
               <span v-if="song.time_signature"> · {{ song.time_signature }}</span>
-              <span v-if="song.ccli_number"> · CCLI {{ song.ccli_number }}</span>
+              <span v-if="song.ccli_number"> · {{ t('musician.ccli') }} {{ song.ccli_number }}</span>
             </div>
           </div>
 
           <div class="flex items-end gap-3">
             <div class="flex flex-col">
               <span class="mono uppercase tracking-[0.14em] text-[10px] text-text-faint mb-1">
-                Original
+                {{ t('musician.original') }}
               </span>
               <KeyBadge :musical-key="song.original_key" />
             </div>
@@ -155,7 +157,7 @@ function resetKey(): void {
                 for="m-key"
                 class="mono uppercase tracking-[0.14em] text-[10px] text-text-faint mb-1"
               >
-                Play in
+                {{ t('musician.playIn') }}
               </label>
               <div class="flex items-center gap-2">
                 <select
@@ -166,10 +168,10 @@ function resetKey(): void {
                   data-testid="musician-key-select"
                   @change="targetKey = ($event.target as HTMLSelectElement).value"
                 >
-                  <optgroup label="Major">
+                  <optgroup :label="t('musician.keyMajor')">
                     <option v-for="k in MAJOR_KEYS" :key="k" :value="k">{{ k }}</option>
                   </optgroup>
-                  <optgroup label="Minor">
+                  <optgroup :label="t('musician.keyMinor')">
                     <option v-for="k in MINOR_KEYS" :key="k" :value="k">{{ k }}</option>
                   </optgroup>
                 </select>
@@ -180,7 +182,7 @@ function resetKey(): void {
                   data-testid="musician-key-reset"
                   @click="resetKey"
                 >
-                  Reset
+                  {{ t('musician.reset') }}
                 </button>
               </div>
             </div>
@@ -198,11 +200,11 @@ function resetKey(): void {
 
         <div data-testid="musician-sheets">
           <div class="mono uppercase tracking-[0.14em] text-[10.5px] text-text-faint mb-2">
-            Song sheets
+            {{ t('musician.songSheets') }}
           </div>
 
           <div v-if="sheets.loading" class="card p-4 text-[12px] text-text-faint">
-            Loading sheets…
+            {{ t('musician.loadingSheets') }}
           </div>
 
           <template v-else-if="sheets.list.length">
@@ -231,27 +233,27 @@ function resetKey(): void {
             class="card p-4 text-[12px] text-text-faint"
             data-testid="musician-sheets-empty"
           >
-            <p>No sheets attached to this song.</p>
+            <p>{{ t('musician.noSheets') }}</p>
             <router-link
               v-if="auth.canEditSongs && song"
               :to="`/songs/${song.id}`"
               class="text-accent hover:underline mt-1 inline-block"
             >
-              Upload a sheet →
+              {{ t('musician.uploadSheet') }}
             </router-link>
           </div>
         </div>
 
         <div v-if="song.preview_url">
           <div class="mono uppercase tracking-[0.14em] text-[10.5px] text-text-faint mb-2">
-            Preview
+            {{ t('musician.preview') }}
           </div>
           <PreviewPlayer :url="song.preview_url" />
         </div>
       </aside>
     </div>
 
-    <div v-else class="p-8 text-text-faint">Song not found.</div>
+    <div v-else class="p-8 text-text-faint">{{ t('musician.songNotFound') }}</div>
 
     <Toast
       v-if="errorToast"

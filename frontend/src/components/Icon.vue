@@ -20,6 +20,7 @@ defineProps<{
     | 'trash'
     | 'logout'
     | 'arrow-left'
+    | 'menu'
   size?: number
 }>()
 </script>
@@ -94,6 +95,9 @@ defineProps<{
     </template>
     <template v-else-if="name === 'arrow-left'">
       <path d="M13 8H3M6 5L3 8l3 3" />
+    </template>
+    <template v-else-if="name === 'menu'">
+      <path d="M2 4h12M2 8h12M2 12h12" />
     </template>
   </svg>
 </template>

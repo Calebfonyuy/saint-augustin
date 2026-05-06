@@ -8,10 +8,24 @@
    design-system primitives ported from the prototype (buttons, inputs,
    chips, cards, key badges, chord/lyric lines). */
 
+/* Lock the root chain to the visible viewport so percentage heights
+   inside Vue components actually resolve. `100dvh` (dynamic viewport
+   height) prevents the iOS Safari "URL-bar collapse" gap; older
+   browsers fall back to the preceding `100vh` declaration. */
 html,
-body {
+body,
+#app {
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  /* Prevent rubber-band scrolling pulling the whole shell when an inner
+     pane is the real scroller. Inner panes opt back in with overflow-auto. */
+  overflow: hidden;
+}
+
+body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-text);

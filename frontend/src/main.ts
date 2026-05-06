@@ -4,6 +4,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
+import i18n from './i18n'
 import { installUnauthorizedHandler } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import './assets/main.css'
@@ -13,6 +14,7 @@ const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
+app.use(i18n)
 
 // Install the 401 interceptor after Pinia so the store is accessible.
 // We dispatch through the router rather than doing a hard reload so the

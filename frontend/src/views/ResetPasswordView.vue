@@ -4,12 +4,15 @@
 // embeds them — and the user just picks the new password.
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import BrandMark from '@/components/BrandMark.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import * as passwordApi from '@/api/password'
 import { extractErrorMessage } from '@/api/client'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 const email = ref('')
 const token = ref('')
@@ -27,7 +30,7 @@ onMounted(() => {
 async function onSubmit() {
   error.value = null
   if (password.value !== passwordConfirm.value) {
-    error.value = 'Passwords do not match.'
+    error.value = t('auth.resetPassword.passwordMismatch')
     return
   }
   submitting.value = true
@@ -41,7 +44,7 @@ async function onSubmit() {
     success.value = true
     setTimeout(() => router.push({ name: 'login' }), 1500)
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not reset password.')
+    error.value = extractErrorMessage(err, t('auth.resetPassword.error'))
   } finally {
     submitting.value = false
   }
@@ -49,58 +52,63 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="w-full h-full grid place-items-center bg-bg text-text">
-    <div class="max-w-[420px] w-full card p-8">
-      <div class="mb-6"><BrandMark /></div>
-      <h1 class="font-display font-semibold text-[26px]">Choose a new password</h1>
+  <div class="relative w-full h-full overflow-y-auto bg-bg text-text">
+    <div class="fixed top-3 right-3 z-20">
+      <LanguageSwitcher direction="down" align="right" />
+    </div>
+    <div class="min-h-full grid place-items-center p-4 sm:p-8">
+      <div class="max-w-[420px] w-full card p-6 sm:p-8">
+        <div class="mb-6"><BrandMark /></div>
+        <h1 class="font-display font-semibold text-[22px] sm:text-[26px]">{{ t('auth.resetPassword.title') }}</h1>
 
-      <div v-if="success" class="mt-5" data-testid="reset-success">
-        <p class="text-success font-medium">Password updated.</p>
-        <p class="text-[13px] text-text-faint mt-2">Redirecting you to sign in…</p>
+        <div v-if="success" class="mt-5" data-testid="reset-success">
+          <p class="text-success font-medium">{{ t('auth.resetPassword.success') }}</p>
+          <p class="text-[13px] text-text-faint mt-2">{{ t('auth.resetPassword.redirecting') }}</p>
+        </div>
+
+        <form v-else class="mt-5 flex flex-col gap-3" novalidate @submit.prevent="onSubmit">
+          <div>
+            <label for="reset-email" class="field-label">{{ t('auth.resetPassword.email') }}</label>
+            <input
+              id="reset-email"
+              v-model="email"
+              class="input"
+              type="email"
+              required
+              :disabled="submitting"
+            />
+          </div>
+          <div>
+            <label for="reset-password" class="field-label">{{ t('auth.resetPassword.newPassword') }}</label>
+            <input
+              id="reset-password"
+              v-model="password"
+              class="input"
+              type="password"
+              minlength="8"
+              required
+              autocomplete="new-password"
+              :disabled="submitting"
+            />
+          </div>
+          <div>
+            <label for="reset-confirm" class="field-label">{{ t('auth.resetPassword.confirmPassword') }}</label>
+            <input
+              id="reset-confirm"
+              v-model="passwordConfirm"
+              class="input"
+              type="password"
+              required
+              autocomplete="new-password"
+              :disabled="submitting"
+            />
+          </div>
+          <p v-if="error" data-testid="reset-error" class="field-error">{{ error }}</p>
+          <button type="submit" class="btn btn-primary justify-center" :disabled="submitting">
+            {{ submitting ? t('auth.resetPassword.submitting') : t('auth.resetPassword.submit') }}
+          </button>
+        </form>
       </div>
-
-      <form v-else class="mt-5 flex flex-col gap-3" novalidate @submit.prevent="onSubmit">
-        <div>
-          <label for="reset-email" class="field-label">Email</label>
-          <input
-            id="reset-email"
-            v-model="email"
-            class="input"
-            type="email"
-            required
-            :disabled="submitting"
-          />
-        </div>
-        <div>
-          <label for="reset-password" class="field-label">New password</label>
-          <input
-            id="reset-password"
-            v-model="password"
-            class="input"
-            type="password"
-            minlength="8"
-            required
-            autocomplete="new-password"
-            :disabled="submitting"
-          />
-        </div>
-        <div>
-          <label for="reset-confirm" class="field-label">Confirm password</label>
-          <input
-            id="reset-confirm"
-            v-model="passwordConfirm"
-            class="input"
-            type="password"
-            required
-            autocomplete="new-password"
-            :disabled="submitting"
-          />
-        </div>
-        <p v-if="error" data-testid="reset-error" class="field-error">{{ error }}</p>
-        <button type="submit" class="btn btn-primary justify-center" :disabled="submitting">
-          {{ submitting ? 'Updating…' : 'Update password' }}
-        </button>
-      </form>
     </div>
   </div>
 </template>
