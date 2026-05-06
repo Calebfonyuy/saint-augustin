@@ -155,17 +155,19 @@ export const useProjectionStore = defineStore('projection', () => {
         resolve(res)
       }
 
-      socket!.on('connect', () => {
-        socket!.emit(
-          'join',
-          { sessionId: args.sessionId, controlToken: args.controlToken },
-          (response: JoinResult) => finalize(response),
-        )
-      })
+      if (socket !== null) {
+        socket.on('connect', () => {
+          socket!.emit(
+            'join',
+            { sessionId: args.sessionId, controlToken: args.controlToken },
+            (response: JoinResult) => finalize(response),
+          )
+        })
 
-      socket!.once('connect_error', (err: Error) => {
-        finalize({ ok: false, error: err.message })
-      })
+        socket.once('connect_error', (err: Error) => {
+          finalize({ ok: false, error: err.message })
+        })
+      }
     })
   }
 
@@ -185,7 +187,9 @@ export const useProjectionStore = defineStore('projection', () => {
       return { ok: false, error: 'forbidden' }
     }
     return new Promise<MutationResult>((resolve) => {
-      socket!.emit(event, args, (resp: MutationResult) => resolve(resp ?? { ok: false }))
+      if (socket) {
+        socket.emit(event, args, (resp: MutationResult) => resolve(resp ?? { ok: false }))
+      }
     })
   }
 

@@ -7,7 +7,7 @@
 // is performed by the worship leader, who is authenticated.
 //
 // Ref: services/projection/src/sessions/sessions.controller.ts
-import axios, { AxiosInstance } from 'axios'
+import axios, { type AxiosInstance } from 'axios'
 import type {
   CreateProjectionSessionInput,
   CreateProjectionSessionResponse,
