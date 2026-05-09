@@ -21,5 +21,5 @@ return [
         ],
     ],
 
-    'prefix' => env('CACHE_PREFIX', 'sa_auth_cache_'),
+    'prefix' => env('CACHE_PREFIX', 'saintaugustin_db_cache_'),
 ];

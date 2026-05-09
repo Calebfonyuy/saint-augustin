@@ -1,0 +1,11 @@
+# Dev-only env tweaks. APP_DEBUG=true surfaces stack traces.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: saintaugustin-config
+  namespace: saintaugustin
+data:
+  APP_ENV: "local"
+  APP_DEBUG: "true"
+  APP_URL: "http://saintaugustin.dev.local"
+  APP_FRONTEND_URL: "http://saintaugustin.dev.local"

@@ -1,0 +1,55 @@
+# Non-secret configuration shared by every service.
+# Anything sensitive (passwords, app keys, S3 credentials) lives in the
+# Secret manifest — see `secrets.example.yaml`.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: saintaugustin-config
+  namespace: saintaugustin
+data:
+  # ── Common ────────────────────────────────────────────────────────
+  APP_NAME: "SaintAugustin"
+  APP_ENV: "production"
+  APP_DEBUG: "false"
+  # The three URLs below must match the public hostnames the operator
+  # exposes via the Ingress (see `ingress.yaml`). Adjust per environment
+  # in the matching overlay.
+  APP_URL: "http://saintaugustin.example.com"
+  APP_FRONTEND_URL: "http://saintaugustin.example.com"
+
+  # ── Database ──────────────────────────────────────────────────────
+  DB_CONNECTION: "pgsql"
+  DB_HOST: "postgres"
+  DB_PORT: "5432"
+  DB_DATABASE: "saintaugustin_db"
+  DB_USERNAME: "saintaugustin"
+
+  # ── Redis ─────────────────────────────────────────────────────────
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  CACHE_DRIVER: "redis"
+  QUEUE_CONNECTION: "redis"
+  SESSION_DRIVER: "redis"
+
+  # ── Octane (FrankenPHP) ───────────────────────────────────────────
+  OCTANE_SERVER: "frankenphp"
+
+  # ── Object storage (MinIO) ────────────────────────────────────────
+  FILESYSTEM_DISK: "minio"
+  MINIO_ENDPOINT: "http://minio:9000"
+  MINIO_BUCKET: "saintaugustin"
+  MINIO_REGION: "us-east-1"
+  SONG_SHEET_URL_TTL: "15"
+
+  # ── Upload caps (MB) ──────────────────────────────────────────────
+  UPLOAD_IMPORT_MAX_MB: "100"
+  UPLOAD_SHEET_MAX_MB: "10"
+
+  # ── Mail (override per env; defaults to log driver) ───────────────
+  MAIL_MAILER: "log"
+  MAIL_FROM_ADDRESS: "noreply@example.com"
+  MAIL_FROM_NAME: "SaintAugustin"
+
+  # ── Projection service ────────────────────────────────────────────
+  NODE_ENV: "production"
+  PROJECTION_PORT: "3000"

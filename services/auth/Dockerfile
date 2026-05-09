@@ -36,13 +36,19 @@ RUN docker-php-ext-install \
 # Redis extension via PECL
 RUN pecl install redis && docker-php-ext-enable redis
 
+# Custom php.ini overrides — bumps upload/post limits + memory_limit so
+# bulk imports (e.g. VideoPsalm .vpagd archives) aren't rejected by PHP
+# before Laravel sees them. Prefixed `zz-` so it loads after the
+# docker-php-ext-*.ini extension files and our values win on any conflict.
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/zz-uploads.ini
+
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Copy composer files first for layer caching
-COPY composer.json composer.lock* ./
+# Copy application source
+COPY . .
 
 # Install dependencies (no dev in production, with dev in development)
 ARG APP_ENV=local
@@ -51,9 +57,6 @@ RUN if [ "$APP_ENV" = "production" ]; then \
     else \
         composer install --no-interaction; \
     fi
-
-# Copy application source
-COPY . .
 
 # Ensure storage and cache directories exist and are writable
 RUN mkdir -p storage/logs storage/framework/{cache,sessions,views} bootstrap/cache \

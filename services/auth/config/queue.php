@@ -13,7 +13,7 @@ return [
         'redis' => [
             'driver'       => 'redis',
             'connection'   => 'default',
-            'queue'        => env('REDIS_QUEUE', 'sa_auth'),
+            'queue'        => env('REDIS_QUEUE', 'saintaugustin_db'),
             'retry_after'  => 90,
             'block_for'    => null,
             'after_commit' => false,

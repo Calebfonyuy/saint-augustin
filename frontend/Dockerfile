@@ -13,7 +13,7 @@ FROM node:20-alpine AS development
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm i
 # Source mounted via volume in docker-compose
 
 EXPOSE 5173
@@ -25,8 +25,13 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm i
+ARG VITE_API_BASE_URL
+ARG VITE_WS_URL
+ARG VITE_PROJECTION_BASE_URL
+
 COPY . .
+RUN printf "VITE_API_BASE_URL=%s\nVITE_WS_URL=%s\nVITE_PROJECTION_BASE_URL=%s\n" "$VITE_API_BASE_URL" "$VITE_WS_URL" "$VITE_PROJECTION_BASE_URL" > ./.env
 RUN npm run build
 
 # --- Production stage ---
@@ -34,9 +39,10 @@ FROM nginx:1.27-alpine AS production
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+
 # SPA fallback: all routes → index.html
 RUN echo 'server { \
-    listen 80; \
+    listen *:80; \
     root /usr/share/nginx/html; \
     index index.html; \
     location / { \

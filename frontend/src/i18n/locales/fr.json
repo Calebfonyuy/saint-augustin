@@ -1,0 +1,108 @@
+{
+  "common": {
+    "anonymous": "Anonyme",
+    "guest": "Invité",
+    "loading": "Chargement…",
+    "back": "Retour",
+    "edit": "Modifier",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu",
+    "accountSettings": "Paramètres du compte",
+    "logOut": "Se déconnecter",
+    "or": "ou",
+    "allRightsReserved": "Tous droits réservés",
+    "language": "Langue"
+  },
+  "nav": {
+    "workspace": "Espace",
+    "dashboard": "Tableau de bord",
+    "library": "Bibliothèque",
+    "playlists": "Playlists",
+    "projection": "Projection",
+    "admin": "Admin",
+    "soon": "bientôt"
+  },
+  "auth": {
+    "login": {
+      "taglineSub": "Celui qui chante prie deux fois. Un endroit calme pour conserver les chants, préparer les sets et animer votre dimanche.",
+      "title": "Bon retour",
+      "subtitle": "Connectez-vous pour accéder à votre espace.",
+      "email": "Adresse e-mail",
+      "password": "Mot de passe",
+      "submit": "Se connecter",
+      "submitting": "Connexion en cours…",
+      "forgotPassword": "Mot de passe oublié ?",
+      "invalidCredentials": "Identifiants invalides."
+    },
+    "register": {
+      "panelHeadlinePre": "Bienvenue chez",
+      "panelSubtext": "Un seul endroit pour les chants, accords et sets dominicaux de votre chorale.",
+      "title": "Acceptez votre invitation",
+      "verifying": "Vérification de l'invitation…",
+      "verifyError": "Cette invitation est invalide ou a expiré.",
+      "noToken": "Aucun jeton d'invitation fourni. Demandez à un administrateur un nouveau lien.",
+      "backToSignIn": "Retour à la connexion",
+      "accountCreated": "Compte créé.",
+      "redirecting": "Redirection vers la page de connexion…",
+      "email": "Adresse e-mail",
+      "assignedRoles": "Rôles attribués",
+      "displayName": "Nom affiché",
+      "password": "Mot de passe",
+      "passwordHint": "Au moins 8 caractères, minuscules et majuscules avec au moins un chiffre.",
+      "confirmPassword": "Confirmer le mot de passe",
+      "submit": "Créer le compte",
+      "submitting": "Création du compte…",
+      "passwordMismatch": "Les mots de passe ne correspondent pas.",
+      "registrationFailed": "L'inscription a échoué."
+    },
+    "forgotPassword": {
+      "title": "Réinitialiser votre mot de passe",
+      "subtitle": "Saisissez l'adresse e-mail associée à votre compte et nous vous enverrons un lien de réinitialisation.",
+      "email": "Adresse e-mail",
+      "submit": "Envoyer le lien",
+      "submitting": "Envoi…",
+      "backToSignIn": "Retour à la connexion",
+      "error": "Impossible d'envoyer le lien de réinitialisation."
+    },
+    "resetPassword": {
+      "title": "Choisissez un nouveau mot de passe",
+      "email": "Adresse e-mail",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "submit": "Mettre à jour le mot de passe",
+      "submitting": "Mise à jour…",
+      "success": "Mot de passe mis à jour.",
+      "redirecting": "Redirection vers la page de connexion…",
+      "passwordMismatch": "Les mots de passe ne correspondent pas.",
+      "error": "Impossible de réinitialiser le mot de passe."
+    }
+  },
+  "musician": {
+    "library": "Bibliothèque",
+    "edit": "Modifier",
+    "loading": "Chargement…",
+    "songNotFound": "Chant introuvable.",
+    "failedLoad": "Impossible de charger le chant.",
+    "unknownAuthor": "Auteur inconnu",
+    "bpm": "bpm",
+    "ccli": "CCLI",
+    "original": "Original",
+    "playIn": "Jouer en",
+    "reset": "Réinitialiser",
+    "keyMajor": "Majeur",
+    "keyMinor": "Mineur",
+    "songSheets": "Partitions",
+    "loadingSheets": "Chargement des partitions…",
+    "noSheets": "Aucune partition associée à ce chant.",
+    "uploadSheet": "Téléverser une partition →",
+    "preview": "Aperçu"
+  },
+  "shared": {
+    "loading": "Chargement…",
+    "linkUnavailable": "Lien indisponible",
+    "linkInvalid": "Ce lien de partage est invalide ou a expiré.",
+    "untitled": "Sans titre",
+    "lyricsUnavailable": "Paroles non disponibles.",
+    "projectionHelp": "← / → pour naviguer · cliquer pour avancer"
+  }
+}

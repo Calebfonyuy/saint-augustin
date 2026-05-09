@@ -1,0 +1,31 @@
+# Base manifest set. Overlays patch images / replicas / hosts.
+#
+# `secrets.yaml` is intentionally NOT listed here — operators copy
+# `secrets.example.yaml` to `secrets.yaml`, populate it, and apply it
+# out-of-band so secret rotations don't require a kustomize re-render.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: saintaugustin
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - postgres.yaml
+  - redis.yaml
+  - minio.yaml
+  - auth-service.yaml
+  - projection-service.yaml
+  - frontend.yaml
+  - ingress.yaml
+
+# Overlay this list with your own registry/tag in each environment.
+images:
+  - name: ghcr.io/REPLACE_ME/saintaugustin-auth
+    newName: ghcr.io/REPLACE_ME/saintaugustin-auth
+    newTag: latest
+  - name: ghcr.io/REPLACE_ME/saintaugustin-projection
+    newName: ghcr.io/REPLACE_ME/saintaugustin-projection
+    newTag: latest
+  - name: ghcr.io/REPLACE_ME/saintaugustin-frontend
+    newName: ghcr.io/REPLACE_ME/saintaugustin-frontend
+    newTag: latest

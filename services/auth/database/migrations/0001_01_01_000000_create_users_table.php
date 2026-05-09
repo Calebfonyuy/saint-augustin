@@ -20,7 +20,8 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('email')->unique();
             $table->string('display_name');
-            $table->string('password');
+            $table->string('password')->nullable();              // null for OAuth-only users
+            $table->string('google_id')->nullable()->unique(); // Google OAuth subject ID (Socialite)
             $table->jsonb('roles')->default('["musician"]');   // admin, musician, projectionist
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();

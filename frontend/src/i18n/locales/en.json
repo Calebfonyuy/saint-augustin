@@ -1,0 +1,108 @@
+{
+  "common": {
+    "anonymous": "Anonymous",
+    "guest": "Guest",
+    "loading": "Loading…",
+    "back": "Back",
+    "edit": "Edit",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "accountSettings": "Account settings",
+    "logOut": "Log out",
+    "or": "or",
+    "allRightsReserved": "All rights reserved",
+    "language": "Language"
+  },
+  "nav": {
+    "workspace": "Workspace",
+    "dashboard": "Dashboard",
+    "library": "Song Library",
+    "playlists": "Playlists",
+    "projection": "Projection",
+    "admin": "Admin",
+    "soon": "soon"
+  },
+  "auth": {
+    "login": {
+      "taglineSub": "He who sings, prays twice. A quiet place to keep songs, build sets, and run your Sunday.",
+      "title": "Welcome back",
+      "subtitle": "Sign in to continue to your workspace.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "forgotPassword": "Forgot your password?",
+      "invalidCredentials": "Invalid credentials."
+    },
+    "register": {
+      "panelHeadlinePre": "Welcome to",
+      "panelSubtext": "One place for your choir's songs, chords, and Sunday sets.",
+      "title": "Accept your invite",
+      "verifying": "Verifying invitation…",
+      "verifyError": "This invitation link is invalid or has expired.",
+      "noToken": "No invitation token was provided. Ask an admin for a new invite link.",
+      "backToSignIn": "Back to sign in",
+      "accountCreated": "Account created.",
+      "redirecting": "Redirecting you to sign in…",
+      "email": "Email",
+      "assignedRoles": "Assigned roles",
+      "displayName": "Display name",
+      "password": "Password",
+      "passwordHint": "Minimum 8 characters, mixed case with at least one number.",
+      "confirmPassword": "Confirm password",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "passwordMismatch": "Passwords do not match.",
+      "registrationFailed": "Registration failed."
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "subtitle": "Enter the email address on your account and we'll send you a reset link.",
+      "email": "Email",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "backToSignIn": "Back to sign in",
+      "error": "Could not send reset link."
+    },
+    "resetPassword": {
+      "title": "Choose a new password",
+      "email": "Email",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "submit": "Update password",
+      "submitting": "Updating…",
+      "success": "Password updated.",
+      "redirecting": "Redirecting you to sign in…",
+      "passwordMismatch": "Passwords do not match.",
+      "error": "Could not reset password."
+    }
+  },
+  "musician": {
+    "library": "Library",
+    "edit": "Edit",
+    "loading": "Loading…",
+    "songNotFound": "Song not found.",
+    "failedLoad": "Failed to load song.",
+    "unknownAuthor": "Unknown",
+    "bpm": "bpm",
+    "ccli": "CCLI",
+    "original": "Original",
+    "playIn": "Play in",
+    "reset": "Reset",
+    "keyMajor": "Major",
+    "keyMinor": "Minor",
+    "songSheets": "Song sheets",
+    "loadingSheets": "Loading sheets…",
+    "noSheets": "No sheets attached to this song.",
+    "uploadSheet": "Upload a sheet →",
+    "preview": "Preview"
+  },
+  "shared": {
+    "loading": "Loading…",
+    "linkUnavailable": "Link unavailable",
+    "linkInvalid": "This share link is invalid or has expired.",
+    "untitled": "Untitled",
+    "lyricsUnavailable": "Lyrics unavailable.",
+    "projectionHelp": "← / → to navigate · click to advance"
+  }
+}

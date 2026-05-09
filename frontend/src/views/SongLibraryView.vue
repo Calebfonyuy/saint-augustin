@@ -1,0 +1,209 @@
+<script setup lang="ts">
+// Song Library — 2-pane layout: searchable list on the left, preview on the right.
+// Search is debounced (250ms) so each keystroke doesn't fire an API call.
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import AppShell from '@/components/AppShell.vue'
+import KeyBadge from '@/components/KeyBadge.vue'
+import Icon from '@/components/Icon.vue'
+import ChordProPreview from '@/components/ChordProPreview.vue'
+import Toast from '@/components/Toast.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useSongsStore } from '@/stores/songs'
+import { useSongbooksStore } from '@/stores/songbooks'
+import { useProjectionStore } from '@/stores/projection'
+import { extractErrorMessage } from '@/api/client'
+import type { Song } from '@/types'
+
+const auth = useAuthStore()
+const songs = useSongsStore()
+const songbooks = useSongbooksStore()
+const projection = useProjectionStore()
+const router = useRouter()
+
+const query = ref('')
+const songbookFilter = ref<string>('')
+const selectedId = ref<string | null>(null)
+const errorToast = ref<string | null>(null)
+const projecting = ref(false)
+
+const selected = computed<Song | null>(
+  () => songs.list.find((s) => s.id === selectedId.value) ?? null,
+)
+
+async function refresh() {
+  try {
+    await songs.fetchList({
+      q: query.value || undefined,
+      songbook: songbookFilter.value || undefined,
+      per_page: 50,
+    })
+    if (!selectedId.value && songs.list.length) selectedId.value = songs.list[0].id
+    // If the current selection is no longer in the list (e.g. after filter), reset.
+    if (selectedId.value && !songs.list.some((s) => s.id === selectedId.value)) {
+      selectedId.value = songs.list[0]?.id ?? null
+    }
+  } catch (err) {
+    errorToast.value = extractErrorMessage(err, 'Failed to load songs.')
+  }
+}
+
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+watch(query, () => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(refresh, 250)
+})
+watch(songbookFilter, refresh)
+
+onMounted(async () => {
+  await Promise.all([refresh(), songbooks.fetchList()])
+})
+
+function songbookName(id: string): string {
+  return songbooks.list.find((sb) => sb.id === id)?.name ?? '—'
+}
+
+/**
+ * Open a projection session for the currently-selected song without
+ * persisting a playlist. Routes to the controller view on success.
+ */
+async function onProjectSong(): Promise<void> {
+  if (!selected.value || projecting.value) return
+  projecting.value = true
+  try {
+    const created = await projection.createFromSong(selected.value)
+    await router.push({ name: 'projection-control', params: { id: created.sessionId } })
+  } catch (err) {
+    errorToast.value = extractErrorMessage(err, 'Could not start projection.')
+  } finally {
+    projecting.value = false
+  }
+}
+</script>
+
+<template>
+  <AppShell>
+    <div class="grid grid-cols-[380px_1fr] flex-1 min-h-0">
+      <!-- LEFT: search + list -->
+      <div class="border-r border-border flex flex-col min-h-0">
+        <div class="px-4 pt-[14px] pb-[10px] border-b border-border">
+          <div class="flex justify-between items-center mb-[10px]">
+            <div class="font-display font-semibold text-[20px]">Song Library</div>
+            <router-link
+              v-if="auth.canEditSongs"
+              to="/songs/new"
+              class="btn btn-primary"
+              style="padding: 6px 10px; font-size: 12px"
+            >
+              <Icon name="plus" /> New song
+            </router-link>
+          </div>
+          <div class="relative">
+            <span class="absolute left-[10px] top-[10px] text-text-faint"><Icon name="search" /></span>
+            <input
+              v-model="query"
+              class="input"
+              style="padding-left: 30px"
+              placeholder="Search title, author, lyrics…"
+              data-testid="library-search"
+            />
+          </div>
+          <select
+            v-if="songbooks.list.length > 1"
+            v-model="songbookFilter"
+            class="input mt-2 text-[12px]"
+            data-testid="library-songbook-filter"
+          >
+            <option value="">All songbooks</option>
+            <option v-for="sb in songbooks.list" :key="sb.id" :value="sb.id">
+              {{ sb.name }}
+            </option>
+          </select>
+        </div>
+        <div class="overflow-auto flex-1" data-testid="library-list">
+          <div v-if="songs.loading && songs.list.length === 0" class="p-5 text-[13px] text-text-faint">
+            Loading…
+          </div>
+          <div v-else-if="songs.list.length === 0" class="p-5 text-[13px] text-text-faint">
+            No songs match your search.
+          </div>
+          <div
+            v-for="s in songs.list"
+            :key="s.id"
+            class="px-4 py-3 border-b border-border cursor-pointer border-l-[3px]"
+            :class="
+              selectedId === s.id
+                ? 'bg-accent-soft border-l-accent'
+                : 'border-l-transparent hover:bg-bg-sunken'
+            "
+            data-testid="library-item"
+            @click="selectedId = s.id"
+          >
+            <div class="flex gap-[10px]">
+              <div class="flex-1 min-w-0">
+                <div class="text-[14px] font-semibold truncate">{{ s.title }}</div>
+                <div class="text-[11.5px] text-text-faint mt-[2px] truncate">
+                  {{ s.author ?? 'Unknown' }}
+                </div>
+              </div>
+              <KeyBadge :musical-key="s.original_key" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: preview -->
+      <div v-if="selected" class="flex flex-col min-h-0">
+        <div class="px-6 py-4 border-b border-border flex items-center gap-3">
+          <div class="flex-1">
+            <div class="font-display font-semibold text-[22px]">{{ selected.title }}</div>
+            <div class="text-[12px] text-text-faint mt-[2px]">
+              {{ selected.author ?? 'Unknown' }}
+              <span v-if="selected.time_signature"> · {{ selected.time_signature }}</span>
+              <span v-if="selected.tempo"> · {{ selected.tempo }} bpm</span>
+              <span v-if="selected.ccli_number"> · CCLI {{ selected.ccli_number }}</span>
+              <span> · {{ songbookName(selected.songbook_id) }}</span>
+            </div>
+          </div>
+          <router-link
+            :to="`/songs/${selected.id}/play`"
+            class="btn btn-primary"
+            data-testid="library-play"
+          >
+            Switch to musician view
+          </router-link>
+          <button
+            type="button"
+            class="btn btn-primary"
+            data-testid="library-project"
+            :disabled="projecting"
+            @click="onProjectSong"
+          >
+            <Icon name="cast" />
+            {{ projecting ? 'Starting…' : 'Project song' }}
+          </button>
+          <router-link
+            v-if="auth.canEditSongs"
+            :to="`/songs/${selected.id}`"
+            class="btn"
+            data-testid="library-edit"
+          >
+            Edit
+          </router-link>
+        </div>
+        <div class="px-9 py-6 overflow-auto flex-1">
+          <ChordProPreview :source="selected.lyrics" />
+        </div>
+      </div>
+      <div v-else class="grid place-items-center text-text-faint text-[13px]">
+        Select a song to preview
+      </div>
+    </div>
+    <Toast
+      v-if="errorToast"
+      :message="errorToast"
+      kind="error"
+      @close="errorToast = null"
+    />
+  </AppShell>
+</template>

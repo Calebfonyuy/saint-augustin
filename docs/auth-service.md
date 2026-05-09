@@ -1,0 +1,119 @@
+# Auth Service
+
+The Auth Service is a Laravel 12 application that acts as the primary backend for SaintAugustin. It handles authentication, user management, songs, songbooks, song sheets, playlists, and share links — capabilities that will be split into separate microservices as the project scales.
+
+- **Runtime:** PHP 8.3 with Laravel Octane (FrankenPHP worker)
+- **Database:** PostgreSQL 16 (`saintaugustin_db` schema)
+- **Object storage:** MinIO (S3-compatible) for song sheet files
+- **Auth mechanism:** Laravel Sanctum — stateless Bearer tokens
+- **Container port:** 8000 (exposed via Nginx gateway at `/api/...`)
+
+---
+
+## API Routes
+
+All routes are prefixed `/api` by Laravel. The Nginx gateway routes them from port 8080.
+
+### Authentication (`/api/auth`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/auth/status` | — | Service health / version |
+| POST | `/api/auth/login` | — | Obtain a Bearer token |
+| POST | `/api/auth/password/forgot` | — | Send reset email |
+| POST | `/api/auth/password/reset` | — | Apply reset token |
+| GET | `/api/auth/invitations/{token}` | — | Verify an invitation token |
+| POST | `/api/auth/register` | — | Register via invitation |
+| POST | `/api/auth/logout` | Bearer | Revoke current token |
+| POST | `/api/auth/refresh` | Bearer | Issue a fresh token |
+| POST | `/api/auth/invitations` | Bearer + Admin | Create an invitation |
+
+Registration is invitation-only. An admin calls `POST /api/auth/invitations` with `{ email, roles[] }`, which sends an email containing a single-use token. The recipient visits the registration form, the token is validated, and their account is created with the pre-assigned roles.
+
+### Songbooks (`/api/songbooks`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/songbooks` | Bearer | List all songbooks |
+| GET | `/api/songbooks/{id}` | Bearer | Get a single songbook |
+| POST | `/api/songbooks` | Bearer + Admin | Create a songbook |
+| PUT | `/api/songbooks/{id}` | Bearer + Admin | Update a songbook |
+| DELETE | `/api/songbooks/{id}` | Bearer + Admin | Delete a songbook |
+
+Songbooks are organisational containers for songs (e.g. "Hillsong", "Hymns", "Originals"). Every song belongs to one songbook.
+
+### Songs (`/api/songs`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/songs` | Bearer | Paginated list with filtering |
+| GET | `/api/songs/{id}` | Bearer | Get a single song |
+| POST | `/api/songs` | Bearer (Admin/Musician) | Create a song |
+| PUT | `/api/songs/{id}` | Bearer (Admin/Musician) | Update a song |
+| DELETE | `/api/songs/{id}` | Bearer + Admin | Soft-delete |
+| POST | `/api/songs/{id}/restore` | Bearer + Admin | Restore from trash |
+| GET | `/api/songs/{songId}/sheets` | Bearer | List sheet attachments |
+| POST | `/api/songs/{songId}/sheets` | Bearer (Admin/Musician) | Upload a sheet |
+
+**Song list query parameters:** `q` (search title/author), `songbook`, `key`, `tag`, `trashed` (`with`/`only`), `per_page`, `page`.
+
+Songs store ChordPro lyrics in the `lyrics` column. The `original_key`, `tempo`, `time_signature`, `tags[]`, `ccli_number`, and `preview_url` fields are optional metadata. Songs support soft-delete (via Laravel's `SoftDeletes`) so the library never loses data.
+
+### Song Sheets (`/api/sheets`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/sheets/{id}` | Bearer | Get metadata + presigned URL |
+| DELETE | `/api/sheets/{id}` | Bearer + Admin | Delete sheet + file |
+
+Song sheets are PDF or image attachments stored in MinIO. On upload the file is persisted to the `saintaugustin` bucket and a record is saved in the `song_sheets` table. On download the API generates a short-lived presigned URL (configurable TTL, default 15 minutes via `SONG_SHEET_URL_TTL`). If the URL has expired the client refetches `GET /sheets/{id}` to obtain a fresh one.
+
+### Playlists (`/api/playlists`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/playlists` | Bearer | Paginated list |
+| POST | `/api/playlists` | Bearer | Create a playlist |
+| GET | `/api/playlists/{id}` | Bearer | Get playlist with items |
+| PUT | `/api/playlists/{id}` | Bearer (Owner/Admin) | Update playlist metadata |
+| DELETE | `/api/playlists/{id}` | Bearer (Owner/Admin) | Delete playlist |
+| POST | `/api/playlists/{id}/duplicate` | Bearer | Duplicate (caller becomes owner) |
+| POST | `/api/playlists/{playlistId}/items` | Bearer (Owner/Admin) | Add a song to the playlist |
+| PUT | `/api/playlists/{playlistId}/items/reorder` | Bearer (Owner/Admin) | Reorder items |
+| PUT | `/api/playlists/{playlistId}/items/{itemId}` | Bearer (Owner/Admin) | Update item (key, notes) |
+| DELETE | `/api/playlists/{playlistId}/items/{itemId}` | Bearer (Owner/Admin) | Remove item |
+| GET | `/api/playlists/{playlistId}/share` | Bearer (Owner/Admin) | List share links |
+| POST | `/api/playlists/{playlistId}/share` | Bearer (Owner/Admin) | Create a share link |
+| DELETE | `/api/share-links/{id}` | Bearer (Owner/Admin) | Revoke a share link |
+| GET | `/api/playlists/{id}/export` | Bearer | Download PDF export |
+| GET | `/api/share/{token}` | — (throttled 60/min) | Resolve public share link |
+
+Each playlist item stores `position`, an optional `target_key` (transpose destination for the musician), and free-text `notes`. The `reorder` endpoint accepts an ordered array of item IDs and re-assigns `position` values in one transaction.
+
+**Share links** carry a `mode` field (`musician` or `projection`). The `musician` payload includes full song lyrics; `projection` omits them. Public access is throttled to prevent token enumeration.
+
+**PDF export** renders the playlist via a Blade view and returns a downloadable PDF using a Laravel PDF package.
+
+---
+
+## Key Design Decisions
+
+- **Sanctum stateless mode only.** The `statefulApi()` helper is not used on any route — all API consumers send `Authorization: Bearer {token}` headers. This avoids CSRF complications in the SPA and keeps the service truly stateless.
+- **Soft deletes on songs.** Songs are never hard-deleted by users. The `trashed` query parameter on the list endpoint lets admins view and restore deleted songs.
+- **MinIO presigned URLs.** File content never passes through the Laravel process on download; only the presigned URL is issued. This keeps the auth service lean and avoids large request bodies in PHP.
+- **Single-service monolith for phases 1–3.** Songs, sheets, and playlists live in the same Laravel app to simplify development. The Nginx gateway already defines stub upstreams for future extraction.
+
+---
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `APP_KEY` | Laravel app encryption key | — (generate with `php artisan key:generate`) |
+| `DB_HOST` / `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` | PostgreSQL connection | — |
+| `REDIS_HOST` / `REDIS_PORT` | Redis connection (cache + queue) | `redis:6379` |
+| `JWT_SECRET` | Sanctum token signing secret | — |
+| `MINIO_ENDPOINT` | MinIO S3 endpoint | `http://minio:9000` |
+| `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | MinIO credentials | — |
+| `MINIO_BUCKET` | Default bucket name | `saintaugustin` |
+| `SONG_SHEET_URL_TTL` | Presigned URL lifetime (minutes) | `15` |
