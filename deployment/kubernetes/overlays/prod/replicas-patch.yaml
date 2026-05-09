@@ -1,0 +1,26 @@
+# Bump replicas for the stateless services. Postgres / Redis / MinIO
+# stay at 1 — for HA storage swap them for managed services or proper
+# StatefulSet operators (Bitnami / CrunchyData / etc.).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: saintaugustin
+spec:
+  replicas: 2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: projection-service
+  namespace: saintaugustin
+spec:
+  replicas: 2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: saintaugustin
+spec:
+  replicas: 2

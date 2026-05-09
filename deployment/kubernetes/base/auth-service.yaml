@@ -1,0 +1,93 @@
+# Auth Service — Laravel 12 + FrankenPHP (Octane).
+#
+# Migrations run as a Job on each `kubectl apply` (the Job's `name` is
+# generated from the image tag at overlay time, so a new tag = a new
+# Job = fresh migration run). This keeps multi-replica deployments
+# safe: only one pod ever runs `migrate --force`.
+#
+# The Deployment itself starts Octane directly with no migration step,
+# so individual pod restarts don't race the database.
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: saintaugustin
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: auth-migrate
+  namespace: saintaugustin
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: ghcr.io/REPLACE_ME/saintaugustin-auth:latest
+          command: ["php", "artisan", "migrate", "--force"]
+          envFrom:
+            - configMapRef:
+                name: saintaugustin-config
+            - secretRef:
+                name: saintaugustin-secrets
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: saintaugustin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth
+          image: ghcr.io/REPLACE_ME/saintaugustin-auth:latest
+          command:
+            - php
+            - artisan
+            - octane:start
+            - --server=frankenphp
+            - --host=0.0.0.0
+            - --port=8000
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: saintaugustin-config
+            - secretRef:
+                name: saintaugustin-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "2000m"
+              memory: "1Gi"

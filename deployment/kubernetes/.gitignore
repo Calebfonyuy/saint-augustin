@@ -1,0 +1,2 @@
+# Populated secrets must never land in the repo.
+base/secrets.yaml
