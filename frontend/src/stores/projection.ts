@@ -21,6 +21,7 @@ import type {
   CreateProjectionSessionResponse,
   Playlist,
   ProjectionSessionState,
+  Song,
 } from '@/types'
 
 export type ProjectionRole = 'controller' | 'display'
@@ -230,6 +231,52 @@ export const useProjectionStore = defineStore('projection', () => {
     return created
   }
 
+  /**
+   * Project a single song without first creating a persisted playlist.
+   * Synthesises an ephemeral one-item playlist client-side so we can re-use
+   * the same slide pipeline (chord stripping, stanza splitting) as
+   * `createFromPlaylist`. The session is created without a playlistId so
+   * the projection service has no dangling reference back to a real row.
+   */
+  async function createFromSong(song: Song): Promise<CreateProjectionSessionResponse> {
+    const ephemeral: Playlist = {
+      id: '',
+      name: song.title,
+      event_date: null,
+      tags: [],
+      created_by: null,
+      duplicated_from_id: null,
+      item_count: 1,
+      items: [
+        {
+          id: 'ephemeral-item',
+          song_id: song.id,
+          position: 0,
+          target_key: null,
+          notes: null,
+          song: {
+            id: song.id,
+            title: song.title,
+            author: song.author,
+            original_key: song.original_key,
+            tempo: song.tempo,
+            time_signature: song.time_signature,
+            lyrics: song.lyrics,
+          },
+        },
+      ],
+      created_at: '',
+      updated_at: '',
+    }
+    const slides = buildSlidesForPlaylist(ephemeral)
+    const created = await projectionApi.createSession({
+      playlistName: song.title,
+      slides,
+    })
+    await connect({ sessionId: created.sessionId, controlToken: created.controlToken })
+    return created
+  }
+
   async function destroy(): Promise<void> {
     if (!sessionId.value || !controlToken.value) return
     await projectionApi.destroySession(sessionId.value, controlToken.value)
@@ -258,6 +305,7 @@ export const useProjectionStore = defineStore('projection', () => {
     setBlackout,
     setFontScale,
     createFromPlaylist,
+    createFromSong,
     destroy,
   }
 })

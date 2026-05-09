@@ -2,6 +2,7 @@
 // Song Library — 2-pane layout: searchable list on the left, preview on the right.
 // Search is debounced (250ms) so each keystroke doesn't fire an API call.
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import KeyBadge from '@/components/KeyBadge.vue'
 import Icon from '@/components/Icon.vue'
@@ -10,17 +11,21 @@ import Toast from '@/components/Toast.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSongsStore } from '@/stores/songs'
 import { useSongbooksStore } from '@/stores/songbooks'
+import { useProjectionStore } from '@/stores/projection'
 import { extractErrorMessage } from '@/api/client'
 import type { Song } from '@/types'
 
 const auth = useAuthStore()
 const songs = useSongsStore()
 const songbooks = useSongbooksStore()
+const projection = useProjectionStore()
+const router = useRouter()
 
 const query = ref('')
 const songbookFilter = ref<string>('')
 const selectedId = ref<string | null>(null)
 const errorToast = ref<string | null>(null)
+const projecting = ref(false)
 
 const selected = computed<Song | null>(
   () => songs.list.find((s) => s.id === selectedId.value) ?? null,
@@ -56,6 +61,23 @@ onMounted(async () => {
 
 function songbookName(id: string): string {
   return songbooks.list.find((sb) => sb.id === id)?.name ?? '—'
+}
+
+/**
+ * Open a projection session for the currently-selected song without
+ * persisting a playlist. Routes to the controller view on success.
+ */
+async function onProjectSong(): Promise<void> {
+  if (!selected.value || projecting.value) return
+  projecting.value = true
+  try {
+    const created = await projection.createFromSong(selected.value)
+    await router.push({ name: 'projection-control', params: { id: created.sessionId } })
+  } catch (err) {
+    errorToast.value = extractErrorMessage(err, 'Could not start projection.')
+  } finally {
+    projecting.value = false
+  }
 }
 </script>
 
@@ -150,6 +172,16 @@ function songbookName(id: string): string {
           >
             Switch to musician view
           </router-link>
+          <button
+            type="button"
+            class="btn btn-primary"
+            data-testid="library-project"
+            :disabled="projecting"
+            @click="onProjectSong"
+          >
+            <Icon name="cast" />
+            {{ projecting ? 'Starting…' : 'Project song' }}
+          </button>
           <router-link
             v-if="auth.canEditSongs"
             :to="`/songs/${selected.id}`"
