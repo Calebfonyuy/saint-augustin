@@ -220,7 +220,7 @@ export const useProjectionStore = defineStore('projection', () => {
    * controlToken / sessionId for routing or sharing the display URL.
    */
   async function createFromPlaylist(playlist: Playlist): Promise<CreateProjectionSessionResponse> {
-    const slides = await buildSlidesForPlaylist(playlist)
+    const slides = buildSlidesForPlaylist(playlist)
     const created = await projectionApi.createSession({
       playlistName: playlist.name,
       playlistId: playlist.id,

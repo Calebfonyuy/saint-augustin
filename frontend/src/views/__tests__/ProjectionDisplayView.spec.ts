@@ -44,11 +44,15 @@ function makeRouter() {
   })
 }
 
+type ConnectResult =
+  | { ok: true; role: 'controller' | 'display'; state: ProjectionSessionState }
+  | { ok: false; error: string }
+
 interface MountOptions {
   query?: Record<string, string>
   sessionState?: ProjectionSessionState | null
   status?: 'idle' | 'connecting' | 'connected' | 'error'
-  connectResult?: { ok: boolean; role?: string; state?: ProjectionSessionState; error?: string }
+  connectResult?: ConnectResult
 }
 
 async function mountView({
@@ -72,7 +76,7 @@ async function mountView({
   projection.state = sessionState
   projection.sessionId = 'sess-1'
 
-  const defaultConnectResult = sessionState
+  const defaultConnectResult: ConnectResult = sessionState
     ? { ok: true, role: 'display', state: sessionState }
     : { ok: false, error: 'session_not_found' }
 
@@ -148,7 +152,7 @@ describe('ProjectionDisplayView', () => {
   it('passes blackout state from session to SlideRenderer', async () => {
     const { w } = await mountView({ sessionState: makeState({ blackout: true }) })
     // Blackout makes the container background-color black.
-    const style = w.find('.slide-renderer').element.style
+    const style = (w.find('.slide-renderer').element as HTMLElement).style
     expect(style.backgroundColor).toBe('rgb(0, 0, 0)')
   })
 
@@ -188,19 +192,19 @@ describe('ProjectionDisplayView', () => {
 
   it('applies the bg query param as background-color', async () => {
     const { w } = await mountView({ query: { bg: '#1a1a2e' } })
-    const root = w.find('[data-testid="display-root"]').element
+    const root = w.find('[data-testid="display-root"]').element as HTMLElement
     expect(root.style.backgroundColor).toBe('rgb(26, 26, 46)')
   })
 
   it('applies the fg query param as color', async () => {
     const { w } = await mountView({ query: { fg: '#e8e0d0' } })
-    const root = w.find('[data-testid="display-root"]').element
+    const root = w.find('[data-testid="display-root"]').element as HTMLElement
     expect(root.style.color).toBe('rgb(232, 224, 208)')
   })
 
   it('defaults to black background and white text', async () => {
     const { w } = await mountView()
-    const root = w.find('[data-testid="display-root"]').element
+    const root = w.find('[data-testid="display-root"]').element as HTMLElement
     expect(root.style.backgroundColor).toBe('rgb(0, 0, 0)')
     expect(root.style.color).toBe('rgb(255, 255, 255)')
   })
@@ -209,55 +213,55 @@ describe('ProjectionDisplayView', () => {
 
   it('uses center alignment by default', async () => {
     const { w } = await mountView()
-    const inner = w.find('.slide-inner')
-    expect(inner.element.style.textAlign).toBe('center')
+    const inner = w.find('.slide-inner').element as HTMLElement
+    expect(inner.style.textAlign).toBe('center')
   })
 
   it('passes left alignment from the align query param', async () => {
     const { w } = await mountView({ query: { align: 'left' } })
-    const inner = w.find('.slide-inner')
-    expect(inner.element.style.textAlign).toBe('left')
+    const inner = w.find('.slide-inner').element as HTMLElement
+    expect(inner.style.textAlign).toBe('left')
   })
 
   it('passes right alignment from the align query param', async () => {
     const { w } = await mountView({ query: { align: 'right' } })
-    const inner = w.find('.slide-inner')
-    expect(inner.element.style.textAlign).toBe('right')
+    const inner = w.find('.slide-inner').element as HTMLElement
+    expect(inner.style.textAlign).toBe('right')
   })
 
   it('ignores unknown alignment values and falls back to center', async () => {
     const { w } = await mountView({ query: { align: 'justify' } })
-    const inner = w.find('.slide-inner')
-    expect(inner.element.style.textAlign).toBe('center')
+    const inner = w.find('.slide-inner').element as HTMLElement
+    expect(inner.style.textAlign).toBe('center')
   })
 
   // ── Theming — font family ────────────────────────────────────────────────
 
   it('uses the serif font preset when font=serif', async () => {
     const { w } = await mountView({ query: { font: 'serif' } })
-    const inner = w.find('.slide-inner')
+    const inner = w.find('.slide-inner').element as HTMLElement
     // fontFamily contains Crimson Pro (part of the serif preset string).
-    expect(inner.element.style.fontFamily).toContain('Crimson Pro')
+    expect(inner.style.fontFamily).toContain('Crimson Pro')
   })
 
   it('uses the sans font preset when font=sans', async () => {
     const { w } = await mountView({ query: { font: 'sans' } })
-    const inner = w.find('.slide-inner')
-    expect(inner.element.style.fontFamily).toContain('IBM Plex Sans')
+    const inner = w.find('.slide-inner').element as HTMLElement
+    expect(inner.style.fontFamily).toContain('IBM Plex Sans')
   })
 
   it('uses the mono font preset when font=mono', async () => {
     const { w } = await mountView({ query: { font: 'mono' } })
-    const inner = w.find('.slide-inner')
-    expect(inner.element.style.fontFamily).toContain('IBM Plex Mono')
+    const inner = w.find('.slide-inner').element as HTMLElement
+    expect(inner.style.fontFamily).toContain('IBM Plex Mono')
   })
 
   it('falls back to the design-system display font when no font param is given', async () => {
     const { w } = await mountView()
-    const inner = w.find('.slide-inner')
+    const inner = w.find('.slide-inner').element as HTMLElement
     // The fallback uses var(--font-display) which JSDOM renders as the
     // literal CSS variable string since it can't resolve custom properties.
-    expect(inner.element.style.fontFamily).toContain('font-display')
+    expect(inner.style.fontFamily).toContain('font-display')
   })
 
   // ── Fullscreen button ────────────────────────────────────────────────────

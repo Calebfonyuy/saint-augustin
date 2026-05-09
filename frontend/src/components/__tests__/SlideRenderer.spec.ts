@@ -136,14 +136,14 @@ describe('SlideRenderer', () => {
       props: { slide: slide(), background: '#1a1a2e' },
     })
     // JSDOM normalises hex to rgb — use the element.style property directly.
-    expect(w.find('.slide-renderer').element.style.backgroundColor).toBe('rgb(26, 26, 46)')
+    expect((w.find('.slide-renderer').element as HTMLElement).style.backgroundColor).toBe('rgb(26, 26, 46)')
   })
 
   it('overrides background with black during blackout', () => {
     const w = mount(SlideRenderer, {
       props: { slide: slide(), background: '#1a1a2e', blackout: true },
     })
-    const el = w.find('.slide-renderer').element
+    const el = w.find('.slide-renderer').element as HTMLElement
     expect(el.style.backgroundColor).toBe('rgb(0, 0, 0)')
   })
 
@@ -154,7 +154,7 @@ describe('SlideRenderer', () => {
       props: { slide: slide(), backgroundImage: 'https://example.com/bg.jpg' },
     })
     // JSDOM may or may not quote the URL inside url(); match both forms.
-    expect(w.find('.slide-renderer').element.style.backgroundImage).toMatch(
+    expect((w.find('.slide-renderer').element as HTMLElement).style.backgroundImage).toMatch(
       /url\(["']?https:\/\/example\.com\/bg\.jpg["']?\)/,
     )
   })
@@ -167,7 +167,7 @@ describe('SlideRenderer', () => {
         blackout: true,
       },
     })
-    expect(w.find('.slide-renderer').element.style.backgroundImage).toBe('')
+    expect((w.find('.slide-renderer').element as HTMLElement).style.backgroundImage).toBe('')
   })
 
   // ── Variant CSS class ───────────────────────────────────────────────────────
@@ -183,17 +183,17 @@ describe('SlideRenderer', () => {
 
   it('defaults to center text alignment', () => {
     const w = mount(SlideRenderer, { props: { slide: slide() } })
-    expect(w.find('.slide-inner').element.style.textAlign).toBe('center')
+    expect((w.find('.slide-inner').element as HTMLElement).style.textAlign).toBe('center')
   })
 
   it('applies left text alignment', () => {
     const w = mount(SlideRenderer, { props: { slide: slide(), textAlign: 'left' } })
-    expect(w.find('.slide-inner').element.style.textAlign).toBe('left')
+    expect((w.find('.slide-inner').element as HTMLElement).style.textAlign).toBe('left')
   })
 
   it('applies right text alignment', () => {
     const w = mount(SlideRenderer, { props: { slide: slide(), textAlign: 'right' } })
-    expect(w.find('.slide-inner').element.style.textAlign).toBe('right')
+    expect((w.find('.slide-inner').element as HTMLElement).style.textAlign).toBe('right')
   })
 
   // ── Font family ─────────────────────────────────────────────────────────────
@@ -202,13 +202,13 @@ describe('SlideRenderer', () => {
     const w = mount(SlideRenderer, {
       props: { slide: slide(), fontFamily: "'IBM Plex Sans', sans-serif" },
     })
-    expect(w.find('.slide-inner').element.style.fontFamily).toContain('IBM Plex Sans')
+    expect((w.find('.slide-inner').element as HTMLElement).style.fontFamily).toContain('IBM Plex Sans')
   })
 
   it('uses the design-system display font as the default', () => {
     const w = mount(SlideRenderer, { props: { slide: slide() } })
     // JSDOM can't resolve CSS variables so the value includes the literal
     // var(--font-display) string.
-    expect(w.find('.slide-inner').element.style.fontFamily).toContain('font-display')
+    expect((w.find('.slide-inner').element as HTMLElement).style.fontFamily).toContain('font-display')
   })
 })
