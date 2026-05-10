@@ -125,6 +125,7 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET:-saintaugustin}
       MINIO_REGION: ${MINIO_REGION:-us-east-1}
       SONG_SHEET_URL_TTL: ${SONG_SHEET_URL_TTL:-15}
+      # Frontend URL (for CORS and email links)
       APP_FRONTEND_URL: ${APP_FRONTEND_URL:-http://localhost:5173}
       # Email settings
       MAIL_MAILER: ${MAIL_MAILER:-smtp}
@@ -132,7 +133,7 @@ services:
       MAIL_PORT: ${MAIL_PORT:-2525}
       MAIL_USERNAME: ${MAIL_USERNAME:-a3267a5074290e}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-6f5f3ca2cff388}
-    #   MAIL_SCHEME: ${MAIL_SCHEME:-tls}
+      # MAIL_SCHEME: ${MAIL_SCHEME:-tls}
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@saintaugustin.local}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-"SaintAugustin"}
     ports:
@@ -163,12 +164,6 @@ services:
     build:
       context: ./services/projection
       dockerfile: Dockerfile
-      target: production
-      args:
-        NODE_ENV: production
-        REDIS_HOST: "${REDIS_HOST:-redis}"
-        REDIS_PORT: "${REDIS_PORT:-6379}"
-        PORT: "${PROJECTION_SERVICE_PORT:-3000}"
     container_name: staug-projection
     restart: unless-stopped
     environment:
@@ -196,15 +191,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: production
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
-        VITE_WS_URL: ${VITE_WS_URL}
-        VITE_PROJECTION_BASE_URL: ${VITE_PROJECTION_BASE_URL}
     container_name: staug-frontend
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-5173}:80"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+      VITE_WS_URL: ${VITE_WS_URL}
+      VITE_PROJECTION_BASE_URL: ${VITE_PROJECTION_BASE_URL}
 
 # =============================================================================
 # VOLUMES

@@ -7,48 +7,21 @@
 #
 # Ref: https://vite.dev/guide/
 # =============================================================================
+FROM node:26-alpine3.22
 
-# --- Development stage (used by docker-compose) ---
-FROM node:20-alpine AS development
-
-WORKDIR /app
-COPY package*.json ./
-RUN npm i
-# Source mounted via volume in docker-compose
-
-EXPOSE 5173
-
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
-
-# --- Build stage ---
-FROM node:20-alpine AS builder
+ENV VITE_API_BASE_URL="http://staug-api:8080/api"
+ENV VITE_WS_URL="ws://staug-projection:3000/ws"
+ENV VITE_PROJECTION_BASE_URL="http://staug-projection:3000"
 
 WORKDIR /app
 COPY package*.json ./
 RUN npm i
-ARG VITE_API_BASE_URL
-ARG VITE_WS_URL
-ARG VITE_PROJECTION_BASE_URL
 
 COPY . .
-RUN printf "VITE_API_BASE_URL=%s\nVITE_WS_URL=%s\nVITE_PROJECTION_BASE_URL=%s\n" "$VITE_API_BASE_URL" "$VITE_WS_URL" "$VITE_PROJECTION_BASE_URL" > ./.env
-RUN npm run build
-
-# --- Production stage ---
-FROM nginx:1.27-alpine AS production
-
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-
-# SPA fallback: all routes → index.html
-RUN echo 'server { \
-    listen *:80; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+COPY ./entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+
+ENTRYPOINT [ "/entrypoint.sh" ]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "80"]
