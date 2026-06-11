@@ -72,6 +72,10 @@ vi.mock('@/api/projection', () => ({
   createSession: vi.fn(),
   getSession: vi.fn(),
   destroySession: vi.fn(),
+  listSessions: vi.fn(),
+  startSession: vi.fn(),
+  endSession: vi.fn(),
+  loadSlides: vi.fn(),
 }))
 
 import * as projectionApi from '@/api/projection'
@@ -84,6 +88,15 @@ function makeState(overrides: Partial<ReturnType<typeof baseState>> = {}) {
 function baseState() {
   return {
     id: 'sess-1',
+    name: 'Sunday',
+    status: 'LIVE' as const,
+    kind: 'TEMPORARY' as const,
+    ownerId: null,
+    ownerName: null,
+    scheduledStartAt: null,
+    scheduledEndAt: null,
+    startedAt: 'now',
+    endedAt: null,
     playlistId: 'pl-1',
     playlistName: 'Sunday',
     slides: [
@@ -236,8 +249,10 @@ describe('useProjectionStore', () => {
       updated_at: '',
     }
     const promise = store.createFromPlaylist(playlist)
-    // Drain the connect handshake.
-    // createFromPlaylist awaits the api call before connecting; flush microtasks.
+    // Drain the connect handshake. createFromPlaylist awaits the slide
+    // build (microtask), then the api call (microtask), then opens the
+    // socket — flush enough microtasks for all three to settle.
+    await Promise.resolve()
     await Promise.resolve()
     await Promise.resolve()
     const sock = lastSocket.current!
@@ -249,7 +264,7 @@ describe('useProjectionStore', () => {
       expect.objectContaining({ playlistId: 'pl-1', playlistName: 'Sunday' }),
     )
     const call = vi.mocked(projectionApi.createSession).mock.calls[0][0]
-    expect(call.slides.length).toBeGreaterThan(0)
+    expect(call.slides?.length ?? 0).toBeGreaterThan(0)
     expect(store.role).toBe('controller')
   })
 

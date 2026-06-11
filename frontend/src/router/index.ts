@@ -121,6 +121,14 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      // Sessions index — list NOT_STARTED + LIVE sessions, create persistent
+      // sessions, start/end/share.
+      path: '/sessions',
+      name: 'sessions',
+      component: () => import('@/views/SessionsListView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       // Projection controller (worship leader). Requires auth and pulls
       // the controlToken from the projection store after Go Live.
       path: '/projection/control/:id',

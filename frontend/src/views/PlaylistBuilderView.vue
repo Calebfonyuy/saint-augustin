@@ -7,13 +7,13 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import draggable from 'vuedraggable'
 import AppShell from '@/components/AppShell.vue'
+import GoLiveDialog from '@/components/GoLiveDialog.vue'
 import Icon from '@/components/Icon.vue'
 import KeyBadge from '@/components/KeyBadge.vue'
 import ShareDialog from '@/components/ShareDialog.vue'
 import Toast from '@/components/Toast.vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePlaylistsStore } from '@/stores/playlists'
-import { useProjectionStore } from '@/stores/projection'
 import { useSongsStore } from '@/stores/songs'
 import { downloadPlaylistExport } from '@/api/playlists'
 import { extractErrorMessage } from '@/api/client'
@@ -23,7 +23,6 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const playlists = usePlaylistsStore()
-const projection = useProjectionStore()
 const songs = useSongsStore()
 
 const id = computed(() => route.params.id as string)
@@ -32,6 +31,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
 const shareOpen = ref(false)
+const goLiveOpen = ref(false)
 const exportMenuOpen = ref(false)
 
 // Editable header state — kept local until blur/save so an in-flight keystroke
@@ -190,22 +190,22 @@ async function onDelete(): Promise<void> {
 }
 
 /**
- * Open a fresh projection session and route the worship leader straight
- * to the controller view. The display URL is shown there so they can
- * cast it to the projector or another browser tab.
+ * Open the Go-Live dialog. The dialog handles the three projection modes
+ * (temporary / existing live / persistent) and routes the leader to the
+ * controller view once it has a session id to attach to.
  */
-async function onGoLive(): Promise<void> {
+function onGoLive(): void {
   if (!playlist.value) return
   if (items.value.length === 0) {
     error.value = 'Add at least one song before going live.'
     return
   }
-  try {
-    const created = await projection.createFromPlaylist(playlist.value)
-    await router.push({ name: 'projection-control', params: { id: created.sessionId } })
-  } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not start projection session.')
-  }
+  goLiveOpen.value = true
+}
+
+async function onGoLiveLaunched(sessionId: string): Promise<void> {
+  goLiveOpen.value = false
+  await router.push({ name: 'projection-control', params: { id: sessionId } })
 }
 
 async function onExport(format: 'pdf' | 'txt'): Promise<void> {
@@ -504,6 +504,14 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
         :playlist-id="id"
         :open="shareOpen"
         @close="shareOpen = false"
+      />
+
+      <GoLiveDialog
+        v-if="goLiveOpen && playlist"
+        :playlist="playlist"
+        :open="goLiveOpen"
+        @close="goLiveOpen = false"
+        @launched="onGoLiveLaunched"
       />
     </template>
 

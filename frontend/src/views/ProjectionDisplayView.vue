@@ -45,6 +45,29 @@ const sessionId = computed(() => route.params.id as string)
 const isFullscreen = ref(false)
 const showStatus = ref(true)
 
+/** True when we've joined a persistent session that hasn't been started yet.
+ *  The display swaps the slide area for a friendly "session hasn't started"
+ *  screen until the controller transitions it to LIVE. */
+const isNotStarted = computed(
+  () => projection.state?.status === 'NOT_STARTED',
+)
+
+/** Pre-formatted scheduled start time, in the viewer's local timezone, or
+ *  null when the session is open-ended (no schedule). */
+const scheduledStartLabel = computed(() => {
+  const iso = projection.state?.scheduledStartAt
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+})
+
 // ── Query-param theming ─────────────────────────────────────────────────
 
 const bg = computed(() => (route.query.bg as string) || '#000000')
@@ -136,8 +159,34 @@ onBeforeUnmount(() => {
     data-testid="display-root"
     @dblclick="toggleFullscreen"
   >
+    <!-- ── Not-started screen ────────────────────────────────────────── -->
+    <!-- Shown when the persistent session exists but hasn't been started -->
+    <!-- yet. Surfaces the scheduled start time so worshippers know when  -->
+    <!-- to come back.                                                    -->
+    <template v-if="isNotStarted">
+      <div class="waiting-screen" data-testid="display-not-started">
+        <div class="waiting-inner">
+          <BrandMark :size="44" class="waiting-brand" />
+          <p class="waiting-headline" data-testid="display-not-started-name">
+            {{ projection.state?.name ?? 'Session' }}
+          </p>
+          <p class="waiting-label">Hasn’t started yet</p>
+          <p
+            v-if="scheduledStartLabel"
+            class="waiting-schedule"
+            data-testid="display-not-started-schedule"
+          >
+            Starts {{ scheduledStartLabel }}
+          </p>
+          <p v-else class="waiting-schedule" data-testid="display-not-started-schedule">
+            No scheduled start time
+          </p>
+        </div>
+      </div>
+    </template>
+
     <!-- ── Main slide area ───────────────────────────────────────────── -->
-    <template v-if="projection.state">
+    <template v-else-if="projection.state">
       <SlideRenderer
         :slide="projection.currentSlide"
         :blackout="projection.state.blackout"
@@ -248,6 +297,23 @@ onBeforeUnmount(() => {
   letter-spacing: 0.12em;
   opacity: 0.5;
   margin: 0;
+}
+.waiting-headline {
+  font-family: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 600;
+  text-align: center;
+  margin: 0;
+  max-width: 80vw;
+  line-height: 1.15;
+}
+.waiting-schedule {
+  font-family: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+  font-size: clamp(16px, 2vw, 22px);
+  font-weight: 400;
+  text-align: center;
+  margin: 0;
+  opacity: 0.75;
 }
 
 @keyframes waiting-pulse {

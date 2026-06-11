@@ -17,6 +17,15 @@ import type { ProjectionSessionState } from '@/types'
 function makeState(over: Partial<ProjectionSessionState> = {}): ProjectionSessionState {
   return {
     id: 'sess-1',
+    name: 'Sunday Service',
+    status: 'LIVE',
+    kind: 'TEMPORARY',
+    ownerId: null,
+    ownerName: null,
+    scheduledStartAt: null,
+    scheduledEndAt: null,
+    startedAt: '2026-05-01T00:00:00Z',
+    endedAt: null,
     playlistId: 'pl-1',
     playlistName: 'Sunday Service',
     slides: [
@@ -139,6 +148,37 @@ describe('ProjectionDisplayView', () => {
   it('hides the waiting screen once session state is received', async () => {
     const { w } = await mountView({ sessionState: makeState() })
     expect(w.find('[data-testid="display-waiting"]').exists()).toBe(false)
+  })
+
+  // ── Not-started screen ─────────────────────────────────────────────────────
+
+  it('shows the not-started screen for a NOT_STARTED persistent session', async () => {
+    const { w } = await mountView({
+      sessionState: makeState({
+        status: 'NOT_STARTED',
+        kind: 'PERSISTENT',
+        name: 'Sunday 9:30',
+        scheduledStartAt: '2026-06-14T13:30:00Z',
+      }),
+    })
+    expect(w.find('[data-testid="display-not-started"]').exists()).toBe(true)
+    expect(w.find('[data-testid="display-not-started-name"]').text()).toBe('Sunday 9:30')
+    expect(w.find('[data-testid="display-not-started-schedule"]').text()).toContain('Starts')
+    // SlideRenderer must NOT be rendered when the session hasn't started.
+    expect(w.find('[data-testid="display-slide-renderer"]').exists()).toBe(false)
+  })
+
+  it('shows a "no scheduled start time" hint when scheduledStartAt is null', async () => {
+    const { w } = await mountView({
+      sessionState: makeState({
+        status: 'NOT_STARTED',
+        kind: 'PERSISTENT',
+        scheduledStartAt: null,
+      }),
+    })
+    expect(w.find('[data-testid="display-not-started-schedule"]').text()).toContain(
+      'No scheduled start time',
+    )
   })
 
   // ── Slide rendering ─────────────────────────────────────────────────────────

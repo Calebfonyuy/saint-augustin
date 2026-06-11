@@ -156,7 +156,7 @@ async function endSession(): Promise<void> {
   if (!confirm('End this projection session? Displays will disconnect.')) return
   try {
     await projection.destroy()
-    await router.push('/playlists')
+    await router.push('/sessions')
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Could not end session.'
   }

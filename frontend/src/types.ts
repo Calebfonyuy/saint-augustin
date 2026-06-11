@@ -213,8 +213,20 @@ export interface ProjectionSlide {
   body: string
 }
 
+export type ProjectionSessionStatus = 'NOT_STARTED' | 'LIVE' | 'ENDED'
+export type ProjectionSessionKind = 'TEMPORARY' | 'PERSISTENT'
+
 export interface ProjectionSessionState {
   id: string
+  name: string
+  status: ProjectionSessionStatus
+  kind: ProjectionSessionKind
+  ownerId: string | null
+  ownerName: string | null
+  scheduledStartAt: string | null
+  scheduledEndAt: string | null
+  startedAt: string | null
+  endedAt: string | null
   playlistId: string | null
   playlistName: string
   slides: ProjectionSlide[]
@@ -225,14 +237,46 @@ export interface ProjectionSessionState {
   updatedAt: string
 }
 
+/** Compact list-view shape returned by GET /sessions. */
+export interface ProjectionSessionSummary {
+  id: string
+  name: string
+  status: ProjectionSessionStatus
+  kind: ProjectionSessionKind
+  ownerId: string | null
+  ownerName: string | null
+  scheduledStartAt: string | null
+  scheduledEndAt: string | null
+  startedAt: string | null
+  endedAt: string | null
+  playlistName: string
+  slideCount: number
+  createdAt: string
+  updatedAt: string
+}
+
 export interface CreateProjectionSessionInput {
+  /** Defaults to TEMPORARY when omitted. */
+  kind?: ProjectionSessionKind
+  /** Required for PERSISTENT; defaults to playlistName for TEMPORARY. */
+  name?: string
   playlistName: string
   playlistId?: string
-  slides: ProjectionSlide[]
+  /** Required for TEMPORARY; optional for PERSISTENT (can be loaded later). */
+  slides?: ProjectionSlide[]
+  scheduledStartAt?: string
+  scheduledEndAt?: string
 }
 
 export interface CreateProjectionSessionResponse {
   sessionId: string
-  controlToken: string
+  /** Only present when the created session is LIVE (TEMPORARY). */
+  controlToken: string | null
   state: ProjectionSessionState
+}
+
+export interface LoadProjectionSlidesInput {
+  playlistName: string
+  playlistId?: string
+  slides: ProjectionSlide[]
 }

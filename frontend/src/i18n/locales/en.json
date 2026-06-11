@@ -18,8 +18,9 @@
     "dashboard": "Dashboard",
     "library": "Song Library",
     "playlists": "Playlists",
+    "sessions": "Sessions",
     "projection": "Projection",
-    "admin": "Admin",
+    "admin": "Administration",
     "soon": "soon"
   },
   "auth": {

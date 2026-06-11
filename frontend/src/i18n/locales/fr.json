@@ -18,8 +18,9 @@
     "dashboard": "Tableau de bord",
     "library": "Bibliothèque",
     "playlists": "Playlists",
+    "sessions": "Sessions",
     "projection": "Projection",
-    "admin": "Admin",
+    "admin": "Gestion",
     "soon": "bientôt"
   },
   "auth": {

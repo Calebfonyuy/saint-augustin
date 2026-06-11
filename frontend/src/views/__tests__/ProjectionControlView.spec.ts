@@ -22,6 +22,15 @@ import type { ProjectionSessionState } from '@/types'
 function makeState(over: Partial<ProjectionSessionState> = {}): ProjectionSessionState {
   return {
     id: 'sess-1',
+    name: 'Sunday Service',
+    status: 'LIVE',
+    kind: 'TEMPORARY',
+    ownerId: null,
+    ownerName: null,
+    scheduledStartAt: null,
+    scheduledEndAt: null,
+    startedAt: '2026-05-01T00:00:00Z',
+    endedAt: null,
     playlistId: 'pl-1',
     playlistName: 'Sunday Service',
     slides: [

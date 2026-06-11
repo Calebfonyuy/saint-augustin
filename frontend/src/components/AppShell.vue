@@ -49,14 +49,14 @@ const items = computed<NavItem[]>(() => [
   { id: 'dashboard', labelKey: 'nav.dashboard', icon: 'list', to: '/' },
   { id: 'library', labelKey: 'nav.library', icon: 'music', to: '/library' },
   { id: 'playlists', labelKey: 'nav.playlists', icon: 'list', to: '/playlists' },
-  { id: 'projection', labelKey: 'nav.projection', icon: 'cast', to: '/playlists' },
+  { id: 'sessions', labelKey: 'nav.sessions', icon: 'cast', to: '/sessions' },
   { id: 'admin', labelKey: 'nav.admin', icon: 'cog', to: '/admin/users', adminOnly: true },
 ])
 
 const activeId = computed(() => {
   const path = router.currentRoute.value.path
   if (path.startsWith('/library') || path.startsWith('/songs')) return 'library'
-  if (path.startsWith('/projection')) return 'projection'
+  if (path.startsWith('/sessions') || path.startsWith('/projection')) return 'sessions'
   if (path.startsWith('/playlists')) return 'playlists'
   if (path.startsWith('/admin')) return 'admin'
   if (path === '/' || path.startsWith('/dashboard')) return 'dashboard'
