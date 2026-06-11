@@ -43,13 +43,22 @@ async function setup() {
   const { server, to, emit } = fakeServer();
   gateway.server = server;
 
-  const created = await sessions.create({
-    playlistName: 'Sunday',
-    slides: [
-      slide({ id: 'a', slideIndex: 0 }),
-      slide({ id: 'b', slideIndex: 1 }),
-    ],
-  });
+  const created = await sessions.create(
+    {
+      kind: 'TEMPORARY',
+      playlistName: 'Sunday',
+      slides: [
+        slide({ id: 'a', slideIndex: 0 }),
+        slide({ id: 'b', slideIndex: 1 }),
+      ],
+    },
+    {
+      id: 'u-1',
+      email: 'leader@church.local',
+      display_name: 'Leader',
+      roles: ['musician'],
+    },
+  );
 
   return { gateway, sessions, created, to, emit };
 }
@@ -84,7 +93,7 @@ describe('ProjectionGateway', () => {
     const { gateway, created } = await setup();
     const sock = fakeSocket();
     const result = await gateway.onJoin(
-      { sessionId: created.state.id, controlToken: created.controlToken },
+      { sessionId: created.state.id, controlToken: created.controlToken! },
       sock,
     );
     if (!result.ok) throw new Error('expected ok=true');
@@ -104,7 +113,7 @@ describe('ProjectionGateway', () => {
     const { gateway, created, to, emit } = await setup();
     const sock = fakeSocket();
     await gateway.onJoin(
-      { sessionId: created.state.id, controlToken: created.controlToken },
+      { sessionId: created.state.id, controlToken: created.controlToken! },
       sock,
     );
     const result = await gateway.onNext(sock);
@@ -120,7 +129,7 @@ describe('ProjectionGateway', () => {
     const { gateway, created, emit } = await setup();
     const sock = fakeSocket();
     await gateway.onJoin(
-      { sessionId: created.state.id, controlToken: created.controlToken },
+      { sessionId: created.state.id, controlToken: created.controlToken! },
       sock,
     );
     await gateway.onBlackout({ on: true }, sock);
@@ -133,7 +142,7 @@ describe('ProjectionGateway', () => {
     const { gateway, created } = await setup();
     const ctrl = fakeSocket();
     await gateway.onJoin(
-      { sessionId: created.state.id, controlToken: created.controlToken },
+      { sessionId: created.state.id, controlToken: created.controlToken! },
       ctrl,
     );
     await gateway.onNext(ctrl);

@@ -19,6 +19,7 @@ ENV PORT=3000
 WORKDIR /app
 COPY package*.json ./
 RUN npm i
+# RUN npm i -g http-server
 
 COPY . .
 COPY ./entrypoint.sh /entrypoint.sh
@@ -28,7 +29,7 @@ RUN npm run build
 
 EXPOSE 3000
 
-# CMD ["http-server", "dist", "-p", "3000"]
 ENTRYPOINT [ "/entrypoint.sh" ]
 
+# CMD ["http-server", "dist", "--cors", "-p", "3000"]
 CMD ["npm", "run", "start:prod", "--", "--host", "0.0.0.0", "--port", "3000"]

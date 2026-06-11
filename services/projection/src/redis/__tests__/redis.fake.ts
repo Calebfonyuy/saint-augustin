@@ -1,10 +1,12 @@
 // Minimal in-memory replacement for the slice of ioredis we actually use.
-// Sessions use only get / set (with EX) / del / expire / multi.exec, so we
-// implement just those. Keeps the test suite hermetic — no Redis container.
+// Sessions use get / set (with EX) / del / expire / persist / multi.exec
+// plus the SET commands (sadd / smembers / srem) used to index sessions
+// for listing. Keeps the test suite hermetic — no Redis container.
 type Entry = { value: string; expiresAt: number | null };
 
 class FakeRedisClient {
   private store = new Map<string, Entry>();
+  private sets = new Map<string, Set<string>>();
 
   private gc(key: string): boolean {
     const e = this.store.get(key);
@@ -21,7 +23,16 @@ class FakeRedisClient {
     return this.store.get(key)!.value;
   }
 
-  async set(key: string, value: string, mode?: string, ttlSeconds?: number): Promise<'OK'> {
+  async mget(...keys: string[]): Promise<(string | null)[]> {
+    return Promise.all(keys.map((k) => this.get(k)));
+  }
+
+  async set(
+    key: string,
+    value: string,
+    mode?: string,
+    ttlSeconds?: number,
+  ): Promise<'OK'> {
     const expiresAt =
       mode === 'EX' && typeof ttlSeconds === 'number'
         ? Date.now() + ttlSeconds * 1000
@@ -34,6 +45,7 @@ class FakeRedisClient {
     let n = 0;
     for (const k of keys) {
       if (this.store.delete(k)) n++;
+      if (this.sets.delete(k)) n++;
     }
     return n;
   }
@@ -42,6 +54,47 @@ class FakeRedisClient {
     if (!this.gc(key)) return 0;
     this.store.get(key)!.expiresAt = Date.now() + ttlSeconds * 1000;
     return 1;
+  }
+
+  async persist(key: string): Promise<number> {
+    if (!this.gc(key)) return 0;
+    const e = this.store.get(key)!;
+    if (e.expiresAt === null) return 0;
+    e.expiresAt = null;
+    return 1;
+  }
+
+  async sadd(key: string, ...members: string[]): Promise<number> {
+    let set = this.sets.get(key);
+    if (!set) {
+      set = new Set<string>();
+      this.sets.set(key, set);
+    }
+    let added = 0;
+    for (const m of members) {
+      if (!set.has(m)) {
+        set.add(m);
+        added++;
+      }
+    }
+    return added;
+  }
+
+  async srem(key: string, ...members: string[]): Promise<number> {
+    const set = this.sets.get(key);
+    if (!set) return 0;
+    let removed = 0;
+    for (const m of members) {
+      if (set.delete(m)) removed++;
+    }
+    if (set.size === 0) this.sets.delete(key);
+    return removed;
+  }
+
+  async smembers(key: string): Promise<string[]> {
+    const set = this.sets.get(key);
+    if (!set) return [];
+    return Array.from(set);
   }
 
   /** Pipeline / transaction stub — runs queued commands sequentially. */

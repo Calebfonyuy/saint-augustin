@@ -11,6 +11,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { channel } from 'diagnostics_channel';
 import Redis from 'ioredis';
 
 @Injectable()
@@ -26,8 +27,22 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.client = new Redis({ host, port, lazyConnect: false });
     this.client.on('error', (err) => {
       this.logger.error(`Redis error: ${err.message}`);
+      this.logger.error(`Redis client status: ${this.client?.status}`)
     });
-    this.logger.log(`Redis client connected to ${host}:${port}`);
+    this.client.on('connect', () => {
+      this.logger.log(`Redis client connected to ${host}:${port}`);
+    });
+
+    this.client.on('connecting', () => {
+      this.logger.log(`Redis client reconnecting to ${host}:${port}`);
+    });
+
+    this.client.on('close', () => {
+      this.logger.log(`Redis client disconnected from ${host}:${port}`);
+    });
+    this.client.on('ready', ()=>{
+      this.logger.log(`Redis client ready`);
+    });
   }
 
   async onModuleDestroy(): Promise<void> {

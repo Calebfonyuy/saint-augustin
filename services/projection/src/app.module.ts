@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './auth/auth.module';
 import { HealthController } from './health.controller';
 import { ProjectionModule } from './projection/projection.module';
 import { RedisModule } from './redis/redis.module';
@@ -9,6 +10,7 @@ import { SessionsModule } from './sessions/sessions.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     RedisModule,
+    AuthModule,
     SessionsModule,
     ProjectionModule,
   ],
