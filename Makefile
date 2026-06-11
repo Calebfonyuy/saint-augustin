@@ -130,6 +130,8 @@ docs: ## Generate docs/saintaugustin.pdf from Markdown sources (requires pandoc 
 		--highlight-style=tango
 	@echo "✓ Generated $(DOCS_OUT)"
 
+
+
 # ── Help ─────────────────────────────────────────────────────────────────────
 
 .PHONY: help
