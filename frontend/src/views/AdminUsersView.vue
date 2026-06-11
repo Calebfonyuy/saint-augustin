@@ -12,6 +12,7 @@
  * exposed as a unified `members` list to keep the table dumb.
  */
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppShell from '@/components/AppShell.vue'
 import AdminTabs from '@/components/admin/AdminTabs.vue'
 import UserEditorDrawer from '@/components/admin/UserEditorDrawer.vue'
@@ -23,18 +24,19 @@ import { requestPasswordReset } from '@/api/password'
 import type { Role } from '@/types'
 
 const usersStore = useUsersStore()
+const { t } = useI18n()
 
 // ── Filter state ──────────────────────────────────────────────────────────
 
 const query = ref('')
 const roleFilter = ref<'all' | Role>('all')
 
-const ROLE_FILTERS: { id: 'all' | Role; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'admin', label: 'Admin' },
-  { id: 'musician', label: 'Musician' },
-  { id: 'projectionist', label: 'Projectionist' },
-]
+const ROLE_FILTERS = computed<{ id: 'all' | Role; label: string }[]>(() => [
+  { id: 'all', label: t('adminUsers.filters.all') },
+  { id: 'admin', label: t('roles.admin') },
+  { id: 'musician', label: t('roles.musician') },
+  { id: 'projectionist', label: t('roles.projectionist') },
+])
 
 const visible = computed<AdminMember[]>(() => {
   return usersStore.members.filter((m) => {
@@ -114,7 +116,7 @@ function initialsOf(m: AdminMember): string {
 }
 
 function lastActiveLabel(m: AdminMember): string {
-  if (m.kind === 'invitation') return 'Awaiting registration'
+  if (m.kind === 'invitation') return t('adminUsers.awaitingRegistration')
   return relativeFromIso(m.updated_at)
 }
 
@@ -123,19 +125,17 @@ function relativeFromIso(iso: string): string {
   if (!Number.isFinite(ts)) return '—'
   const diff = Date.now() - ts
   const min = Math.floor(diff / 60_000)
-  if (min < 1) return 'Just now'
-  if (min < 60) return `${min} min ago`
+  if (min < 1) return t('adminUsers.relativeTime.justNow')
+  if (min < 60) return t('adminUsers.relativeTime.minutes', { n: min })
   const hr = Math.floor(min / 60)
-  if (hr < 24) return `${hr}h ago`
+  if (hr < 24) return t('adminUsers.relativeTime.hours', { n: hr })
   const day = Math.floor(hr / 24)
-  if (day < 7) return `${day}d ago`
+  if (day < 7) return t('adminUsers.relativeTime.days', { n: day })
   return new Date(iso).toLocaleDateString()
 }
 
 function roleLabel(r: Role): string {
-  if (r === 'admin') return 'Admin'
-  if (r === 'musician') return 'Musician'
-  return 'Projectionist'
+  return t(`roles.${r}`)
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ onMounted(async () => {
   try {
     await usersStore.fetchAll()
   } catch (err) {
-    notify('error', extractErrorMessage(err, 'Could not load users.'))
+    notify('error', extractErrorMessage(err, t('adminUsers.errors.load')))
   }
 })
 
@@ -157,10 +157,10 @@ async function onSaveUser(payload: { id: string; display_name: string; roles: Ro
       display_name: payload.display_name,
       roles: payload.roles,
     })
-    notify('success', 'User updated.')
+    notify('success', t('adminUsers.toast.updated'))
     closeDrawer()
   } catch (err) {
-    notify('error', extractErrorMessage(err, 'Could not save user.'))
+    notify('error', extractErrorMessage(err, t('adminUsers.errors.save')))
   } finally {
     saving.value = false
   }
@@ -170,10 +170,10 @@ async function onDeleteUser(id: string) {
   saving.value = true
   try {
     await usersStore.removeUser(id)
-    notify('success', 'User removed.')
+    notify('success', t('adminUsers.toast.removed'))
     closeDrawer()
   } catch (err) {
-    notify('error', extractErrorMessage(err, 'Could not remove user.'))
+    notify('error', extractErrorMessage(err, t('adminUsers.errors.remove')))
   } finally {
     saving.value = false
   }
@@ -183,10 +183,10 @@ async function onInvite(payload: { email: string; roles: Role[] }) {
   saving.value = true
   try {
     await usersStore.inviteUser(payload.email, payload.roles)
-    notify('success', `Invitation sent to ${payload.email}.`)
+    notify('success', t('adminUsers.toast.invitationSent', { email: payload.email }))
     closeDrawer()
   } catch (err) {
-    notify('error', extractErrorMessage(err, 'Could not send invitation.'))
+    notify('error', extractErrorMessage(err, t('adminUsers.errors.invite')))
   } finally {
     saving.value = false
   }
@@ -196,10 +196,10 @@ async function onResendInvite(id: string) {
   saving.value = true
   try {
     await usersStore.resendInvitation(id)
-    notify('success', 'Invitation re-sent.')
+    notify('success', t('adminUsers.toast.invitationResent'))
     closeDrawer()
   } catch (err) {
-    notify('error', extractErrorMessage(err, 'Could not resend invitation.'))
+    notify('error', extractErrorMessage(err, t('adminUsers.errors.resend')))
   } finally {
     saving.value = false
   }
@@ -209,10 +209,10 @@ async function onCancelInvite(id: string) {
   saving.value = true
   try {
     await usersStore.cancelInvitation(id)
-    notify('success', 'Invitation cancelled.')
+    notify('success', t('adminUsers.toast.invitationCancelled'))
     closeDrawer()
   } catch (err) {
-    notify('error', extractErrorMessage(err, 'Could not cancel invitation.'))
+    notify('error', extractErrorMessage(err, t('adminUsers.errors.cancelInvite')))
   } finally {
     saving.value = false
   }
@@ -221,9 +221,9 @@ async function onCancelInvite(id: string) {
 async function onResetPassword(member: AdminMember) {
   try {
     await requestPasswordReset(member.email)
-    notify('success', `Reset link emailed to ${member.email}.`)
+    notify('success', t('adminUsers.toast.resetSent', { email: member.email }))
   } catch (err) {
-    notify('error', extractErrorMessage(err, 'Could not send reset link.'))
+    notify('error', extractErrorMessage(err, t('adminUsers.errors.resetLink')))
   }
 }
 
@@ -236,7 +236,7 @@ function selectedMembers(): AdminMember[] {
 async function bulkResendInvites() {
   const targets = selectedMembers().filter((m) => m.kind === 'invitation')
   if (targets.length === 0) {
-    notify('error', 'Select pending invitations to resend.')
+    notify('error', t('adminUsers.bulk.pickInvites'))
     return
   }
   let ok = 0
@@ -250,7 +250,7 @@ async function bulkResendInvites() {
   }
   notify(
     ok === targets.length ? 'success' : 'error',
-    `Resent ${ok} of ${targets.length} invitation(s).`,
+    t('adminUsers.bulk.resentCount', { ok, total: targets.length }),
   )
   selected.value = new Set()
 }
@@ -258,7 +258,7 @@ async function bulkResendInvites() {
 async function bulkRemove() {
   const targets = selectedMembers()
   if (targets.length === 0) return
-  if (!confirm(`Remove ${targets.length} member(s) from the workspace?`)) return
+  if (!confirm(t('adminUsers.bulk.confirmRemove', { count: targets.length }))) return
 
   let ok = 0
   for (const m of targets) {
@@ -272,7 +272,7 @@ async function bulkRemove() {
   }
   notify(
     ok === targets.length ? 'success' : 'error',
-    `Removed ${ok} of ${targets.length}.`,
+    t('adminUsers.bulk.removedCount', { ok, total: targets.length }),
   )
   selected.value = new Set()
 }
@@ -280,7 +280,7 @@ async function bulkRemove() {
 
 <template>
   <AppShell>
-    <AdminTabs active="users" subtitle="Members & invitations">
+    <AdminTabs active="users" :subtitle="t('adminUsers.subtitle')">
       <template #actions>
         <button
           type="button"
@@ -288,7 +288,7 @@ async function bulkRemove() {
           data-testid="invite-user-btn"
           @click="openInvite"
         >
-          <Icon name="plus" /> Invite user
+          <Icon name="plus" /> {{ t('adminUsers.inviteUser') }}
         </button>
       </template>
     </AdminTabs>
@@ -302,10 +302,10 @@ async function bulkRemove() {
       >
         <div
           v-for="s in [
-            { label: 'Users', value: usersStore.stats.total },
-            { label: 'Pending invites', value: usersStore.stats.pending },
-            { label: 'Admins', value: usersStore.stats.admins },
-            { label: 'Musicians', value: usersStore.stats.musicians },
+            { label: t('adminUsers.stats.users'), value: usersStore.stats.total },
+            { label: t('adminUsers.stats.pending'), value: usersStore.stats.pending },
+            { label: t('adminUsers.stats.admins'), value: usersStore.stats.admins },
+            { label: t('adminUsers.stats.musicians'), value: usersStore.stats.musicians },
           ]"
           :key="s.label"
           class="card p-[14px]"
@@ -326,7 +326,7 @@ async function bulkRemove() {
           <input
             v-model="query"
             class="input"
-            placeholder="Search name or email…"
+            :placeholder="t('adminUsers.searchPlaceholder')"
             style="padding-left: 30px"
             data-testid="admin-users-search"
           />
@@ -359,14 +359,14 @@ async function bulkRemove() {
           class="text-[12px] text-text-muted flex items-center gap-2"
           data-testid="admin-users-bulkbar"
         >
-          <span>{{ selected.size }} selected</span>
+          <span>{{ t('adminUsers.bulk.selectedCount', { count: selected.size }) }}</span>
           <span class="text-text-faint">·</span>
           <button
             type="button"
             class="text-accent hover:underline"
             @click="bulkResendInvites"
           >
-            Resend invite
+            {{ t('adminUsers.bulk.resend') }}
           </button>
           <span class="text-text-faint">·</span>
           <button
@@ -375,7 +375,7 @@ async function bulkRemove() {
             style="color: var(--danger)"
             @click="bulkRemove"
           >
-            Remove
+            {{ t('adminUsers.bulk.remove') }}
           </button>
         </div>
       </div>
@@ -390,13 +390,13 @@ async function bulkRemove() {
           <input
             type="checkbox"
             :checked="allSelected"
-            :aria-label="allSelected ? 'Deselect all' : 'Select all'"
+            :aria-label="allSelected ? t('adminUsers.table.deselectAll') : t('adminUsers.table.selectAll')"
             @change="toggleAll"
           />
-          <div>Name</div>
-          <div>Email</div>
-          <div>Roles</div>
-          <div>Last active</div>
+          <div>{{ t('adminUsers.table.name') }}</div>
+          <div>{{ t('adminUsers.table.email') }}</div>
+          <div>{{ t('adminUsers.table.roles') }}</div>
+          <div>{{ t('adminUsers.table.lastActive') }}</div>
           <div></div>
         </div>
 
@@ -405,7 +405,7 @@ async function bulkRemove() {
           v-if="usersStore.loading && usersStore.members.length === 0"
           class="p-6 text-[13px] text-text-faint text-center"
         >
-          Loading…
+          {{ t('common.loading') }}
         </div>
 
         <!-- Rows -->
@@ -421,7 +421,7 @@ async function bulkRemove() {
           <input
             type="checkbox"
             :checked="selected.has(m.id)"
-            :aria-label="`Select ${m.email}`"
+            :aria-label="t('adminUsers.table.selectEmail', { email: m.email })"
             @click.stop
             @change="toggleOne(m.id)"
           />
@@ -434,13 +434,13 @@ async function bulkRemove() {
             <div class="min-w-0">
               <div class="font-semibold truncate">
                 <span v-if="m.display_name">{{ m.display_name }}</span>
-                <em v-else class="text-text-faint not-italic">Unnamed</em>
+                <em v-else class="text-text-faint not-italic">{{ t('userDrawer.headerName.unnamed') }}</em>
               </div>
               <div
                 v-if="m.kind === 'invitation'"
                 class="mono text-[10.5px] text-text-faint mt-[2px] tracking-[0.16em]"
               >
-                INVITE PENDING
+                {{ t('adminUsers.invitePending') }}
               </div>
             </div>
           </div>
@@ -461,7 +461,7 @@ async function bulkRemove() {
             type="button"
             class="btn btn-ghost"
             style="padding: 4px"
-            :aria-label="`Open ${m.email}`"
+            :aria-label="t('adminUsers.table.openEmail', { email: m.email })"
             @click.stop="openEdit(m)"
           >
             <Icon name="dots" />
@@ -474,13 +474,13 @@ async function bulkRemove() {
           class="p-10 text-center text-[13px] text-text-faint"
           data-testid="admin-users-empty"
         >
-          No users match.
+          {{ t('adminUsers.noMatch') }}
           <button
             type="button"
             class="text-accent ml-1 hover:underline"
             @click="openInvite"
           >
-            Invite someone?
+            {{ t('adminUsers.inviteSomeone') }}
           </button>
         </div>
       </div>

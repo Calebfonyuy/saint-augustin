@@ -14,6 +14,9 @@
  * about CSP/iframe-src policy implications.
  */
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ url: string | null | undefined }>()
 
@@ -54,7 +57,7 @@ const embedSrc = computed(() => (ytId.value ? `https://www.youtube.com/embed/${y
         :src="embedSrc"
         class="w-full h-full block"
         style="border: 0"
-        title="Song preview"
+        :title="t('preview.iframeTitle')"
         loading="lazy"
         allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowfullscreen

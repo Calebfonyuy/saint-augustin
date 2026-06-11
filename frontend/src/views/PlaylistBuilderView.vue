@@ -4,6 +4,7 @@
 // All mutations are gated to the playlist owner or an admin; non-owners fall
 // through to a read-only view that still allows duplication.
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import draggable from 'vuedraggable'
 import AppShell from '@/components/AppShell.vue'
@@ -24,6 +25,7 @@ const router = useRouter()
 const auth = useAuthStore()
 const playlists = usePlaylistsStore()
 const songs = useSongsStore()
+const { t } = useI18n()
 
 const id = computed(() => route.params.id as string)
 
@@ -73,7 +75,7 @@ async function load(): Promise<void> {
     eventDateDraft.value = p.event_date ?? ''
     tagsDraft.value = (p.tags ?? []).join(', ')
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not load playlist.')
+    error.value = extractErrorMessage(err, t('playlistBuilder.errors.load'))
   } finally {
     loading.value = false
   }
@@ -114,9 +116,9 @@ async function saveHeader(): Promise<void> {
       event_date: eventDateDraft.value || null,
       tags,
     })
-    success.value = 'Saved.'
+    success.value = t('common.saved')
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not save playlist.')
+    error.value = extractErrorMessage(err, t('playlistBuilder.errors.save'))
   }
 }
 
@@ -126,7 +128,7 @@ async function onAddSong(songId: string): Promise<void> {
   try {
     await playlists.addItem(id.value, { song_id: songId })
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not add song.')
+    error.value = extractErrorMessage(err, t('playlistBuilder.errors.addSong'))
   }
 }
 
@@ -134,7 +136,7 @@ async function onRemoveItem(itemId: string): Promise<void> {
   try {
     await playlists.removeItem(id.value, itemId)
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not remove item.')
+    error.value = extractErrorMessage(err, t('playlistBuilder.errors.removeItem'))
   }
 }
 
@@ -146,7 +148,7 @@ async function onItemFieldBlur(item: PlaylistItem): Promise<void> {
       notes: item.notes?.trim() || null,
     })
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not update item.')
+    error.value = extractErrorMessage(err, t('playlistBuilder.errors.updateItem'))
   }
 }
 
@@ -161,7 +163,7 @@ async function onReorderEnd(): Promise<void> {
       draggableItems.value.map((i) => i.id),
     )
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not reorder. Reverted.')
+    error.value = extractErrorMessage(err, t('playlistBuilder.errors.reorder'))
   }
 }
 
@@ -169,23 +171,26 @@ async function onReorderEnd(): Promise<void> {
 
 async function onDuplicate(): Promise<void> {
   if (!playlist.value) return
-  const name = prompt('Name for the copy:', `${playlist.value.name} (copy)`)
+  const name = prompt(
+    t('playlistBuilder.duplicatePrompt'),
+    t('playlistBuilder.duplicateDefault', { name: playlist.value.name }),
+  )
   if (!name) return
   try {
     const copy = await playlists.duplicate(id.value, name)
     await router.push(`/playlists/${copy.id}`)
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not duplicate.')
+    error.value = extractErrorMessage(err, t('playlistBuilder.errors.duplicate'))
   }
 }
 
 async function onDelete(): Promise<void> {
-  if (!confirm('Delete this playlist? This cannot be undone.')) return
+  if (!confirm(t('playlistBuilder.confirmDelete'))) return
   try {
     await playlists.remove(id.value)
     await router.push('/playlists')
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not delete.')
+    error.value = extractErrorMessage(err, t('playlistBuilder.errors.delete'))
   }
 }
 
@@ -197,7 +202,7 @@ async function onDelete(): Promise<void> {
 function onGoLive(): void {
   if (!playlist.value) return
   if (items.value.length === 0) {
-    error.value = 'Add at least one song before going live.'
+    error.value = t('playlistsList.errors.emptyForGoLive')
     return
   }
   goLiveOpen.value = true
@@ -221,20 +226,20 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
     a.remove()
     URL.revokeObjectURL(url)
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not export.')
+    error.value = extractErrorMessage(err, t('playlistBuilder.errors.export'))
   }
 }
 </script>
 
 <template>
   <AppShell>
-    <div v-if="loading" class="p-8 text-text-faint">Loading…</div>
+    <div v-if="loading" class="p-8 text-text-faint">{{ t('common.loading') }}</div>
 
     <template v-else-if="playlist">
       <!-- Header -->
       <div class="px-6 py-[14px] border-b border-border flex items-center gap-3 flex-wrap">
         <router-link to="/playlists" class="text-[12px] text-text-faint flex items-center gap-1">
-          <Icon name="arrow-left" /> Playlists
+          <Icon name="arrow-left" /> {{ t('nav.playlists') }}
         </router-link>
         <div class="flex-1 min-w-[280px]">
           <input
@@ -246,7 +251,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
             @blur="saveHeader"
           />
           <div class="flex flex-wrap items-center gap-2 mt-1 text-[12px] text-text-faint">
-            <span class="mono uppercase tracking-[0.12em] text-[10px]">Event</span>
+            <span class="mono uppercase tracking-[0.12em] text-[10px]">{{ t('playlistBuilder.event') }}</span>
             <input
               v-model="eventDateDraft"
               type="date"
@@ -256,12 +261,12 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
               data-testid="playlist-event-date"
               @blur="saveHeader"
             />
-            <span class="mono uppercase tracking-[0.12em] text-[10px] ml-2">Tags</span>
+            <span class="mono uppercase tracking-[0.12em] text-[10px] ml-2">{{ t('playlistBuilder.tags') }}</span>
             <input
               v-model="tagsDraft"
               class="input"
               style="width: 220px; padding: 3px 6px; font-size: 12px"
-              placeholder="advent, communion"
+              :placeholder="t('playlistBuilder.tagsPlaceholder')"
               :readonly="!canEdit"
               data-testid="playlist-tags"
               @blur="saveHeader"
@@ -274,7 +279,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
           data-testid="playlist-duplicate"
           @click="onDuplicate"
         >
-          Duplicate
+          {{ t('playlistsList.row.duplicate') }}
         </button>
         <button
           v-if="canEdit"
@@ -283,7 +288,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
           data-testid="playlist-share"
           @click="shareOpen = true"
         >
-          Share
+          {{ t('playlistsList.row.share') }}
         </button>
         <button
           v-if="canEdit"
@@ -292,7 +297,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
           data-testid="playlist-go-live"
           @click="onGoLive"
         >
-          <Icon name="cast" /> Go Live
+          <Icon name="cast" /> {{ t('playlistsList.row.goLive') }}
         </button>
         <div class="relative">
           <button
@@ -301,7 +306,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
             data-testid="playlist-export"
             @click="exportMenuOpen = !exportMenuOpen"
           >
-            Export <Icon name="chev" />
+            {{ t('playlistBuilder.export') }} <Icon name="chev" />
           </button>
           <div
             v-if="exportMenuOpen"
@@ -315,7 +320,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
               data-testid="export-pdf"
               @click="onExport('pdf')"
             >
-              PDF
+              {{ t('playlistBuilder.exportPdf') }}
             </button>
             <button
               type="button"
@@ -323,7 +328,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
               data-testid="export-txt"
               @click="onExport('txt')"
             >
-              Plain text
+              {{ t('playlistBuilder.exportText') }}
             </button>
           </div>
         </div>
@@ -334,7 +339,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
           data-testid="playlist-delete"
           @click="onDelete"
         >
-          <Icon name="trash" /> Delete
+          <Icon name="trash" /> {{ t('common.delete') }}
         </button>
       </div>
 
@@ -347,8 +352,8 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
             class="text-text-faint text-[13px] py-12 text-center"
             data-testid="playlist-empty"
           >
-            Drag songs in from the right, or click the
-            <Icon name="plus" /> button on a song.
+            {{ t('playlistBuilder.emptyPart1') }}
+            <Icon name="plus" /> {{ t('playlistBuilder.emptyPart2') }}
           </div>
           <draggable
             v-else
@@ -370,7 +375,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
                 <span
                   v-if="canEdit"
                   class="pt-1 drag-handle cursor-grab text-text-faint"
-                  aria-label="Drag to reorder"
+                  :aria-label="t('playlistBuilder.dragHandle')"
                 >
                   <Icon name="dots" />
                 </span>
@@ -383,10 +388,10 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
                 <div class="flex-1 min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-[14px] font-semibold truncate">
-                      {{ element.song?.title ?? 'Untitled' }}
+                      {{ element.song?.title ?? t('shared.untitled') }}
                     </span>
                     <span v-if="element.song?.deleted" class="chip chip-danger">
-                      song deleted
+                      {{ t('playlistBuilder.songDeleted') }}
                     </span>
                     <KeyBadge
                       v-if="element.target_key"
@@ -396,7 +401,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
                       v-else-if="element.song?.original_key"
                       class="text-[11px] text-text-faint mono"
                     >
-                      orig {{ element.song.original_key }}
+                      {{ t('playlistBuilder.originalKey', { key: element.song.original_key }) }}
                     </span>
                   </div>
                   <div class="text-[11.5px] text-text-faint mt-[2px] truncate">
@@ -407,7 +412,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
                       v-model="element.target_key"
                       class="input mono"
                       style="padding: 5px 8px; font-size: 12px"
-                      :placeholder="element.song?.original_key ?? 'Key'"
+                      :placeholder="element.song?.original_key ?? t('playlistBuilder.keyPlaceholder')"
                       data-testid="item-key"
                       @blur="onItemFieldBlur(element)"
                     />
@@ -415,7 +420,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
                       v-model="element.notes"
                       class="input"
                       style="padding: 5px 8px; font-size: 12px"
-                      placeholder="Notes — capo 2, last chorus a cappella…"
+                      :placeholder="t('playlistBuilder.notesPlaceholder')"
                       data-testid="item-notes"
                       @blur="onItemFieldBlur(element)"
                     />
@@ -432,7 +437,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
                   type="button"
                   class="btn btn-danger"
                   style="padding: 4px 6px; font-size: 11px"
-                  :title="`Remove ${element.song?.title}`"
+                  :title="t('playlistBuilder.removeTitle', { name: element.song?.title ?? '' })"
                   data-testid="item-remove"
                   @click="onRemoveItem(element.id)"
                 >
@@ -447,7 +452,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
         <aside v-if="canEdit" class="flex flex-col min-h-0 border-l border-border">
           <div class="px-4 pt-4 pb-2 border-b border-border">
             <div class="mono uppercase tracking-[0.14em] text-[10px] text-text-faint mb-2">
-              Add songs
+              {{ t('playlistBuilder.addSongs') }}
             </div>
             <div class="relative">
               <span class="absolute left-[10px] top-[10px] text-text-faint">
@@ -457,7 +462,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
                 v-model="pickerQuery"
                 class="input"
                 style="padding-left: 30px"
-                placeholder="Search the library…"
+                :placeholder="t('playlistBuilder.pickerPlaceholder')"
                 data-testid="picker-search"
               />
             </div>
@@ -467,13 +472,13 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
               v-if="songs.loading && songs.list.length === 0"
               class="p-4 text-[12px] text-text-faint"
             >
-              Loading…
+              {{ t('common.loading') }}
             </div>
             <div
               v-else-if="songs.list.length === 0"
               class="p-4 text-[12px] text-text-faint"
             >
-              No songs match.
+              {{ t('playlistBuilder.noSongsMatch') }}
             </div>
             <button
               v-for="s in songs.list"
@@ -486,7 +491,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
               <div class="flex-1 min-w-0">
                 <div class="text-[13px] font-medium truncate">{{ s.title }}</div>
                 <div class="text-[11px] text-text-faint truncate">
-                  {{ s.author ?? 'Unknown' }}
+                  {{ s.author ?? t('musician.unknownAuthor') }}
                 </div>
               </div>
               <KeyBadge :musical-key="s.original_key" />
@@ -495,7 +500,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
           </div>
         </aside>
         <aside v-else class="border-l border-border p-4 text-[12px] text-text-faint">
-          You can view and duplicate this playlist. Only the owner or an admin can edit it.
+          {{ t('playlistBuilder.readOnlyNote') }}
         </aside>
       </div>
 
@@ -515,7 +520,7 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
       />
     </template>
 
-    <div v-else class="p-8 text-text-faint">Playlist not found.</div>
+    <div v-else class="p-8 text-text-faint">{{ t('playlistBuilder.notFound') }}</div>
 
     <Toast
       v-if="error"

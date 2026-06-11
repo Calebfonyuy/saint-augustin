@@ -10,6 +10,7 @@
 // Also exposes a "Create persistent session" form so a leader can schedule
 // a session in advance and share the link before the service starts.
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import Icon from '@/components/Icon.vue'
@@ -23,6 +24,7 @@ import type { ProjectionSessionSummary } from '@/types'
 const router = useRouter()
 const auth = useAuthStore()
 const projection = useProjectionStore()
+const { t } = useI18n()
 
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
@@ -40,7 +42,7 @@ async function refresh(): Promise<void> {
   try {
     await projection.fetchSessions({ mine: mineOnly.value })
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not load sessions.')
+    error.value = extractErrorMessage(err, t('sessions.errors.load'))
   }
 }
 
@@ -88,14 +90,14 @@ async function onCreate(): Promise<void> {
       scheduledStartAt: toIsoOrUndefined(newStart.value),
       scheduledEndAt: toIsoOrUndefined(newEnd.value),
     })
-    success.value = `Created session "${created.state.name}".`
+    success.value = t('sessions.toast.created', { name: created.state.name })
     newName.value = ''
     newPlaylistName.value = ''
     newStart.value = ''
     newEnd.value = ''
     await refresh()
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not create session.')
+    error.value = extractErrorMessage(err, t('sessions.errors.create'))
   } finally {
     creating.value = false
   }
@@ -111,8 +113,8 @@ async function onStart(s: ProjectionSessionSummary): Promise<void> {
     error.value = extractErrorMessage(
       err,
       s.slideCount === 0
-        ? 'This session has no slides yet — open a playlist and use Go Live → Existing session.'
-        : 'Could not start session.',
+        ? t('sessions.errors.startEmpty')
+        : t('sessions.errors.start'),
     )
   }
 }
@@ -126,24 +128,24 @@ async function onProject(s: ProjectionSessionSummary): Promise<void> {
 }
 
 async function onEnd(s: ProjectionSessionSummary): Promise<void> {
-  if (!confirm(`End session "${s.name}"? Displays will be disconnected.`)) return
+  if (!confirm(t('sessions.confirmEnd', { name: s.name }))) return
   try {
     await projection.endById(s.id)
-    success.value = `Ended session "${s.name}".`
+    success.value = t('sessions.toast.ended', { name: s.name })
     await refresh()
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not end session.')
+    error.value = extractErrorMessage(err, t('sessions.errors.end'))
   }
 }
 
 async function onDelete(s: ProjectionSessionSummary): Promise<void> {
-  if (!confirm(`Delete session "${s.name}"? This cannot be undone.`)) return
+  if (!confirm(t('sessions.confirmDelete', { name: s.name }))) return
   try {
     await projection.deleteById(s.id)
-    success.value = `Deleted session "${s.name}".`
+    success.value = t('sessions.toast.deleted', { name: s.name })
     await refresh()
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not delete session.')
+    error.value = extractErrorMessage(err, t('sessions.errors.delete'))
   }
 }
 
@@ -158,9 +160,9 @@ const notStartedCount = computed(
 <template>
   <AppShell>
     <div class="px-6 py-4 border-b border-border flex items-center gap-3 flex-wrap">
-      <div class="font-display font-semibold text-[20px]">Projection sessions</div>
+      <div class="font-display font-semibold text-[20px]">{{ t('sessions.title') }}</div>
       <div class="text-[12px] text-text-faint mono uppercase tracking-[0.12em]">
-        {{ liveCount }} live · {{ notStartedCount }} scheduled
+        {{ t('sessions.headerCounts', { live: liveCount, scheduled: notStartedCount }) }}
       </div>
       <div class="flex-1" />
       <label class="flex items-center gap-2 text-[12px] text-text-muted">
@@ -170,7 +172,7 @@ const notStartedCount = computed(
           data-testid="sessions-mine"
           @change="refresh"
         />
-        Only mine
+        {{ t('playlistsList.onlyMine') }}
       </label>
       <button
         type="button"
@@ -178,39 +180,39 @@ const notStartedCount = computed(
         data-testid="sessions-refresh"
         @click="refresh"
       >
-        Refresh
+        {{ t('common.refresh') }}
       </button>
     </div>
 
     <!-- Create persistent session -->
     <div class="px-6 py-4 border-b border-border">
       <div class="font-display font-semibold text-[15px] mb-3">
-        Create a persistent session
+        {{ t('sessions.create.title') }}
       </div>
       <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-end">
         <div>
-          <label class="field-label" for="new-session-name">Name</label>
+          <label class="field-label" for="new-session-name">{{ t('sessions.create.name') }}</label>
           <input
             id="new-session-name"
             v-model="newName"
             class="input"
-            placeholder="Sunday 9:30 — Advent II"
+            :placeholder="t('sessions.create.namePlaceholder')"
             data-testid="sessions-new-name"
             @keydown.enter="onCreate"
           />
         </div>
         <div>
-          <label class="field-label" for="new-session-playlist">Display label</label>
+          <label class="field-label" for="new-session-playlist">{{ t('sessions.create.displayLabel') }}</label>
           <input
             id="new-session-playlist"
             v-model="newPlaylistName"
             class="input"
-            placeholder="(defaults to name)"
+            :placeholder="t('sessions.create.displayLabelPlaceholder')"
             data-testid="sessions-new-playlist"
           />
         </div>
         <div>
-          <label class="field-label" for="new-session-start">Starts</label>
+          <label class="field-label" for="new-session-start">{{ t('sessions.create.starts') }}</label>
           <input
             id="new-session-start"
             v-model="newStart"
@@ -220,7 +222,7 @@ const notStartedCount = computed(
           />
         </div>
         <div>
-          <label class="field-label" for="new-session-end">Ends</label>
+          <label class="field-label" for="new-session-end">{{ t('sessions.create.ends') }}</label>
           <input
             id="new-session-end"
             v-model="newEnd"
@@ -236,12 +238,11 @@ const notStartedCount = computed(
           data-testid="sessions-create"
           @click="onCreate"
         >
-          <Icon name="plus" /> Create
+          <Icon name="plus" /> {{ t('common.create') }}
         </button>
       </div>
       <p class="text-[11px] text-text-faint mt-2">
-        Leave both dates blank to keep the session live forever until you end it.
-        Slides are loaded later from a playlist via Go Live → Project to this session.
+        {{ t('sessions.create.hint') }}
       </p>
     </div>
 
@@ -251,14 +252,14 @@ const notStartedCount = computed(
         v-if="projection.sessionsLoading && projection.sessions.length === 0"
         class="text-text-faint text-[13px] p-4"
       >
-        Loading…
+        {{ t('common.loading') }}
       </div>
       <div
         v-else-if="projection.sessions.length === 0"
         class="text-text-faint text-[13px] p-4"
         data-testid="sessions-empty"
       >
-        No active sessions.
+        {{ t('sessions.empty') }}
       </div>
       <div v-else class="grid gap-2">
         <div
@@ -274,24 +275,24 @@ const notStartedCount = computed(
                 :class="statusClass(s.status)"
                 data-testid="session-status"
               >
-                {{ s.status === 'NOT_STARTED' ? 'Scheduled' : s.status }}
+                {{ t(`session.status.${s.status}`) }}
               </span>
               <span class="text-[14px] font-semibold truncate">{{ s.name }}</span>
               <span
                 v-if="s.kind === 'PERSISTENT'"
                 class="text-[10px] mono uppercase tracking-[0.12em] text-text-faint"
               >
-                persistent
+                {{ t('session.kind.PERSISTENT').toLowerCase() }}
               </span>
             </div>
             <div class="text-[11.5px] text-text-faint mt-[2px]">
-              {{ s.slideCount }} slide{{ s.slideCount === 1 ? '' : 's' }}
-              <span v-if="s.ownerName"> · by {{ s.ownerName }}</span>
+              {{ t('sessions.slideCount', { count: s.slideCount }, s.slideCount) }}
+              <span v-if="s.ownerName"> · {{ t('sessions.byOwner', { owner: s.ownerName }) }}</span>
               <span v-if="s.scheduledStartAt">
-                · starts {{ formatDateTime(s.scheduledStartAt) }}
+                · {{ t('sessions.startsAt', { time: formatDateTime(s.scheduledStartAt) }) }}
               </span>
               <span v-if="s.scheduledEndAt">
-                · ends {{ formatDateTime(s.scheduledEndAt) }}
+                · {{ t('sessions.endsAt', { time: formatDateTime(s.scheduledEndAt) }) }}
               </span>
             </div>
           </div>
@@ -303,7 +304,7 @@ const notStartedCount = computed(
               data-testid="session-share"
               @click="sharingFor = s"
             >
-              Share
+              {{ t('playlistsList.row.share') }}
             </button>
             <button
               v-if="s.status === 'NOT_STARTED' && canManage(s)"
@@ -312,7 +313,7 @@ const notStartedCount = computed(
               data-testid="session-start"
               @click="onStart(s)"
             >
-              Start
+              {{ t('sessions.actions.start') }}
             </button>
             <button
               v-if="s.status === 'LIVE'"
@@ -321,7 +322,7 @@ const notStartedCount = computed(
               data-testid="session-project"
               @click="onProject(s)"
             >
-              <Icon name="cast" /> Project
+              <Icon name="cast" /> {{ t('sessions.actions.project') }}
             </button>
             <button
               v-if="s.status === 'LIVE' && canManage(s)"
@@ -330,13 +331,13 @@ const notStartedCount = computed(
               data-testid="session-end"
               @click="onEnd(s)"
             >
-              End
+              {{ t('sessions.actions.end') }}
             </button>
             <button
               v-if="canManage(s)"
               type="button"
               class="btn btn-ghost"
-              aria-label="Delete"
+              :aria-label="t('common.delete')"
               data-testid="session-delete"
               @click="onDelete(s)"
             >

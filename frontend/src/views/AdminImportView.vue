@@ -19,6 +19,7 @@
  * check role here.
  */
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppShell from '@/components/AppShell.vue'
 import AdminTabs from '@/components/admin/AdminTabs.vue'
 import Icon from '@/components/Icon.vue'
@@ -31,6 +32,8 @@ import {
   type VpagdPreviewSong,
 } from '@/api/imports'
 import { extractErrorMessage } from '@/api/client'
+
+const { t } = useI18n()
 
 // ── State ─────────────────────────────────────────────────────────────
 
@@ -85,7 +88,7 @@ function reset(): void {
 
 async function onFileSelected(picked: File): Promise<void> {
   if (!picked.name.toLowerCase().endsWith('.vpagd')) {
-    notify('error', 'Please choose a VideoPsalm `.vpagd` file.')
+    notify('error', t('adminImport.errors.wrongType'))
     return
   }
   file.value = picked
@@ -100,7 +103,7 @@ async function onFileSelected(picked: File): Promise<void> {
     // import; making them tick 380 boxes would be punishing.
     selected.value = new Set(data.songs.map((s) => s.guid))
   } catch (err) {
-    notify('error', extractErrorMessage(err, 'Could not parse archive.'))
+    notify('error', extractErrorMessage(err, t('adminImport.errors.parse')))
     file.value = null
   } finally {
     loading.value = 'idle'
@@ -151,7 +154,7 @@ function toggleOne(guid: string): void {
 async function onImport(): Promise<void> {
   if (!file.value || !preview.value) return
   if (selectedCount.value === 0) {
-    notify('error', 'Select at least one song to import.')
+    notify('error', t('adminImport.errors.selectAtLeastOne'))
     return
   }
 
@@ -165,10 +168,12 @@ async function onImport(): Promise<void> {
   try {
     const r = await importVideopsalm(file.value, guids)
     result.value = r
-    const verb = r.created === 1 ? 'song' : 'songs'
-    notify('success', `Imported ${r.created} ${verb} (skipped ${r.skipped}).`)
+    notify(
+      'success',
+      t('adminImport.toast.imported', { created: r.created, skipped: r.skipped }, r.created),
+    )
   } catch (err) {
-    notify('error', extractErrorMessage(err, 'Import failed.'))
+    notify('error', extractErrorMessage(err, t('adminImport.errors.importFailed')))
   } finally {
     loading.value = 'idle'
   }
@@ -181,17 +186,14 @@ function startOver(): void {
 
 <template>
   <AppShell>
-    <AdminTabs active="import" subtitle="Bulk song import" />
+    <AdminTabs active="import" :subtitle="t('adminImport.subtitle')" />
 
     <div class="px-6 py-5 overflow-auto flex-1">
       <!-- Stage 1: file picker (shown only when no archive is loaded yet) -->
       <section v-if="!preview && !result" data-testid="import-picker">
-        <h2 class="font-display text-[18px] font-semibold mb-1">VideoPsalm import</h2>
+        <h2 class="font-display text-[18px] font-semibold mb-1">{{ t('adminImport.title') }}</h2>
         <p class="text-[13px] text-text-muted mb-4 max-w-[640px]">
-          Upload a <span class="mono">.vpagd</span> archive exported from VideoPsalm. We'll
-          parse it and show you the song list before anything is written to the database.
-          Songs that already exist (matched on title within the same songbook) are skipped
-          on import — no overwrites.
+          {{ t('adminImport.intro') }}
         </p>
 
         <div
@@ -206,9 +208,9 @@ function startOver(): void {
             <Icon name="upload" :size="28" />
           </div>
           <div class="text-[14px] mb-2">
-            Drop your <span class="mono">.vpagd</span> archive here
+            {{ t('adminImport.dropzone') }}
           </div>
-          <div class="text-[12px] text-text-faint mb-4">or</div>
+          <div class="text-[12px] text-text-faint mb-4">{{ t('common.or') }}</div>
           <button
             type="button"
             class="btn btn-primary"
@@ -216,7 +218,7 @@ function startOver(): void {
             data-testid="import-pick-btn"
             @click="onPickClick"
           >
-            {{ loading === 'parsing' ? 'Parsing…' : 'Choose file' }}
+            {{ loading === 'parsing' ? t('adminImport.parsing') : t('adminImport.chooseFile') }}
           </button>
           <input
             ref="fileInput"
@@ -227,7 +229,7 @@ function startOver(): void {
             @change="onPickChange"
           />
           <div class="mt-3 text-[11px] text-text-faint">
-            Maximum size: 50 MB. Admin only.
+            {{ t('adminImport.maxSize') }}
           </div>
         </div>
       </section>
@@ -237,7 +239,7 @@ function startOver(): void {
         <div class="card p-6 max-w-[560px]">
           <div class="flex items-center gap-2 mb-3 text-accent">
             <Icon name="check" :size="20" />
-            <h2 class="font-display text-[18px] font-semibold m-0">Import complete</h2>
+            <h2 class="font-display text-[18px] font-semibold m-0">{{ t('adminImport.result.title') }}</h2>
           </div>
 
           <div
@@ -246,7 +248,7 @@ function startOver(): void {
           >
             <div class="card p-[14px]">
               <div class="mono uppercase tracking-[0.14em] text-[11px] text-text-faint">
-                Created
+                {{ t('adminImport.result.created') }}
               </div>
               <div class="font-display text-[28px] font-semibold mt-[6px]">
                 {{ result.created }}
@@ -254,7 +256,7 @@ function startOver(): void {
             </div>
             <div class="card p-[14px]">
               <div class="mono uppercase tracking-[0.14em] text-[11px] text-text-faint">
-                Skipped
+                {{ t('adminImport.result.skipped') }}
               </div>
               <div class="font-display text-[28px] font-semibold mt-[6px]">
                 {{ result.skipped }}
@@ -262,7 +264,7 @@ function startOver(): void {
             </div>
             <div class="card p-[14px]">
               <div class="mono uppercase tracking-[0.14em] text-[11px] text-text-faint">
-                Total
+                {{ t('adminImport.result.total') }}
               </div>
               <div class="font-display text-[28px] font-semibold mt-[6px]">
                 {{ result.total }}
@@ -272,7 +274,7 @@ function startOver(): void {
 
           <div v-if="result.songbooks.length" class="text-[13px] mb-4">
             <div class="mono uppercase tracking-[0.14em] text-[11px] text-text-faint mb-2">
-              Songbooks touched
+              {{ t('adminImport.result.songbooksTouched') }}
             </div>
             <div class="flex flex-wrap gap-1">
               <span v-for="sb in result.songbooks" :key="sb" class="chip" style="font-size: 11px">
@@ -282,15 +284,14 @@ function startOver(): void {
           </div>
 
           <p v-if="result.skipped > 0" class="text-[12px] text-text-muted mb-4">
-            {{ result.skipped }} song(s) were skipped because a song with the same title
-            already exists in the same songbook. Existing edits are preserved.
+            {{ t('adminImport.result.skippedExplain', { count: result.skipped }, result.skipped) }}
           </p>
 
           <div class="flex gap-2">
             <button type="button" class="btn btn-primary" @click="startOver">
-              Import another archive
+              {{ t('adminImport.result.importAnother') }}
             </button>
-            <RouterLink to="/library" class="btn btn-ghost">View library</RouterLink>
+            <RouterLink to="/library" class="btn btn-ghost">{{ t('adminImport.result.viewLibrary') }}</RouterLink>
           </div>
         </div>
       </section>
@@ -300,20 +301,19 @@ function startOver(): void {
         <div class="flex items-baseline gap-3 mb-1 flex-wrap">
           <h2 class="font-display text-[18px] font-semibold">{{ file?.name }}</h2>
           <span class="text-[12px] text-text-faint">
-            {{ preview.songs.length }} song(s) parsed
+            {{ t('adminImport.preview.parsedCount', { count: preview.songs.length }, preview.songs.length) }}
           </span>
           <button
             type="button"
             class="text-accent text-[12px] hover:underline ml-auto"
             @click="startOver"
           >
-            Choose a different file
+            {{ t('adminImport.preview.chooseDifferent') }}
           </button>
         </div>
 
         <p class="text-[13px] text-text-muted mb-4 max-w-[640px]">
-          Review the songs below and uncheck any you don't want to import. Songs already in
-          the library (matched on title within the same songbook) will be skipped automatically.
+          {{ t('adminImport.preview.subtitle') }}
         </p>
 
         <!-- Per-songbook counts -->
@@ -339,14 +339,14 @@ function startOver(): void {
             <input
               v-model="search"
               class="input"
-              placeholder="Search title or songbook…"
+              :placeholder="t('adminImport.preview.searchPlaceholder')"
               style="padding-left: 30px"
               data-testid="import-search"
             />
           </div>
 
           <div class="text-[12px] text-text-muted">
-            {{ selectedCount }} of {{ preview.songs.length }} selected
+            {{ t('adminImport.preview.selectedOf', { selected: selectedCount, total: preview.songs.length }) }}
           </div>
 
           <div class="flex-1" />
@@ -358,7 +358,11 @@ function startOver(): void {
             data-testid="import-commit-btn"
             @click="onImport"
           >
-            {{ loading === 'importing' ? 'Importing…' : `Import ${selectedCount} song(s)` }}
+            {{
+              loading === 'importing'
+                ? t('adminImport.importing')
+                : t('adminImport.preview.importCount', { count: selectedCount }, selectedCount)
+            }}
           </button>
         </div>
 
@@ -371,13 +375,13 @@ function startOver(): void {
             <input
               type="checkbox"
               :checked="allSelected"
-              :aria-label="allSelected ? 'Deselect all' : 'Select all'"
+              :aria-label="allSelected ? t('adminUsers.table.deselectAll') : t('adminUsers.table.selectAll')"
               data-testid="import-select-all"
               @change="toggleAll"
             />
-            <div>Title</div>
-            <div>Songbook</div>
-            <div class="text-right">Verses</div>
+            <div>{{ t('adminImport.table.title') }}</div>
+            <div>{{ t('adminImport.table.songbook') }}</div>
+            <div class="text-right">{{ t('adminImport.table.verses') }}</div>
           </div>
 
           <div
@@ -392,7 +396,7 @@ function startOver(): void {
             <input
               type="checkbox"
               :checked="selected.has(s.guid)"
-              :aria-label="`Select ${s.title}`"
+              :aria-label="t('adminImport.table.selectTitle', { title: s.title })"
               @click.stop
               @change="toggleOne(s.guid)"
             />
@@ -405,7 +409,7 @@ function startOver(): void {
             v-if="filteredSongs.length === 0"
             class="p-10 text-center text-[13px] text-text-faint"
           >
-            No songs match.
+            {{ t('adminImport.table.noMatch') }}
           </div>
         </div>
       </section>

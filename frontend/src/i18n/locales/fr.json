@@ -11,7 +11,22 @@
     "logOut": "Se déconnecter",
     "or": "ou",
     "allRightsReserved": "Tous droits réservés",
-    "language": "Langue"
+    "language": "Langue",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "copy": "Copier",
+    "copied": "Copié",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré.",
+    "delete": "Supprimer",
+    "create": "Créer",
+    "creating": "Création…",
+    "search": "Rechercher",
+    "refresh": "Actualiser",
+    "noScheduledTime": "—",
+    "yes": "Oui",
+    "no": "Non"
   },
   "nav": {
     "workspace": "Espace",
@@ -105,5 +120,533 @@
     "untitled": "Sans titre",
     "lyricsUnavailable": "Paroles non disponibles.",
     "projectionHelp": "← / → pour naviguer · cliquer pour avancer"
+  },
+  "preview": {
+    "iframeTitle": "Aperçu du chant"
+  },
+  "metronome": {
+    "title": "Métronome",
+    "bpm": "BPM",
+    "start": "Démarrer",
+    "stop": "Arrêter"
+  },
+  "sheetViewer": {
+    "open": "Ouvrir",
+    "unsupported": "Type de fichier non pris en charge."
+  },
+  "chordPro": {
+    "empty": "Pas encore de paroles."
+  },
+  "shareDialog": {
+    "title": "Partager la playlist",
+    "mode": "Mode",
+    "modeMusician": "Musicien (paroles + accords)",
+    "modeProjection": "Projection (paroles seules)",
+    "expiresLabel": "Expire (optionnel)",
+    "create": "Créer le lien",
+    "creating": "Création…",
+    "empty": "Aucun lien de partage actif.",
+    "revoke": "Révoquer",
+    "copy": "Copier",
+    "copied": "Copié",
+    "expiresOn": "expire le {date}",
+    "confirmRevoke": "Révoquer ce lien ? Toute personne qui l'utilise perdra l'accès.",
+    "errorLoad": "Impossible de charger les liens de partage.",
+    "errorCreate": "Impossible de créer le lien de partage.",
+    "errorRevoke": "Impossible de révoquer le lien."
+  },
+  "goLive": {
+    "title": "Lancer la projection",
+    "modeTemporary": "Temporaire",
+    "modeTemporaryHint": "Session ponctuelle. Se termine quand vous quittez.",
+    "modeExisting": "Session existante",
+    "modeExistingHint": "Envoyer les diapositives vers une session que vous pouvez gérer. Les sessions programmées sont démarrées.",
+    "modePersistent": "Créer une session persistante",
+    "modePersistentHint": "Donnez-lui un nom. Programmez début et fin si nécessaire.",
+    "existingLabel": "Sessions vers lesquelles vous pouvez projeter",
+    "pickOne": "— Choisir —",
+    "statusScheduled": "programmée",
+    "statusLive": "en direct",
+    "byOwner": "par {owner}",
+    "noneAvailable": "Aucune session disponible. Créez-en une persistante ou choisissez Temporaire.",
+    "willStartHint": "Cette session est programmée — la projection la démarrera maintenant.",
+    "nameLabel": "Nom de la session",
+    "namePlaceholder": "Dimanche 9h30 — Avent II",
+    "startsLabel": "Début (optionnel)",
+    "endsLabel": "Fin (optionnel)",
+    "startNowHint": "Projeter maintenant (sinon la session reste programmée, prête à être démarrée plus tard)",
+    "actionLaunch": "Lancer",
+    "actionProjectToSession": "Projeter vers la session",
+    "actionCreateAndProject": "Créer et projeter",
+    "actionCreate": "Créer la session",
+    "errorPickSession": "Choisissez une session vers laquelle projeter.",
+    "errorLaunch": "Impossible de lancer."
+  },
+  "session": {
+    "status": {
+      "NOT_STARTED": "Programmée",
+      "LIVE": "En direct",
+      "ENDED": "Terminée"
+    },
+    "kind": {
+      "TEMPORARY": "Temporaire",
+      "PERSISTENT": "Persistante"
+    }
+  },
+  "sessionShare": {
+    "title": "Partager la session",
+    "byOwner": "par {owner}",
+    "scheduledStart": "Début programmé",
+    "scheduledEnd": "Fin programmée",
+    "publicUrl": "URL publique de l'affichage",
+    "scanHint": "Scannez le QR code pour ouvrir l'affichage de la session sur un téléphone."
+  },
+  "roles": {
+    "admin": "Administrateur",
+    "musician": "Musicien",
+    "projectionist": "Projectionniste"
+  },
+  "admin": {
+    "title": "Administration",
+    "tabs": {
+      "users": "Utilisateurs",
+      "songbooks": "Carnets de chants",
+      "import": "Import / Export",
+      "settings": "Paramètres"
+    }
+  },
+  "userDrawer": {
+    "header": {
+      "invite": "Inviter un utilisateur",
+      "edit": "Modifier l'utilisateur"
+    },
+    "headerName": {
+      "newMember": "Nouveau membre",
+      "pendingMember": "Membre en attente",
+      "unnamed": "Sans nom"
+    },
+    "subline": {
+      "invite": "Un e-mail d'invitation sera envoyé à l'enregistrement.",
+      "pending": "Invitation en attente — l'utilisateur n'a pas encore accepté.",
+      "active": "Membre de cet espace."
+    },
+    "pending": "En attente",
+    "active": "Actif",
+    "sections": {
+      "identity": "Identité",
+      "roles": "Rôles",
+      "actions": "Actions",
+      "dangerZone": "Zone dangereuse"
+    },
+    "fullName": "Nom complet",
+    "fullNamePlaceholder": "ex. Jonah Pereira",
+    "email": "E-mail",
+    "emailPlaceholder": "nom@staug.app",
+    "emailHint": "L'e-mail est l'identifiant principal de l'utilisateur et ne peut pas être modifié ici.",
+    "rolesHint": "Choisissez-en un ou plusieurs. Un administrateur peut gérer les utilisateurs, les carnets de chants et les paramètres.",
+    "roles": {
+      "admin": { "label": "Administrateur", "blurb": "Contrôle total — utilisateurs, carnets, paramètres." },
+      "musician": { "label": "Musicien", "blurb": "Consulter les partitions, préparer les playlists." },
+      "projectionist": { "label": "Projectionniste", "blurb": "Animer la projection pendant le culte." }
+    },
+    "sendResetLink": "Envoyer un lien de réinitialisation",
+    "resetLinkSent": "Lien de réinitialisation envoyé.",
+    "resendInvitation": "Renvoyer l'invitation",
+    "cancelInvitation": "Annuler l'invitation",
+    "removeFromWorkspace": "Retirer de l'espace",
+    "sendInvitation": "Envoyer l'invitation",
+    "resendWithRoles": "Renvoyer avec les nouveaux rôles",
+    "saveChanges": "Enregistrer les modifications",
+    "confirmCancelInvite": "Annuler cette invitation ? Le lien cessera de fonctionner.",
+    "confirmDelete": "Retirer {email} de cet espace ? Cet utilisateur perdra l'accès."
+  },
+  "dashboard": {
+    "welcome": "{greeting}, {name}.",
+    "friend": "ami",
+    "greeting": {
+      "morning": "Bonjour",
+      "afternoon": "Bon après-midi",
+      "evening": "Bonsoir"
+    },
+    "cards": {
+      "openLibrary": { "title": "Ouvrir la bibliothèque", "subtitle": "Parcourir les chants" },
+      "newSong": { "title": "Nouveau chant", "subtitle": "Ajouter à la bibliothèque" },
+      "playlists": { "title": "Playlists", "subtitle": "Préparer un culte" },
+      "sessions": { "title": "Sessions", "subtitle": "Gérer la projection" }
+    },
+    "recentSongs": "Chants récents",
+    "noSongs": "Aucun chant pour le moment.",
+    "addFirst": "Ajouter le premier →"
+  },
+  "library": {
+    "title": "Bibliothèque",
+    "newSong": "Nouveau chant",
+    "searchPlaceholder": "Rechercher titre, auteur, paroles…",
+    "allSongbooks": "Tous les carnets",
+    "noMatches": "Aucun chant ne correspond à votre recherche.",
+    "switchMusician": "Passer à la vue musicien",
+    "projectSong": "Projeter le chant",
+    "starting": "Démarrage…",
+    "selectToPreview": "Sélectionnez un chant pour l'aperçu",
+    "errors": {
+      "load": "Échec du chargement des chants.",
+      "project": "Impossible de démarrer la projection."
+    }
+  },
+  "songEditor": {
+    "createSong": "Créer le chant",
+    "selectSongbook": "Sélectionner un carnet",
+    "default": "par défaut",
+    "livePreview": "Aperçu en direct",
+    "tagsPlaceholder": "cantique, grâce, communion",
+    "confirmDelete": "Supprimer ce chant ? Un administrateur peut le restaurer dans les 30 jours.",
+    "confirmDeleteSheet": "Supprimer cette partition ? Le fichier sera définitivement supprimé.",
+    "fields": {
+      "title": "Titre",
+      "author": "Auteur",
+      "songbook": "Carnet",
+      "key": "Tonalité",
+      "tempo": "Tempo",
+      "time": "Mesure",
+      "lyrics": "Paroles · ChordPro",
+      "previewUrl": "URL d'aperçu",
+      "ccli": "Numéro CCLI",
+      "tags": "Étiquettes (séparées par des virgules)"
+    },
+    "sheets": {
+      "title": "Partitions",
+      "upload": "Téléverser une partition",
+      "uploading": "Téléversement…",
+      "hint": "PDF ou image, max. 10 Mo.",
+      "empty": "Aucune partition associée.",
+      "deleteTitle": "Supprimer {name}"
+    },
+    "toast": {
+      "songCreated": "Chant créé.",
+      "sheetUploaded": "Partition téléversée."
+    },
+    "errors": {
+      "load": "Échec du chargement du chant.",
+      "save": "Impossible d'enregistrer le chant.",
+      "delete": "Impossible de supprimer le chant.",
+      "uploadSheet": "Impossible de téléverser la partition.",
+      "deleteSheet": "Impossible de supprimer la partition."
+    }
+  },
+  "songbookAdmin": {
+    "subtitle": "Gestion des collections",
+    "newName": "Nouveau carnet",
+    "namePlaceholder": "ex. Noël 2026",
+    "descriptionLabel": "Description (optionnelle)",
+    "descriptionPlaceholder": "Description",
+    "default": "par défaut",
+    "defaultCannotDelete": "Le carnet par défaut ne peut pas être supprimé",
+    "songsCount": "aucun chant | 1 chant | {count} chants",
+    "confirmDelete": "Supprimer le carnet « {name} » ?",
+    "toast": {
+      "created": "Carnet créé.",
+      "deleted": "Carnet supprimé."
+    },
+    "errors": {
+      "create": "Impossible de créer le carnet.",
+      "save": "Impossible d'enregistrer.",
+      "delete": "Impossible de supprimer."
+    }
+  },
+  "playlistsList": {
+    "title": "Playlists",
+    "searchPlaceholder": "Rechercher par nom ou étiquette…",
+    "tagFilterPlaceholder": "Filtrer par étiquette",
+    "onlyMine": "Mes playlists",
+    "newName": "Nom de la nouvelle playlist",
+    "newNamePlaceholder": "Dimanche 9h30 — Avent II",
+    "eventDate": "Date du culte",
+    "empty": "Aucune playlist pour le moment.",
+    "yours": "à vous",
+    "songsCount": "aucun chant | 1 chant | {count} chants",
+    "row": {
+      "duplicate": "Dupliquer",
+      "duplicateTitle": "Dupliquer {name}",
+      "share": "Partager",
+      "shareTitle": "Partager {name}",
+      "goLive": "Lancer la projection",
+      "projectTitle": "Projeter {name}",
+      "emptyTip": "Ajoutez des chants avant de lancer la projection"
+    },
+    "toast": {
+      "duplicated": "« {name} » dupliqué."
+    },
+    "errors": {
+      "load": "Impossible de charger les playlists.",
+      "loadOne": "Impossible de charger la playlist.",
+      "create": "Impossible de créer la playlist.",
+      "duplicate": "Impossible de dupliquer la playlist.",
+      "emptyForGoLive": "Ajoutez au moins un chant avant de lancer la projection."
+    }
+  },
+  "playlistBuilder": {
+    "event": "Culte",
+    "tags": "Étiquettes",
+    "tagsPlaceholder": "avent, communion",
+    "export": "Exporter",
+    "exportPdf": "PDF",
+    "exportText": "Texte brut",
+    "addSongs": "Ajouter des chants",
+    "pickerPlaceholder": "Rechercher dans la bibliothèque…",
+    "noSongsMatch": "Aucun chant ne correspond.",
+    "emptyPart1": "Glissez des chants depuis la droite, ou cliquez sur le bouton",
+    "emptyPart2": "d'un chant.",
+    "songDeleted": "chant supprimé",
+    "originalKey": "orig. {key}",
+    "keyPlaceholder": "Tonalité",
+    "notesPlaceholder": "Notes — capo 2, dernier refrain a cappella…",
+    "dragHandle": "Glisser pour réordonner",
+    "removeTitle": "Retirer {name}",
+    "readOnlyNote": "Vous pouvez consulter et dupliquer cette playlist. Seul le propriétaire ou un administrateur peut la modifier.",
+    "notFound": "Playlist introuvable.",
+    "duplicatePrompt": "Nom de la copie :",
+    "duplicateDefault": "{name} (copie)",
+    "confirmDelete": "Supprimer cette playlist ? Cette action est irréversible.",
+    "errors": {
+      "load": "Impossible de charger la playlist.",
+      "save": "Impossible d'enregistrer la playlist.",
+      "addSong": "Impossible d'ajouter le chant.",
+      "removeItem": "Impossible de retirer l'élément.",
+      "updateItem": "Impossible de mettre à jour l'élément.",
+      "reorder": "Impossible de réordonner. Modifications annulées.",
+      "duplicate": "Impossible de dupliquer.",
+      "delete": "Impossible de supprimer.",
+      "export": "Impossible d'exporter."
+    }
+  },
+  "sessions": {
+    "title": "Sessions de projection",
+    "headerCounts": "{live} en direct · {scheduled} programmées",
+    "empty": "Aucune session active.",
+    "slideCount": "aucune diapositive | 1 diapositive | {count} diapositives",
+    "byOwner": "par {owner}",
+    "startsAt": "début {time}",
+    "endsAt": "fin {time}",
+    "create": {
+      "title": "Créer une session persistante",
+      "name": "Nom",
+      "namePlaceholder": "Dimanche 9h30 — Avent II",
+      "displayLabel": "Libellé d'affichage",
+      "displayLabelPlaceholder": "(par défaut, le nom)",
+      "starts": "Début",
+      "ends": "Fin",
+      "hint": "Laissez les deux dates vides pour que la session reste active jusqu'à ce que vous y mettiez fin. Les diapositives seront chargées plus tard depuis une playlist via Lancer la projection → Projeter vers cette session."
+    },
+    "actions": {
+      "start": "Démarrer",
+      "project": "Projeter",
+      "end": "Terminer"
+    },
+    "confirmEnd": "Terminer la session « {name} » ? Les affichages seront déconnectés.",
+    "confirmDelete": "Supprimer la session « {name} » ? Cette action est irréversible.",
+    "toast": {
+      "created": "Session « {name} » créée.",
+      "ended": "Session « {name} » terminée.",
+      "deleted": "Session « {name} » supprimée."
+    },
+    "errors": {
+      "load": "Impossible de charger les sessions.",
+      "create": "Impossible de créer la session.",
+      "start": "Impossible de démarrer la session.",
+      "startEmpty": "Cette session n'a pas encore de diapositives — ouvrez une playlist et utilisez Lancer la projection → Session existante.",
+      "end": "Impossible de terminer la session.",
+      "delete": "Impossible de supprimer la session."
+    }
+  },
+  "projectionControl": {
+    "fallbackTitle": "Projection",
+    "controller": "Contrôleur",
+    "viewOnly": "Lecture seule",
+    "status": {
+      "idle": "Inactif",
+      "connecting": "Connexion…",
+      "connected": "Connecté",
+      "error": "Erreur"
+    },
+    "copyUrl": "Copier l'URL d'affichage",
+    "openDisplay": "Ouvrir l'affichage",
+    "endSession": "Terminer la session",
+    "viewOnlyBanner": "Vous êtes connecté en affichage seul. Pour contrôler cette session, retournez à la playlist et cliquez sur Lancer la projection.",
+    "serviceOrder": "Ordre du culte",
+    "shortcuts": {
+      "title": "Raccourcis",
+      "next": "Diapositive suivante",
+      "prev": "Diapositive précédente",
+      "blackout": "Écran noir",
+      "fullscreen": "Plein écran",
+      "font": "Taille du texte"
+    },
+    "prev": "Préc.",
+    "next": "Suiv.",
+    "blackout": "Écran noir",
+    "blackoutOn": "Écran noir ACTIVÉ",
+    "fullscreen": "⛶ Plein écran",
+    "exitFullscreen": "⛶ Quitter",
+    "fullscreenTip": "Plein écran (F)",
+    "exitFullscreenTip": "Quitter le plein écran (F)",
+    "confirmEnd": "Terminer cette session de projection ? Les affichages seront déconnectés.",
+    "errors": {
+      "copy": "Impossible de copier — maintenez le lien appuyé.",
+      "connect": "Impossible de se connecter à la session de projection.",
+      "end": "Impossible de terminer la session."
+    }
+  },
+  "projectionDisplay": {
+    "fallbackName": "Session",
+    "notStarted": "N'a pas encore commencé",
+    "startsAt": "Début {time}",
+    "noScheduledStart": "Aucune heure de début programmée",
+    "waiting": "En attente de la projection…",
+    "connecting": "Connexion…",
+    "live": "En direct",
+    "disconnected": "Déconnecté",
+    "fullscreen": "Plein écran",
+    "enterFullscreen": "Passer en plein écran"
+  },
+  "adminUsers": {
+    "subtitle": "Membres et invitations",
+    "inviteUser": "Inviter un utilisateur",
+    "inviteSomeone": "Inviter quelqu'un ?",
+    "searchPlaceholder": "Rechercher par nom ou e-mail…",
+    "awaitingRegistration": "En attente d'inscription",
+    "invitePending": "INVITATION EN ATTENTE",
+    "noMatch": "Aucun utilisateur ne correspond.",
+    "stats": {
+      "users": "Utilisateurs",
+      "pending": "Invitations en attente",
+      "admins": "Administrateurs",
+      "musicians": "Musiciens"
+    },
+    "filters": {
+      "all": "Tous"
+    },
+    "table": {
+      "name": "Nom",
+      "email": "E-mail",
+      "roles": "Rôles",
+      "lastActive": "Dernière activité",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner",
+      "selectEmail": "Sélectionner {email}",
+      "openEmail": "Ouvrir {email}"
+    },
+    "relativeTime": {
+      "justNow": "À l'instant",
+      "minutes": "il y a {n} min",
+      "hours": "il y a {n} h",
+      "days": "il y a {n} j"
+    },
+    "bulk": {
+      "selectedCount": "{count} sélectionné(s)",
+      "resend": "Renvoyer l'invitation",
+      "remove": "Retirer",
+      "pickInvites": "Sélectionnez les invitations en attente à renvoyer.",
+      "resentCount": "{ok} invitation(s) renvoyée(s) sur {total}.",
+      "removedCount": "{ok} retirés sur {total}.",
+      "confirmRemove": "Retirer {count} membre(s) de cet espace ?"
+    },
+    "toast": {
+      "updated": "Utilisateur mis à jour.",
+      "removed": "Utilisateur retiré.",
+      "invitationSent": "Invitation envoyée à {email}.",
+      "invitationResent": "Invitation renvoyée.",
+      "invitationCancelled": "Invitation annulée.",
+      "resetSent": "Lien de réinitialisation envoyé à {email}."
+    },
+    "errors": {
+      "load": "Impossible de charger les utilisateurs.",
+      "save": "Impossible d'enregistrer l'utilisateur.",
+      "remove": "Impossible de retirer l'utilisateur.",
+      "invite": "Impossible d'envoyer l'invitation.",
+      "resend": "Impossible de renvoyer l'invitation.",
+      "cancelInvite": "Impossible d'annuler l'invitation.",
+      "resetLink": "Impossible d'envoyer le lien de réinitialisation."
+    }
+  },
+  "adminImport": {
+    "subtitle": "Import de chants en lot",
+    "title": "Import VideoPsalm",
+    "intro": "Téléversez une archive .vpagd exportée depuis VideoPsalm. Nous l'analyserons et vous montrerons la liste des chants avant d'écrire quoi que ce soit en base. Les chants déjà présents (titre identique dans le même carnet) sont ignorés à l'import — pas d'écrasement.",
+    "dropzone": "Déposez votre archive .vpagd ici",
+    "chooseFile": "Choisir un fichier",
+    "parsing": "Analyse…",
+    "importing": "Import en cours…",
+    "maxSize": "Taille maximale : 50 Mo. Administrateurs uniquement.",
+    "preview": {
+      "parsedCount": "1 chant analysé | {count} chants analysés",
+      "chooseDifferent": "Choisir un autre fichier",
+      "subtitle": "Vérifiez les chants ci-dessous et décochez ceux que vous ne souhaitez pas importer. Les chants déjà dans la bibliothèque (titre identique dans le même carnet) sont automatiquement ignorés.",
+      "searchPlaceholder": "Rechercher par titre ou carnet…",
+      "selectedOf": "{selected} sur {total} sélectionnés",
+      "importCount": "Importer 1 chant | Importer {count} chants"
+    },
+    "table": {
+      "title": "Titre",
+      "songbook": "Carnet",
+      "verses": "Couplets",
+      "selectTitle": "Sélectionner {title}",
+      "noMatch": "Aucun chant ne correspond."
+    },
+    "result": {
+      "title": "Import terminé",
+      "created": "Créés",
+      "skipped": "Ignorés",
+      "total": "Total",
+      "songbooksTouched": "Carnets concernés",
+      "skippedExplain": "1 chant a été ignoré car un chant du même titre existe déjà dans le même carnet. Les modifications existantes sont préservées. | {count} chants ont été ignorés car un chant du même titre existe déjà dans le même carnet. Les modifications existantes sont préservées.",
+      "importAnother": "Importer une autre archive",
+      "viewLibrary": "Voir la bibliothèque"
+    },
+    "toast": {
+      "imported": "{created} chant importé (ignoré : {skipped}). | {created} chants importés (ignorés : {skipped})."
+    },
+    "errors": {
+      "wrongType": "Choisissez un fichier VideoPsalm .vpagd.",
+      "parse": "Impossible d'analyser l'archive.",
+      "selectAtLeastOne": "Sélectionnez au moins un chant à importer.",
+      "importFailed": "L'import a échoué."
+    }
+  },
+  "account": {
+    "title": "Paramètres du compte",
+    "subtitle": "Modifiez l'apparence de votre nom dans l'espace ou changez votre mot de passe.",
+    "signedInAs": "Connecté en tant que",
+    "noRoles": "Aucun rôle",
+    "emailRolesHint": "L'e-mail et les rôles ne peuvent être modifiés que par un administrateur.",
+    "profile": {
+      "title": "Profil",
+      "subtitle": "C'est le nom affiché dans la barre latérale, sur les playlists partagées et dans les listes admin.",
+      "displayName": "Nom affiché",
+      "save": "Enregistrer"
+    },
+    "password": {
+      "title": "Changer de mot de passe",
+      "subtitle": "Choisissez un mot de passe robuste — au moins 8 caractères avec majuscules, minuscules et un chiffre. Cela vous déconnectera de tous les autres appareils.",
+      "current": "Mot de passe actuel",
+      "new": "Nouveau mot de passe",
+      "confirm": "Confirmer le nouveau mot de passe",
+      "update": "Mettre à jour le mot de passe",
+      "updating": "Mise à jour…"
+    },
+    "errors": {
+      "emptyName": "Le nom affiché ne peut pas être vide.",
+      "updateProfile": "Impossible de mettre à jour le profil.",
+      "passwordMismatch": "Les mots de passe ne correspondent pas.",
+      "changePassword": "Impossible de changer le mot de passe.",
+      "currentPasswordWrong": "Le mot de passe actuel est incorrect.",
+      "passwordTooShort": "Le nouveau mot de passe doit comporter au moins 8 caractères.",
+      "passwordCase": "Le nouveau mot de passe doit contenir des majuscules et des minuscules.",
+      "passwordDigit": "Le nouveau mot de passe doit contenir au moins un chiffre.",
+      "passwordRules": "Le nouveau mot de passe ne respecte pas les règles de complexité requises."
+    },
+    "toast": {
+      "profileUpdated": "Profil mis à jour.",
+      "passwordChanged": "Mot de passe modifié. Les autres appareils ont été déconnectés."
+    }
   }
 }

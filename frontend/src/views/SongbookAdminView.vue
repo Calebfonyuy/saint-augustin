@@ -4,6 +4,7 @@
 // default cannot be deleted — the backend enforces this (409) and we surface
 // the returned message.
 import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppShell from '@/components/AppShell.vue'
 import AdminTabs from '@/components/admin/AdminTabs.vue'
 import Icon from '@/components/Icon.vue'
@@ -13,6 +14,7 @@ import { extractErrorMessage } from '@/api/client'
 import type { Songbook } from '@/types'
 
 const songbooks = useSongbooksStore()
+const { t } = useI18n()
 
 const newForm = reactive({ name: '', description: '' })
 const creating = ref(false)
@@ -32,9 +34,9 @@ async function onCreate() {
     })
     newForm.name = ''
     newForm.description = ''
-    toast.value = { message: 'Songbook created.', kind: 'success' }
+    toast.value = { message: t('songbookAdmin.toast.created'), kind: 'success' }
   } catch (err) {
-    toast.value = { message: extractErrorMessage(err, 'Could not create songbook.'), kind: 'error' }
+    toast.value = { message: extractErrorMessage(err, t('songbookAdmin.errors.create')), kind: 'error' }
   } finally {
     creating.value = false
   }
@@ -57,27 +59,27 @@ async function saveEdit(sb: Songbook) {
       description: editForm.description.trim() || null,
     })
     editingId.value = null
-    toast.value = { message: 'Saved.', kind: 'success' }
+    toast.value = { message: t('common.saved'), kind: 'success' }
   } catch (err) {
-    toast.value = { message: extractErrorMessage(err, 'Could not save.'), kind: 'error' }
+    toast.value = { message: extractErrorMessage(err, t('songbookAdmin.errors.save')), kind: 'error' }
   }
 }
 
 async function onDelete(sb: Songbook) {
   if (sb.is_default) return
-  if (!confirm(`Delete songbook "${sb.name}"?`)) return
+  if (!confirm(t('songbookAdmin.confirmDelete', { name: sb.name }))) return
   try {
     await songbooks.remove(sb.id)
-    toast.value = { message: 'Songbook deleted.', kind: 'success' }
+    toast.value = { message: t('songbookAdmin.toast.deleted'), kind: 'success' }
   } catch (err) {
-    toast.value = { message: extractErrorMessage(err, 'Could not delete.'), kind: 'error' }
+    toast.value = { message: extractErrorMessage(err, t('songbookAdmin.errors.delete')), kind: 'error' }
   }
 }
 </script>
 
 <template>
   <AppShell>
-    <AdminTabs active="songbooks" subtitle="Collection management" />
+    <AdminTabs active="songbooks" :subtitle="t('songbookAdmin.subtitle')" />
 
     <div class="px-8 py-6 overflow-auto flex-1">
       <!-- Create form -->
@@ -88,18 +90,18 @@ async function onDelete(sb: Songbook) {
         @submit.prevent="onCreate"
       >
         <div class="flex-1">
-          <label for="sb-name" class="field-label">New songbook</label>
+          <label for="sb-name" class="field-label">{{ t('songbookAdmin.newName') }}</label>
           <input
             id="sb-name"
             v-model="newForm.name"
             class="input"
-            placeholder="e.g. Christmas 2026"
+            :placeholder="t('songbookAdmin.namePlaceholder')"
             required
             :disabled="creating"
           />
         </div>
         <div class="flex-[2]">
-          <label for="sb-desc" class="field-label">Description (optional)</label>
+          <label for="sb-desc" class="field-label">{{ t('songbookAdmin.descriptionLabel') }}</label>
           <input
             id="sb-desc"
             v-model="newForm.description"
@@ -108,7 +110,7 @@ async function onDelete(sb: Songbook) {
           />
         </div>
         <button class="btn btn-primary" :disabled="creating || !newForm.name.trim()">
-          <Icon name="plus" /> {{ creating ? 'Creating…' : 'Create' }}
+          <Icon name="plus" /> {{ creating ? t('common.creating') : t('common.create') }}
         </button>
       </form>
 
@@ -118,7 +120,7 @@ async function onDelete(sb: Songbook) {
           v-if="songbooks.loading && songbooks.list.length === 0"
           class="p-5 text-[13px] text-text-faint"
         >
-          Loading…
+          {{ t('common.loading') }}
         </div>
         <div
           v-for="(sb, i) in songbooks.list"
@@ -128,9 +130,9 @@ async function onDelete(sb: Songbook) {
         >
           <template v-if="editingId === sb.id">
             <input v-model="editForm.name" class="input flex-1" />
-            <input v-model="editForm.description" class="input flex-[2]" placeholder="Description" />
+            <input v-model="editForm.description" class="input flex-[2]" :placeholder="t('songbookAdmin.descriptionPlaceholder')" />
             <button class="btn btn-primary" @click="saveEdit(sb)">
-              <Icon name="check" /> Save
+              <Icon name="check" /> {{ t('common.save') }}
             </button>
             <button class="btn" @click="cancelEdit"><Icon name="x" /></button>
           </template>
@@ -138,18 +140,18 @@ async function onDelete(sb: Songbook) {
             <div class="flex-1 min-w-0">
               <div class="text-[14px] font-semibold flex items-center gap-2">
                 {{ sb.name }}
-                <span v-if="sb.is_default" class="chip chip-accent">default</span>
+                <span v-if="sb.is_default" class="chip chip-accent">{{ t('songbookAdmin.default') }}</span>
               </div>
               <div v-if="sb.description" class="text-[12px] text-text-faint mt-[2px]">
                 {{ sb.description }}
               </div>
             </div>
-            <div class="mono text-[11px] text-text-faint">{{ sb.songs_count }} songs</div>
-            <button class="btn" @click="startEdit(sb)">Edit</button>
+            <div class="mono text-[11px] text-text-faint">{{ t('songbookAdmin.songsCount', { count: sb.songs_count }, sb.songs_count) }}</div>
+            <button class="btn" @click="startEdit(sb)">{{ t('common.edit') }}</button>
             <button
               class="btn btn-danger"
               :disabled="sb.is_default"
-              :title="sb.is_default ? 'The default songbook cannot be deleted' : undefined"
+              :title="sb.is_default ? t('songbookAdmin.defaultCannotDelete') : undefined"
               @click="onDelete(sb)"
             >
               <Icon name="trash" />

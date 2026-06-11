@@ -12,11 +12,14 @@
 // Emits `(launched, sessionId)` once the user has either created a session
 // or attached to an existing one — the parent view routes to the controller.
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Icon from './Icon.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useProjectionStore } from '@/stores/projection'
 import { extractErrorMessage } from '@/api/client'
 import type { Playlist } from '@/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   playlist: Playlist
@@ -86,7 +89,7 @@ async function onLaunch(): Promise<void> {
     }
     if (mode.value === 'existing') {
       if (!selectedSessionId.value) {
-        error.value = 'Pick a session to project to.'
+        error.value = t('goLive.errorPickSession')
         return
       }
       // Push slides first so the session is start-ready, then start it
@@ -120,7 +123,7 @@ async function onLaunch(): Promise<void> {
       emit('launched', created.sessionId)
     }
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not launch.')
+    error.value = extractErrorMessage(err, t('goLive.errorLaunch'))
   } finally {
     busy.value = false
   }
@@ -140,12 +143,12 @@ async function onLaunch(): Promise<void> {
     <div class="card w-[560px] max-w-[92vw] max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between px-5 py-4 border-b border-border">
         <div id="go-live-title" class="font-display font-semibold text-[18px]">
-          Go Live
+          {{ t('goLive.title') }}
         </div>
         <button
           type="button"
           class="btn btn-ghost"
-          aria-label="Close"
+          :aria-label="t('common.close')"
           @click="emit('close')"
         >
           <Icon name="x" />
@@ -161,8 +164,8 @@ async function onLaunch(): Promise<void> {
             data-testid="go-live-mode-temporary"
           >
             <input v-model="mode" type="radio" value="temporary" class="sr-only" />
-            <span class="font-semibold">Temporary</span>
-            <span class="text-text-faint">One-shot session. Ends when you exit.</span>
+            <span class="font-semibold">{{ t('goLive.modeTemporary') }}</span>
+            <span class="text-text-faint">{{ t('goLive.modeTemporaryHint') }}</span>
           </label>
           <label
             class="card p-3 cursor-pointer text-[12px] flex flex-col gap-1"
@@ -170,8 +173,8 @@ async function onLaunch(): Promise<void> {
             data-testid="go-live-mode-existing"
           >
             <input v-model="mode" type="radio" value="existing" class="sr-only" />
-            <span class="font-semibold">Existing session</span>
-            <span class="text-text-faint">Push slides to a session you can manage. Scheduled sessions are started.</span>
+            <span class="font-semibold">{{ t('goLive.modeExisting') }}</span>
+            <span class="text-text-faint">{{ t('goLive.modeExistingHint') }}</span>
           </label>
           <label
             class="card p-3 cursor-pointer text-[12px] flex flex-col gap-1"
@@ -179,30 +182,30 @@ async function onLaunch(): Promise<void> {
             data-testid="go-live-mode-persistent"
           >
             <input v-model="mode" type="radio" value="persistent" class="sr-only" />
-            <span class="font-semibold">Create persistent session</span>
-            <span class="text-text-faint">Name it. Optionally schedule start &amp; end.</span>
+            <span class="font-semibold">{{ t('goLive.modePersistent') }}</span>
+            <span class="text-text-faint">{{ t('goLive.modePersistentHint') }}</span>
           </label>
         </div>
 
         <!-- Existing -->
         <div v-if="mode === 'existing'" class="flex flex-col gap-2">
-          <label class="field-label" for="go-live-existing">Sessions you can project to</label>
+          <label class="field-label" for="go-live-existing">{{ t('goLive.existingLabel') }}</label>
           <select
             id="go-live-existing"
             v-model="selectedSessionId"
             class="input"
             data-testid="go-live-existing-select"
           >
-            <option value="">— Pick one —</option>
+            <option value="">{{ t('goLive.pickOne') }}</option>
             <option v-for="s in availableSessions" :key="s.id" :value="s.id">
               {{ s.name }}
-              <template v-if="s.status === 'NOT_STARTED'"> · scheduled</template>
-              <template v-else> · live</template>
-              <template v-if="s.ownerName"> — by {{ s.ownerName }}</template>
+              <template v-if="s.status === 'NOT_STARTED'"> · {{ t('goLive.statusScheduled') }}</template>
+              <template v-else> · {{ t('goLive.statusLive') }}</template>
+              <template v-if="s.ownerName"> — {{ t('goLive.byOwner', { owner: s.ownerName }) }}</template>
             </option>
           </select>
           <p v-if="availableSessions.length === 0" class="text-[11px] text-text-faint">
-            No sessions available. Create a persistent one or use Temporary.
+            {{ t('goLive.noneAvailable') }}
           </p>
           <p
             v-else-if="
@@ -212,25 +215,25 @@ async function onLaunch(): Promise<void> {
             "
             class="text-[11px] text-text-faint"
           >
-            This session is scheduled — projecting will start it now.
+            {{ t('goLive.willStartHint') }}
           </p>
         </div>
 
         <!-- Persistent -->
         <div v-if="mode === 'persistent'" class="flex flex-col gap-3">
           <div>
-            <label class="field-label" for="go-live-name">Session name</label>
+            <label class="field-label" for="go-live-name">{{ t('goLive.nameLabel') }}</label>
             <input
               id="go-live-name"
               v-model="sessionName"
               class="input"
-              placeholder="Sunday 9:30 — Advent II"
+              :placeholder="t('goLive.namePlaceholder')"
               data-testid="go-live-name"
             />
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="field-label" for="go-live-start">Starts (optional)</label>
+              <label class="field-label" for="go-live-start">{{ t('goLive.startsLabel') }}</label>
               <input
                 id="go-live-start"
                 v-model="startAt"
@@ -240,7 +243,7 @@ async function onLaunch(): Promise<void> {
               />
             </div>
             <div>
-              <label class="field-label" for="go-live-end">Ends (optional)</label>
+              <label class="field-label" for="go-live-end">{{ t('goLive.endsLabel') }}</label>
               <input
                 id="go-live-end"
                 v-model="endAt"
@@ -256,7 +259,7 @@ async function onLaunch(): Promise<void> {
               type="checkbox"
               data-testid="go-live-start-now"
             />
-            Project now (otherwise the session stays scheduled, ready to start later)
+            {{ t('goLive.startNowHint') }}
           </label>
         </div>
 
@@ -264,7 +267,7 @@ async function onLaunch(): Promise<void> {
       </div>
 
       <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-border">
-        <button type="button" class="btn" @click="emit('close')">Cancel</button>
+        <button type="button" class="btn" @click="emit('close')">{{ t('common.cancel') }}</button>
         <button
           type="button"
           class="btn btn-primary"
@@ -275,12 +278,12 @@ async function onLaunch(): Promise<void> {
           <Icon name="cast" />
           {{
             mode === 'temporary'
-              ? 'Launch'
+              ? t('goLive.actionLaunch')
               : mode === 'existing'
-                ? 'Project to session'
+                ? t('goLive.actionProjectToSession')
                 : startNow
-                  ? 'Create & project'
-                  : 'Create session'
+                  ? t('goLive.actionCreateAndProject')
+                  : t('goLive.actionCreate')
           }}
         </button>
       </div>

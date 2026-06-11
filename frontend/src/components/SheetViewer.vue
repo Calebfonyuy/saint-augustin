@@ -15,8 +15,11 @@
  * doesn't try to recover transparently.
  */
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { SongSheet } from '@/types'
 import Icon from './Icon.vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{ sheet: SongSheet }>()
 
@@ -42,7 +45,7 @@ const pdfSrc = computed(() => `${props.sheet.url}#toolbar=0&navpanes=0`)
         rel="noopener"
         class="text-[11px] text-text-faint hover:text-accent"
       >
-        Open
+        {{ t('sheetViewer.open') }}
       </a>
     </div>
     <div class="bg-bg-sunken min-h-[280px] flex-1">
@@ -62,7 +65,7 @@ const pdfSrc = computed(() => `${props.sheet.url}#toolbar=0&navpanes=0`)
         data-testid="sheet-image"
       />
       <div v-else class="p-4 text-text-faint text-[13px]">
-        Unsupported file type.
+        {{ t('sheetViewer.unsupported') }}
       </div>
     </div>
   </div>

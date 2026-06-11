@@ -3,6 +3,7 @@
 // list are wired — the other cards route to pages that don't exist yet, so
 // they're disabled. The greeting and tagline match the prototype.
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppShell from '@/components/AppShell.vue'
 import KeyBadge from '@/components/KeyBadge.vue'
 import Icon from '@/components/Icon.vue'
@@ -11,12 +12,13 @@ import { useSongsStore } from '@/stores/songs'
 
 const auth = useAuthStore()
 const songs = useSongsStore()
+const { t } = useI18n()
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+  if (hour < 12) return t('dashboard.greeting.morning')
+  if (hour < 18) return t('dashboard.greeting.afternoon')
+  return t('dashboard.greeting.evening')
 })
 
 onMounted(() => {
@@ -31,7 +33,7 @@ onMounted(() => {
   <AppShell>
     <div class="px-8 pt-7 pb-2">
       <div class="font-display font-semibold text-[32px]">
-        {{ greeting }}, {{ auth.user?.display_name?.split(' ')[0] ?? 'friend' }}.
+        {{ t('dashboard.welcome', { greeting, name: auth.user?.display_name?.split(' ')[0] ?? t('dashboard.friend') }) }}
       </div>
       <div class="font-display italic text-[14px] text-text-faint mt-[6px]">
         "Qui cantat, bis orat."
@@ -42,8 +44,8 @@ onMounted(() => {
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <router-link to="/library" class="card p-4 text-left block hover:bg-bg-sunken transition-colors">
           <div class="text-accent mb-2"><Icon name="music" /></div>
-          <div class="text-[14px] font-semibold">Open library</div>
-          <div class="text-[12px] text-text-faint mt-[2px]">Browse songs</div>
+          <div class="text-[14px] font-semibold">{{ t('dashboard.cards.openLibrary.title') }}</div>
+          <div class="text-[12px] text-text-faint mt-[2px]">{{ t('dashboard.cards.openLibrary.subtitle') }}</div>
         </router-link>
         <router-link
           v-if="auth.canEditSongs"
@@ -51,34 +53,37 @@ onMounted(() => {
           class="card p-4 text-left block hover:bg-bg-sunken transition-colors"
         >
           <div class="text-accent mb-2"><Icon name="plus" /></div>
-          <div class="text-[14px] font-semibold">New song</div>
-          <div class="text-[12px] text-text-faint mt-[2px]">Add to the library</div>
+          <div class="text-[14px] font-semibold">{{ t('dashboard.cards.newSong.title') }}</div>
+          <div class="text-[12px] text-text-faint mt-[2px]">{{ t('dashboard.cards.newSong.subtitle') }}</div>
         </router-link>
         <router-link
           to="/playlists"
           class="card p-4 text-left block hover:bg-bg-sunken transition-colors"
         >
           <div class="text-accent mb-2"><Icon name="list" /></div>
-          <div class="text-[14px] font-semibold">Playlists</div>
-          <div class="text-[12px] text-text-faint mt-[2px]">Plan a service</div>
+          <div class="text-[14px] font-semibold">{{ t('dashboard.cards.playlists.title') }}</div>
+          <div class="text-[12px] text-text-faint mt-[2px]">{{ t('dashboard.cards.playlists.subtitle') }}</div>
         </router-link>
-        <div class="card p-4 opacity-50 cursor-not-allowed">
+        <router-link
+          to="/sessions"
+          class="card p-4 text-left block hover:bg-bg-sunken transition-colors"
+        >
           <div class="text-accent mb-2"><Icon name="cast" /></div>
-          <div class="text-[14px] font-semibold">Go live</div>
-          <div class="text-[12px] text-text-faint mt-[2px]">Phase 4</div>
-        </div>
+          <div class="text-[14px] font-semibold">{{ t('dashboard.cards.sessions.title') }}</div>
+          <div class="text-[12px] text-text-faint mt-[2px]">{{ t('dashboard.cards.sessions.subtitle') }}</div>
+        </router-link>
       </div>
 
       <div>
         <div class="mono uppercase tracking-[0.14em] text-[11px] text-text-faint mb-[10px]">
-          Recent songs
+          {{ t('dashboard.recentSongs') }}
         </div>
         <div class="card overflow-hidden">
-          <div v-if="songs.loading" class="p-5 text-[13px] text-text-faint">Loading…</div>
+          <div v-if="songs.loading" class="p-5 text-[13px] text-text-faint">{{ t('common.loading') }}</div>
           <div v-else-if="songs.list.length === 0" class="p-5 text-[13px] text-text-faint">
-            No songs yet.
+            {{ t('dashboard.noSongs') }}
             <router-link v-if="auth.canEditSongs" to="/songs/new" class="text-accent ml-1">
-              Add the first one →
+              {{ t('dashboard.addFirst') }}
             </router-link>
           </div>
           <router-link

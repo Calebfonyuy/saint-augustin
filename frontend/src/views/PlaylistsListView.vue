@@ -8,6 +8,7 @@
 // returns summaries — so the action fetches lazily on click before opening
 // the GoLiveDialog.
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import GoLiveDialog from '@/components/GoLiveDialog.vue'
@@ -22,6 +23,7 @@ import type { Playlist, PlaylistSummary } from '@/types'
 const router = useRouter()
 const auth = useAuthStore()
 const playlists = usePlaylistsStore()
+const { t } = useI18n()
 
 const query = ref('')
 const tag = ref('')
@@ -53,7 +55,7 @@ async function refresh(): Promise<void> {
       per_page: 30,
     })
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not load playlists.')
+    error.value = extractErrorMessage(err, t('playlistsList.errors.load'))
   }
 }
 
@@ -80,7 +82,7 @@ async function onCreate(): Promise<void> {
     newDate.value = ''
     await router.push(`/playlists/${p.id}`)
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not create playlist.')
+    error.value = extractErrorMessage(err, t('playlistsList.errors.create'))
   } finally {
     creating.value = false
   }
@@ -104,12 +106,12 @@ async function onDuplicate(p: PlaylistSummary): Promise<void> {
   busyId.value = p.id
   try {
     const copy = await playlists.duplicate(p.id)
-    success.value = `Duplicated "${p.name}".`
+    success.value = t('playlistsList.toast.duplicated', { name: p.name })
     // Surface the copy at the top of the list immediately (the store
     // already inserts a summary; just nudge focus by toast).
     void copy
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not duplicate playlist.')
+    error.value = extractErrorMessage(err, t('playlistsList.errors.duplicate'))
   } finally {
     busyId.value = null
   }
@@ -121,7 +123,7 @@ function onShare(p: PlaylistSummary): void {
 
 async function onGoLive(p: PlaylistSummary): Promise<void> {
   if (p.item_count === 0) {
-    error.value = 'Add at least one song before going live.'
+    error.value = t('playlistsList.errors.emptyForGoLive')
     return
   }
   busyId.value = p.id
@@ -131,7 +133,7 @@ async function onGoLive(p: PlaylistSummary): Promise<void> {
     const full = await playlists.fetchOne(p.id)
     goLiveFor.value = full
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not load playlist.')
+    error.value = extractErrorMessage(err, t('playlistsList.errors.loadOne'))
   } finally {
     busyId.value = null
   }
@@ -149,7 +151,7 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
 <template>
   <AppShell>
     <div class="px-6 py-4 border-b border-border flex items-center gap-3 flex-wrap">
-      <div class="font-display font-semibold text-[20px]">Playlists</div>
+      <div class="font-display font-semibold text-[20px]">{{ t('playlistsList.title') }}</div>
       <div class="relative ml-2">
         <span class="absolute left-[10px] top-[10px] text-text-faint">
           <Icon name="search" />
@@ -158,7 +160,7 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
           v-model="query"
           class="input"
           style="padding-left: 30px; min-width: 280px"
-          placeholder="Search by name or tag…"
+          :placeholder="t('playlistsList.searchPlaceholder')"
           data-testid="playlists-search"
         />
       </div>
@@ -166,7 +168,7 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
         v-model="tag"
         class="input"
         style="max-width: 160px"
-        placeholder="Filter by tag"
+        :placeholder="t('playlistsList.tagFilterPlaceholder')"
         data-testid="playlists-tag-filter"
       />
       <label class="flex items-center gap-2 text-[12px] text-text-muted">
@@ -175,24 +177,24 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
           type="checkbox"
           data-testid="playlists-mine"
         />
-        Only mine
+        {{ t('playlistsList.onlyMine') }}
       </label>
     </div>
 
     <div class="px-6 py-4 border-b border-border flex items-end gap-2 flex-wrap">
       <div class="flex-1 min-w-[260px]">
-        <label class="field-label" for="new-playlist-name">New playlist name</label>
+        <label class="field-label" for="new-playlist-name">{{ t('playlistsList.newName') }}</label>
         <input
           id="new-playlist-name"
           v-model="newName"
           class="input"
-          placeholder="Sunday 9:30 — Advent II"
+          :placeholder="t('playlistsList.newNamePlaceholder')"
           data-testid="playlists-new-name"
           @keydown.enter="onCreate"
         />
       </div>
       <div>
-        <label class="field-label" for="new-playlist-date">Event date</label>
+        <label class="field-label" for="new-playlist-date">{{ t('playlistsList.eventDate') }}</label>
         <input
           id="new-playlist-date"
           v-model="newDate"
@@ -208,7 +210,7 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
         data-testid="playlists-create"
         @click="onCreate"
       >
-        <Icon name="plus" /> Create
+        <Icon name="plus" /> {{ t('common.create') }}
       </button>
     </div>
 
@@ -217,14 +219,14 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
         v-if="playlists.loading && playlists.list.length === 0"
         class="text-text-faint text-[13px] p-4"
       >
-        Loading…
+        {{ t('common.loading') }}
       </div>
       <div
         v-else-if="playlists.list.length === 0"
         class="text-text-faint text-[13px] p-4"
         data-testid="playlists-empty"
       >
-        No playlists yet.
+        {{ t('playlistsList.empty') }}
       </div>
       <div v-else class="grid gap-2">
         <!--
@@ -247,12 +249,12 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
               <div class="text-[14px] font-semibold truncate">{{ p.name }}</div>
               <div class="text-[11.5px] text-text-faint mt-[2px] truncate">
                 {{ formatDate(p.event_date) }} ·
-                {{ p.item_count }} song{{ p.item_count === 1 ? '' : 's' }}
-                <span v-if="p.created_by === auth.user?.id"> · yours</span>
+                {{ t('playlistsList.songsCount', { count: p.item_count }, p.item_count) }}
+                <span v-if="p.created_by === auth.user?.id"> · {{ t('playlistsList.yours') }}</span>
               </div>
             </div>
             <div class="flex flex-wrap gap-1 max-w-[220px]">
-              <span v-for="t in p.tags" :key="t" class="chip">{{ t }}</span>
+              <span v-for="tag in p.tags" :key="tag" class="chip">{{ tag }}</span>
             </div>
           </router-link>
 
@@ -262,10 +264,10 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
               class="btn"
               :disabled="isBusy(p.id)"
               data-testid="playlist-row-duplicate"
-              :title="`Duplicate ${p.name}`"
+              :title="t('playlistsList.row.duplicateTitle', { name: p.name })"
               @click="onDuplicate(p)"
             >
-              Duplicate
+              {{ t('playlistsList.row.duplicate') }}
             </button>
             <button
               v-if="canEdit(p)"
@@ -273,10 +275,10 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
               class="btn"
               :disabled="isBusy(p.id)"
               data-testid="playlist-row-share"
-              :title="`Share ${p.name}`"
+              :title="t('playlistsList.row.shareTitle', { name: p.name })"
               @click="onShare(p)"
             >
-              Share
+              {{ t('playlistsList.row.share') }}
             </button>
             <button
               v-if="canEdit(p)"
@@ -286,12 +288,12 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
               data-testid="playlist-row-go-live"
               :title="
                 p.item_count === 0
-                  ? 'Add songs before going live'
-                  : `Project ${p.name}`
+                  ? t('playlistsList.row.emptyTip')
+                  : t('playlistsList.row.projectTitle', { name: p.name })
               "
               @click="onGoLive(p)"
             >
-              <Icon name="cast" /> Go Live
+              <Icon name="cast" /> {{ t('playlistsList.row.goLive') }}
             </button>
           </div>
         </div>

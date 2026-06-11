@@ -7,6 +7,9 @@
 // The renderer is intentionally tolerant: anything it doesn't understand
 // falls through as plain lyric text.
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ source: string }>()
 
@@ -88,7 +91,7 @@ const sections = computed<Section[]>(() => {
 
 <template>
   <div v-if="sections.length === 0" class="text-text-faint text-sm italic">
-    No lyrics yet.
+    {{ t('chordPro.empty') }}
   </div>
   <div v-else class="space-y-7">
     <section v-for="(section, i) in sections" :key="i">

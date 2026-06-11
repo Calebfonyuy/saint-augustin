@@ -30,6 +30,7 @@
  *     and a banner tells them to start a new session from the builder.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import Icon from '@/components/Icon.vue'
@@ -40,6 +41,7 @@ import { useProjectionStore } from '@/stores/projection'
 const route = useRoute()
 const router = useRouter()
 const projection = useProjectionStore()
+const { t } = useI18n()
 
 const sessionId = computed(() => route.params.id as string)
 const error = ref<string | null>(null)
@@ -57,7 +59,7 @@ async function copyDisplayUrl(): Promise<void> {
   try {
     await navigator.clipboard.writeText(displayUrl.value)
   } catch {
-    error.value = 'Could not copy — long-press the link instead.'
+    error.value = t('projectionControl.errors.copy')
   }
 }
 
@@ -140,7 +142,7 @@ onMounted(async () => {
       controlToken: projection.controlToken ?? undefined,
     })
     if (!result.ok) {
-      error.value = result.error || 'Could not connect to the projection session.'
+      error.value = result.error || t('projectionControl.errors.connect')
     }
   }
 })
@@ -153,12 +155,12 @@ onBeforeUnmount(() => {
 })
 
 async function endSession(): Promise<void> {
-  if (!confirm('End this projection session? Displays will disconnect.')) return
+  if (!confirm(t('projectionControl.confirmEnd'))) return
   try {
     await projection.destroy()
     await router.push('/sessions')
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Could not end session.'
+    error.value = err instanceof Error ? err.message : t('projectionControl.errors.end')
   }
 }
 </script>
@@ -171,11 +173,11 @@ async function endSession(): Promise<void> {
         <Icon name="cast" />
         <div class="flex-1 min-w-[280px]">
           <div class="text-[18px] font-semibold leading-tight" data-testid="ctrl-playlist-name">
-            {{ projection.state?.playlistName ?? 'Projection' }}
+            {{ projection.state?.playlistName ?? t('projectionControl.fallbackTitle') }}
           </div>
           <div class="text-[11px] text-text-faint mono uppercase tracking-[0.12em]">
-            {{ projection.role === 'controller' ? 'Controller' : 'View-only' }} ·
-            {{ projection.status }}
+            {{ projection.role === 'controller' ? t('projectionControl.controller') : t('projectionControl.viewOnly') }} ·
+            {{ t(`projectionControl.status.${projection.status}`) }}
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -187,7 +189,7 @@ async function endSession(): Promise<void> {
             data-testid="projection-display-url"
           />
           <button type="button" class="btn" data-testid="ctrl-copy-url" @click="copyDisplayUrl">
-            Copy display URL
+            {{ t('projectionControl.copyUrl') }}
           </button>
           <a
             :href="displayUrl"
@@ -196,7 +198,7 @@ async function endSession(): Promise<void> {
             class="btn btn-primary"
             data-testid="ctrl-open-display"
           >
-            <Icon name="cast" /> Open Display
+            <Icon name="cast" /> {{ t('projectionControl.openDisplay') }}
           </a>
           <button
             v-if="projection.role === 'controller'"
@@ -205,7 +207,7 @@ async function endSession(): Promise<void> {
             data-testid="projection-end"
             @click="endSession"
           >
-            End session
+            {{ t('projectionControl.endSession') }}
           </button>
         </div>
       </div>
@@ -216,8 +218,7 @@ async function endSession(): Promise<void> {
         class="px-6 py-2 bg-bg-sunken text-[12px] text-text-muted border-b border-border"
         data-testid="ctrl-viewonly-banner"
       >
-        You are joined as a view-only display. To control this session, return to the
-        playlist and click Go Live.
+        {{ t('projectionControl.viewOnlyBanner') }}
       </div>
 
       <!-- ── Body ─────────────────────────────────────────────────── -->
@@ -226,7 +227,7 @@ async function endSession(): Promise<void> {
         <!-- Service order / jump-to-song (light theme) -->
         <aside class="flex flex-col gap-1 p-3 overflow-y-auto border-r border-border">
           <div class="mono uppercase tracking-[0.14em] text-[10px] text-text-faint px-2 pt-1 pb-2">
-            Service order
+            {{ t('projectionControl.serviceOrder') }}
           </div>
           <button
             v-for="g in projection.itemGroups"
@@ -268,18 +269,18 @@ async function endSession(): Promise<void> {
               </div>
               <!-- Keyboard shortcuts reference card -->
               <div class="card p-3 text-[11px] text-text-muted leading-relaxed">
-                <div class="mono uppercase tracking-[0.14em] text-text-faint mb-2">Shortcuts</div>
+                <div class="mono uppercase tracking-[0.14em] text-text-faint mb-2">{{ t('projectionControl.shortcuts.title') }}</div>
                 <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
                   <span><kbd>→</kbd> <kbd>Space</kbd> <kbd>PgDn</kbd></span>
-                  <span>Next slide</span>
+                  <span>{{ t('projectionControl.shortcuts.next') }}</span>
                   <span><kbd>←</kbd> <kbd>PgUp</kbd></span>
-                  <span>Previous slide</span>
+                  <span>{{ t('projectionControl.shortcuts.prev') }}</span>
                   <span><kbd>B</kbd></span>
-                  <span>Blackout</span>
+                  <span>{{ t('projectionControl.shortcuts.blackout') }}</span>
                   <span><kbd>F</kbd></span>
-                  <span>Fullscreen</span>
+                  <span>{{ t('projectionControl.shortcuts.fullscreen') }}</span>
                   <span><kbd>+</kbd> <kbd>-</kbd></span>
-                  <span>Font size</span>
+                  <span>{{ t('projectionControl.shortcuts.font') }}</span>
                 </div>
               </div>
             </div>
@@ -294,7 +295,7 @@ async function endSession(): Promise<void> {
               data-testid="ctrl-prev"
               @click="projection.previous()"
             >
-              <Icon name="arrow-left" /> Prev
+              <Icon name="arrow-left" /> {{ t('projectionControl.prev') }}
             </button>
             <button
               type="button"
@@ -303,7 +304,7 @@ async function endSession(): Promise<void> {
               data-testid="ctrl-next"
               @click="projection.next()"
             >
-              Next <Icon name="arrow-right" />
+              {{ t('projectionControl.next') }} <Icon name="arrow-right" />
             </button>
             <div
               class="flex items-center gap-1 text-[12px] text-text-faint mono"
@@ -324,7 +325,7 @@ async function endSession(): Promise<void> {
               data-testid="ctrl-blackout"
               @click="projection.setBlackout(!(projection.state?.blackout ?? false))"
             >
-              {{ projection.state?.blackout ? 'Blackout ON' : 'Blackout' }}
+              {{ projection.state?.blackout ? t('projectionControl.blackoutOn') : t('projectionControl.blackout') }}
             </button>
 
             <!-- Font scale -->
@@ -359,11 +360,11 @@ async function endSession(): Promise<void> {
             <button
               type="button"
               class="btn"
-              :title="isFullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'"
+              :title="isFullscreen ? t('projectionControl.exitFullscreenTip') : t('projectionControl.fullscreenTip')"
               data-testid="ctrl-fullscreen"
               @click="toggleFullscreen"
             >
-              {{ isFullscreen ? '⛶ Exit' : '⛶ Full' }}
+              {{ isFullscreen ? t('projectionControl.exitFullscreen') : t('projectionControl.fullscreen') }}
             </button>
           </div>
         </section>

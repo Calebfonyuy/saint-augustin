@@ -13,7 +13,10 @@
  *     block AudioContext creation until a user gesture has occurred.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Icon from './Icon.vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   /** Target BPM. May be null (e.g. song has no tempo) — we fall back to 90. */
@@ -144,7 +147,7 @@ defineExpose({ start, stop, toggle, isRunning })
 <template>
   <div class="card p-4 flex flex-col gap-3" data-testid="metronome">
     <div class="flex items-center justify-between">
-      <div class="mono uppercase tracking-[0.14em] text-[10.5px] text-text-faint">Metronome</div>
+      <div class="mono uppercase tracking-[0.14em] text-[10.5px] text-text-faint">{{ t('metronome.title') }}</div>
       <div class="text-[11px] text-text-faint">{{ timeSignature ?? '4/4' }}</div>
     </div>
 
@@ -181,7 +184,7 @@ defineExpose({ start, stop, toggle, isRunning })
         data-testid="metronome-bpm"
         @input="onBpmInput"
       />
-      <span class="text-[11px] text-text-faint">BPM</span>
+      <span class="text-[11px] text-text-faint">{{ t('metronome.bpm') }}</span>
       <button
         type="button"
         class="btn btn-secondary"
@@ -201,7 +204,7 @@ defineExpose({ start, stop, toggle, isRunning })
         @click="toggle"
       >
         <Icon :name="isRunning ? 'x' : 'check'" />
-        {{ isRunning ? 'Stop' : 'Start' }}
+        {{ isRunning ? t('metronome.stop') : t('metronome.start') }}
       </button>
     </div>
   </div>

@@ -3,10 +3,13 @@
 // worshippers can scan to join the session from their phone. Also surfaces
 // the session schedule and status for confirmation.
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import Icon from './Icon.vue'
 import QrCode from './QrCode.vue'
 import type { ProjectionSessionSummary } from '@/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   session: ProjectionSessionSummary
@@ -54,12 +57,12 @@ function formatDateTime(iso: string | null): string {
     <div class="card w-[560px] max-w-[92vw] max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between px-5 py-4 border-b border-border">
         <div id="session-share-title" class="font-display font-semibold text-[18px]">
-          Share session
+          {{ t('sessionShare.title') }}
         </div>
         <button
           type="button"
           class="btn btn-ghost"
-          aria-label="Close"
+          :aria-label="t('common.close')"
           @click="emit('close')"
         >
           <Icon name="x" />
@@ -70,24 +73,24 @@ function formatDateTime(iso: string | null): string {
         <div>
           <div class="font-display text-[18px] font-semibold">{{ session.name }}</div>
           <div class="text-[12px] text-text-faint mono uppercase tracking-[0.12em] mt-1">
-            {{ session.status }} · {{ session.kind }}
-            <span v-if="session.ownerName"> · by {{ session.ownerName }}</span>
+            {{ t(`session.status.${session.status}`) }} · {{ t(`session.kind.${session.kind}`) }}
+            <span v-if="session.ownerName"> · {{ t('sessionShare.byOwner', { owner: session.ownerName }) }}</span>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3 text-[12px]">
           <div>
-            <div class="field-label">Scheduled start</div>
+            <div class="field-label">{{ t('sessionShare.scheduledStart') }}</div>
             <div data-testid="session-share-start">{{ formatDateTime(session.scheduledStartAt) }}</div>
           </div>
           <div>
-            <div class="field-label">Scheduled end</div>
+            <div class="field-label">{{ t('sessionShare.scheduledEnd') }}</div>
             <div data-testid="session-share-end">{{ formatDateTime(session.scheduledEndAt) }}</div>
           </div>
         </div>
 
         <div class="flex flex-col gap-2">
-          <div class="field-label">Public display URL</div>
+          <div class="field-label">{{ t('sessionShare.publicUrl') }}</div>
           <div class="flex gap-2">
             <input
               class="input mono flex-1"
@@ -102,7 +105,7 @@ function formatDateTime(iso: string | null): string {
               data-testid="session-share-copy"
               @click="copyUrl"
             >
-              {{ copied ? 'Copied!' : 'Copy' }}
+              {{ copied ? t('common.copied') : t('common.copy') }}
             </button>
           </div>
         </div>
@@ -112,7 +115,7 @@ function formatDateTime(iso: string | null): string {
         </div>
 
         <p class="text-[11px] text-text-faint text-center">
-          Scan the QR code to open the session display on a phone.
+          {{ t('sessionShare.scanHint') }}
         </p>
       </div>
     </div>

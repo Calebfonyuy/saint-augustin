@@ -4,6 +4,7 @@
 // optional expiry. Revoking marks the link as revoked server-side; the public
 // resolve endpoint will then 404 the token.
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   createShareLink,
   listShareLinks,
@@ -12,6 +13,8 @@ import {
 import { extractErrorMessage } from '@/api/client'
 import Icon from './Icon.vue'
 import type { ShareLink, ShareMode } from '@/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{ playlistId: string; open: boolean }>()
 const emit = defineEmits<(e: 'close') => void>()
@@ -33,7 +36,7 @@ async function refresh(): Promise<void> {
   try {
     links.value = await listShareLinks(props.playlistId)
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not load share links.')
+    error.value = extractErrorMessage(err, t('shareDialog.errorLoad'))
   } finally {
     loading.value = false
   }
@@ -50,21 +53,21 @@ async function onCreate(): Promise<void> {
     links.value = [created, ...links.value]
     expiresAt.value = ''
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not create share link.')
+    error.value = extractErrorMessage(err, t('shareDialog.errorCreate'))
   } finally {
     creating.value = false
   }
 }
 
 async function onRevoke(id: string): Promise<void> {
-  if (!confirm('Revoke this link? Anyone using it will lose access.')) return
+  if (!confirm(t('shareDialog.confirmRevoke'))) return
   try {
     await revokeShareLink(id)
     links.value = links.value.map((l) =>
       l.id === id ? { ...l, revoked_at: new Date().toISOString() } : l,
     )
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not revoke link.')
+    error.value = extractErrorMessage(err, t('shareDialog.errorRevoke'))
   }
 }
 
@@ -105,12 +108,12 @@ onMounted(refresh)
     <div class="card w-[520px] max-w-[92vw] max-h-[80vh] flex flex-col">
       <div class="flex items-center justify-between px-5 py-4 border-b border-border">
         <div id="share-dialog-title" class="font-display font-semibold text-[18px]">
-          Share playlist
+          {{ t('shareDialog.title') }}
         </div>
         <button
           type="button"
           class="btn btn-ghost"
-          aria-label="Close"
+          :aria-label="t('common.close')"
           @click="emit('close')"
         >
           <Icon name="x" />
@@ -120,14 +123,14 @@ onMounted(refresh)
       <div class="px-5 py-4 border-b border-border flex flex-col gap-3">
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="field-label" for="share-mode">Mode</label>
+            <label class="field-label" for="share-mode">{{ t('shareDialog.mode') }}</label>
             <select id="share-mode" v-model="mode" class="input">
-              <option value="musician">Musician (lyrics + chords)</option>
-              <option value="projection">Projection (lyrics only)</option>
+              <option value="musician">{{ t('shareDialog.modeMusician') }}</option>
+              <option value="projection">{{ t('shareDialog.modeProjection') }}</option>
             </select>
           </div>
           <div>
-            <label class="field-label" for="share-expires">Expires (optional)</label>
+            <label class="field-label" for="share-expires">{{ t('shareDialog.expiresLabel') }}</label>
             <input
               id="share-expires"
               v-model="expiresAt"
@@ -143,19 +146,19 @@ onMounted(refresh)
           data-testid="share-create"
           @click="onCreate"
         >
-          <Icon name="plus" /> {{ creating ? 'Creating…' : 'Create link' }}
+          <Icon name="plus" /> {{ creating ? t('shareDialog.creating') : t('shareDialog.create') }}
         </button>
         <p v-if="error" class="field-error" data-testid="share-error">{{ error }}</p>
       </div>
 
       <div class="flex-1 overflow-auto px-5 py-4 flex flex-col gap-3">
-        <div v-if="loading" class="text-text-faint text-[12px]">Loading…</div>
+        <div v-if="loading" class="text-text-faint text-[12px]">{{ t('common.loading') }}</div>
         <div
           v-else-if="activeLinks.length === 0"
           class="text-text-faint text-[12px]"
           data-testid="share-empty"
         >
-          No active share links yet.
+          {{ t('shareDialog.empty') }}
         </div>
         <div
           v-for="link in activeLinks"
@@ -171,7 +174,7 @@ onMounted(refresh)
               {{ link.mode }}
             </span>
             <span class="text-[11px] text-text-faint">
-              expires {{ formatDate(link.expires_at) }}
+              {{ t('shareDialog.expiresOn', { date: formatDate(link.expires_at) }) }}
             </span>
             <button
               type="button"
@@ -180,7 +183,7 @@ onMounted(refresh)
               data-testid="share-revoke"
               @click="onRevoke(link.id)"
             >
-              Revoke
+              {{ t('shareDialog.revoke') }}
             </button>
           </div>
           <div class="flex items-center gap-2">
@@ -199,7 +202,7 @@ onMounted(refresh)
               @click="copy(link)"
             >
               <Icon :name="copiedToken === link.token ? 'check' : 'list'" />
-              {{ copiedToken === link.token ? 'Copied' : 'Copy' }}
+              {{ copiedToken === link.token ? t('shareDialog.copied') : t('shareDialog.copy') }}
             </button>
           </div>
         </div>

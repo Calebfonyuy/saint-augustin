@@ -11,7 +11,22 @@
     "logOut": "Log out",
     "or": "or",
     "allRightsReserved": "All rights reserved",
-    "language": "Language"
+    "language": "Language",
+    "cancel": "Cancel",
+    "close": "Close",
+    "copy": "Copy",
+    "copied": "Copied",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved.",
+    "delete": "Delete",
+    "create": "Create",
+    "creating": "Creating…",
+    "search": "Search",
+    "refresh": "Refresh",
+    "noScheduledTime": "—",
+    "yes": "Yes",
+    "no": "No"
   },
   "nav": {
     "workspace": "Workspace",
@@ -105,5 +120,533 @@
     "untitled": "Untitled",
     "lyricsUnavailable": "Lyrics unavailable.",
     "projectionHelp": "← / → to navigate · click to advance"
+  },
+  "preview": {
+    "iframeTitle": "Song preview"
+  },
+  "metronome": {
+    "title": "Metronome",
+    "bpm": "BPM",
+    "start": "Start",
+    "stop": "Stop"
+  },
+  "sheetViewer": {
+    "open": "Open",
+    "unsupported": "Unsupported file type."
+  },
+  "chordPro": {
+    "empty": "No lyrics yet."
+  },
+  "shareDialog": {
+    "title": "Share playlist",
+    "mode": "Mode",
+    "modeMusician": "Musician (lyrics + chords)",
+    "modeProjection": "Projection (lyrics only)",
+    "expiresLabel": "Expires (optional)",
+    "create": "Create link",
+    "creating": "Creating…",
+    "empty": "No active share links yet.",
+    "revoke": "Revoke",
+    "copy": "Copy",
+    "copied": "Copied",
+    "expiresOn": "expires {date}",
+    "confirmRevoke": "Revoke this link? Anyone using it will lose access.",
+    "errorLoad": "Could not load share links.",
+    "errorCreate": "Could not create share link.",
+    "errorRevoke": "Could not revoke link."
+  },
+  "goLive": {
+    "title": "Go Live",
+    "modeTemporary": "Temporary",
+    "modeTemporaryHint": "One-shot session. Ends when you exit.",
+    "modeExisting": "Existing session",
+    "modeExistingHint": "Push slides to a session you can manage. Scheduled sessions are started.",
+    "modePersistent": "Create persistent session",
+    "modePersistentHint": "Name it. Optionally schedule start & end.",
+    "existingLabel": "Sessions you can project to",
+    "pickOne": "— Pick one —",
+    "statusScheduled": "scheduled",
+    "statusLive": "live",
+    "byOwner": "by {owner}",
+    "noneAvailable": "No sessions available. Create a persistent one or use Temporary.",
+    "willStartHint": "This session is scheduled — projecting will start it now.",
+    "nameLabel": "Session name",
+    "namePlaceholder": "Sunday 9:30 — Advent II",
+    "startsLabel": "Starts (optional)",
+    "endsLabel": "Ends (optional)",
+    "startNowHint": "Project now (otherwise the session stays scheduled, ready to start later)",
+    "actionLaunch": "Launch",
+    "actionProjectToSession": "Project to session",
+    "actionCreateAndProject": "Create & project",
+    "actionCreate": "Create session",
+    "errorPickSession": "Pick a session to project to.",
+    "errorLaunch": "Could not launch."
+  },
+  "session": {
+    "status": {
+      "NOT_STARTED": "Scheduled",
+      "LIVE": "Live",
+      "ENDED": "Ended"
+    },
+    "kind": {
+      "TEMPORARY": "Temporary",
+      "PERSISTENT": "Persistent"
+    }
+  },
+  "sessionShare": {
+    "title": "Share session",
+    "byOwner": "by {owner}",
+    "scheduledStart": "Scheduled start",
+    "scheduledEnd": "Scheduled end",
+    "publicUrl": "Public display URL",
+    "scanHint": "Scan the QR code to open the session display on a phone."
+  },
+  "roles": {
+    "admin": "Admin",
+    "musician": "Musician",
+    "projectionist": "Projectionist"
+  },
+  "admin": {
+    "title": "Admin",
+    "tabs": {
+      "users": "Users",
+      "songbooks": "Songbooks",
+      "import": "Import / Export",
+      "settings": "Settings"
+    }
+  },
+  "userDrawer": {
+    "header": {
+      "invite": "Invite user",
+      "edit": "Edit user"
+    },
+    "headerName": {
+      "newMember": "New member",
+      "pendingMember": "Pending member",
+      "unnamed": "Unnamed"
+    },
+    "subline": {
+      "invite": "An invitation email will be sent on save.",
+      "pending": "Invitation pending — they have not yet accepted.",
+      "active": "Member of this workspace."
+    },
+    "pending": "Pending",
+    "active": "Active",
+    "sections": {
+      "identity": "Identity",
+      "roles": "Roles",
+      "actions": "Actions",
+      "dangerZone": "Danger zone"
+    },
+    "fullName": "Full name",
+    "fullNamePlaceholder": "e.g. Jonah Pereira",
+    "email": "Email",
+    "emailPlaceholder": "name@staug.app",
+    "emailHint": "The email is the user's primary identifier and cannot be changed here.",
+    "rolesHint": "Pick one or more. An Admin can manage users, songbooks, and settings.",
+    "roles": {
+      "admin": { "label": "Admin", "blurb": "Full control — users, songbooks, settings." },
+      "musician": { "label": "Musician", "blurb": "View musician sheets, build playlists." },
+      "projectionist": { "label": "Projectionist", "blurb": "Run projection during service." }
+    },
+    "sendResetLink": "Send password reset link",
+    "resetLinkSent": "Reset link emailed.",
+    "resendInvitation": "Resend invitation email",
+    "cancelInvitation": "Cancel invitation",
+    "removeFromWorkspace": "Remove from workspace",
+    "sendInvitation": "Send invitation",
+    "resendWithRoles": "Resend with new roles",
+    "saveChanges": "Save changes",
+    "confirmCancelInvite": "Cancel this invitation? The link will stop working.",
+    "confirmDelete": "Remove {email} from the workspace? They will lose access."
+  },
+  "dashboard": {
+    "welcome": "{greeting}, {name}.",
+    "friend": "friend",
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "cards": {
+      "openLibrary": { "title": "Open library", "subtitle": "Browse songs" },
+      "newSong": { "title": "New song", "subtitle": "Add to the library" },
+      "playlists": { "title": "Playlists", "subtitle": "Plan a service" },
+      "sessions": { "title": "Sessions", "subtitle": "Manage projection" }
+    },
+    "recentSongs": "Recent songs",
+    "noSongs": "No songs yet.",
+    "addFirst": "Add the first one →"
+  },
+  "library": {
+    "title": "Song Library",
+    "newSong": "New song",
+    "searchPlaceholder": "Search title, author, lyrics…",
+    "allSongbooks": "All songbooks",
+    "noMatches": "No songs match your search.",
+    "switchMusician": "Switch to musician view",
+    "projectSong": "Project song",
+    "starting": "Starting…",
+    "selectToPreview": "Select a song to preview",
+    "errors": {
+      "load": "Failed to load songs.",
+      "project": "Could not start projection."
+    }
+  },
+  "songEditor": {
+    "createSong": "Create song",
+    "selectSongbook": "Select a songbook",
+    "default": "default",
+    "livePreview": "Live preview",
+    "tagsPlaceholder": "hymn, grace, communion",
+    "confirmDelete": "Delete this song? It can be restored by an admin within 30 days.",
+    "confirmDeleteSheet": "Delete this sheet? This permanently removes the file.",
+    "fields": {
+      "title": "Title",
+      "author": "Author",
+      "songbook": "Songbook",
+      "key": "Key",
+      "tempo": "Tempo",
+      "time": "Time",
+      "lyrics": "Lyrics · ChordPro",
+      "previewUrl": "Preview URL",
+      "ccli": "CCLI number",
+      "tags": "Tags (comma-separated)"
+    },
+    "sheets": {
+      "title": "Sheets",
+      "upload": "Upload sheet",
+      "uploading": "Uploading…",
+      "hint": "PDF or image, max 10 MB.",
+      "empty": "No sheets attached.",
+      "deleteTitle": "Delete {name}"
+    },
+    "toast": {
+      "songCreated": "Song created.",
+      "sheetUploaded": "Sheet uploaded."
+    },
+    "errors": {
+      "load": "Failed to load song.",
+      "save": "Could not save song.",
+      "delete": "Could not delete song.",
+      "uploadSheet": "Could not upload sheet.",
+      "deleteSheet": "Could not delete sheet."
+    }
+  },
+  "songbookAdmin": {
+    "subtitle": "Collection management",
+    "newName": "New songbook",
+    "namePlaceholder": "e.g. Christmas 2026",
+    "descriptionLabel": "Description (optional)",
+    "descriptionPlaceholder": "Description",
+    "default": "default",
+    "defaultCannotDelete": "The default songbook cannot be deleted",
+    "songsCount": "no songs | 1 song | {count} songs",
+    "confirmDelete": "Delete songbook \"{name}\"?",
+    "toast": {
+      "created": "Songbook created.",
+      "deleted": "Songbook deleted."
+    },
+    "errors": {
+      "create": "Could not create songbook.",
+      "save": "Could not save.",
+      "delete": "Could not delete."
+    }
+  },
+  "playlistsList": {
+    "title": "Playlists",
+    "searchPlaceholder": "Search by name or tag…",
+    "tagFilterPlaceholder": "Filter by tag",
+    "onlyMine": "Only mine",
+    "newName": "New playlist name",
+    "newNamePlaceholder": "Sunday 9:30 — Advent II",
+    "eventDate": "Event date",
+    "empty": "No playlists yet.",
+    "yours": "yours",
+    "songsCount": "no songs | 1 song | {count} songs",
+    "row": {
+      "duplicate": "Duplicate",
+      "duplicateTitle": "Duplicate {name}",
+      "share": "Share",
+      "shareTitle": "Share {name}",
+      "goLive": "Go Live",
+      "projectTitle": "Project {name}",
+      "emptyTip": "Add songs before going live"
+    },
+    "toast": {
+      "duplicated": "Duplicated \"{name}\"."
+    },
+    "errors": {
+      "load": "Could not load playlists.",
+      "loadOne": "Could not load playlist.",
+      "create": "Could not create playlist.",
+      "duplicate": "Could not duplicate playlist.",
+      "emptyForGoLive": "Add at least one song before going live."
+    }
+  },
+  "playlistBuilder": {
+    "event": "Event",
+    "tags": "Tags",
+    "tagsPlaceholder": "advent, communion",
+    "export": "Export",
+    "exportPdf": "PDF",
+    "exportText": "Plain text",
+    "addSongs": "Add songs",
+    "pickerPlaceholder": "Search the library…",
+    "noSongsMatch": "No songs match.",
+    "emptyPart1": "Drag songs in from the right, or click the",
+    "emptyPart2": "button on a song.",
+    "songDeleted": "song deleted",
+    "originalKey": "orig {key}",
+    "keyPlaceholder": "Key",
+    "notesPlaceholder": "Notes — capo 2, last chorus a cappella…",
+    "dragHandle": "Drag to reorder",
+    "removeTitle": "Remove {name}",
+    "readOnlyNote": "You can view and duplicate this playlist. Only the owner or an admin can edit it.",
+    "notFound": "Playlist not found.",
+    "duplicatePrompt": "Name for the copy:",
+    "duplicateDefault": "{name} (copy)",
+    "confirmDelete": "Delete this playlist? This cannot be undone.",
+    "errors": {
+      "load": "Could not load playlist.",
+      "save": "Could not save playlist.",
+      "addSong": "Could not add song.",
+      "removeItem": "Could not remove item.",
+      "updateItem": "Could not update item.",
+      "reorder": "Could not reorder. Reverted.",
+      "duplicate": "Could not duplicate.",
+      "delete": "Could not delete.",
+      "export": "Could not export."
+    }
+  },
+  "sessions": {
+    "title": "Projection sessions",
+    "headerCounts": "{live} live · {scheduled} scheduled",
+    "empty": "No active sessions.",
+    "slideCount": "no slides | 1 slide | {count} slides",
+    "byOwner": "by {owner}",
+    "startsAt": "starts {time}",
+    "endsAt": "ends {time}",
+    "create": {
+      "title": "Create a persistent session",
+      "name": "Name",
+      "namePlaceholder": "Sunday 9:30 — Advent II",
+      "displayLabel": "Display label",
+      "displayLabelPlaceholder": "(defaults to name)",
+      "starts": "Starts",
+      "ends": "Ends",
+      "hint": "Leave both dates blank to keep the session live forever until you end it. Slides are loaded later from a playlist via Go Live → Project to this session."
+    },
+    "actions": {
+      "start": "Start",
+      "project": "Project",
+      "end": "End"
+    },
+    "confirmEnd": "End session \"{name}\"? Displays will be disconnected.",
+    "confirmDelete": "Delete session \"{name}\"? This cannot be undone.",
+    "toast": {
+      "created": "Created session \"{name}\".",
+      "ended": "Ended session \"{name}\".",
+      "deleted": "Deleted session \"{name}\"."
+    },
+    "errors": {
+      "load": "Could not load sessions.",
+      "create": "Could not create session.",
+      "start": "Could not start session.",
+      "startEmpty": "This session has no slides yet — open a playlist and use Go Live → Existing session.",
+      "end": "Could not end session.",
+      "delete": "Could not delete session."
+    }
+  },
+  "projectionControl": {
+    "fallbackTitle": "Projection",
+    "controller": "Controller",
+    "viewOnly": "View-only",
+    "status": {
+      "idle": "Idle",
+      "connecting": "Connecting…",
+      "connected": "Connected",
+      "error": "Error"
+    },
+    "copyUrl": "Copy display URL",
+    "openDisplay": "Open Display",
+    "endSession": "End session",
+    "viewOnlyBanner": "You are joined as a view-only display. To control this session, return to the playlist and click Go Live.",
+    "serviceOrder": "Service order",
+    "shortcuts": {
+      "title": "Shortcuts",
+      "next": "Next slide",
+      "prev": "Previous slide",
+      "blackout": "Blackout",
+      "fullscreen": "Fullscreen",
+      "font": "Font size"
+    },
+    "prev": "Prev",
+    "next": "Next",
+    "blackout": "Blackout",
+    "blackoutOn": "Blackout ON",
+    "fullscreen": "⛶ Full",
+    "exitFullscreen": "⛶ Exit",
+    "fullscreenTip": "Fullscreen (F)",
+    "exitFullscreenTip": "Exit fullscreen (F)",
+    "confirmEnd": "End this projection session? Displays will disconnect.",
+    "errors": {
+      "copy": "Could not copy — long-press the link instead.",
+      "connect": "Could not connect to the projection session.",
+      "end": "Could not end session."
+    }
+  },
+  "projectionDisplay": {
+    "fallbackName": "Session",
+    "notStarted": "Hasn’t started yet",
+    "startsAt": "Starts {time}",
+    "noScheduledStart": "No scheduled start time",
+    "waiting": "Waiting for projection…",
+    "connecting": "Connecting…",
+    "live": "Live",
+    "disconnected": "Disconnected",
+    "fullscreen": "Fullscreen",
+    "enterFullscreen": "Enter fullscreen"
+  },
+  "adminUsers": {
+    "subtitle": "Members & invitations",
+    "inviteUser": "Invite user",
+    "inviteSomeone": "Invite someone?",
+    "searchPlaceholder": "Search name or email…",
+    "awaitingRegistration": "Awaiting registration",
+    "invitePending": "INVITE PENDING",
+    "noMatch": "No users match.",
+    "stats": {
+      "users": "Users",
+      "pending": "Pending invites",
+      "admins": "Admins",
+      "musicians": "Musicians"
+    },
+    "filters": {
+      "all": "All"
+    },
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "roles": "Roles",
+      "lastActive": "Last active",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "selectEmail": "Select {email}",
+      "openEmail": "Open {email}"
+    },
+    "relativeTime": {
+      "justNow": "Just now",
+      "minutes": "{n} min ago",
+      "hours": "{n}h ago",
+      "days": "{n}d ago"
+    },
+    "bulk": {
+      "selectedCount": "{count} selected",
+      "resend": "Resend invite",
+      "remove": "Remove",
+      "pickInvites": "Select pending invitations to resend.",
+      "resentCount": "Resent {ok} of {total} invitation(s).",
+      "removedCount": "Removed {ok} of {total}.",
+      "confirmRemove": "Remove {count} member(s) from the workspace?"
+    },
+    "toast": {
+      "updated": "User updated.",
+      "removed": "User removed.",
+      "invitationSent": "Invitation sent to {email}.",
+      "invitationResent": "Invitation re-sent.",
+      "invitationCancelled": "Invitation cancelled.",
+      "resetSent": "Reset link emailed to {email}."
+    },
+    "errors": {
+      "load": "Could not load users.",
+      "save": "Could not save user.",
+      "remove": "Could not remove user.",
+      "invite": "Could not send invitation.",
+      "resend": "Could not resend invitation.",
+      "cancelInvite": "Could not cancel invitation.",
+      "resetLink": "Could not send reset link."
+    }
+  },
+  "adminImport": {
+    "subtitle": "Bulk song import",
+    "title": "VideoPsalm import",
+    "intro": "Upload a .vpagd archive exported from VideoPsalm. We'll parse it and show you the song list before anything is written to the database. Songs that already exist (matched on title within the same songbook) are skipped on import — no overwrites.",
+    "dropzone": "Drop your .vpagd archive here",
+    "chooseFile": "Choose file",
+    "parsing": "Parsing…",
+    "importing": "Importing…",
+    "maxSize": "Maximum size: 50 MB. Admin only.",
+    "preview": {
+      "parsedCount": "1 song parsed | {count} songs parsed",
+      "chooseDifferent": "Choose a different file",
+      "subtitle": "Review the songs below and uncheck any you don't want to import. Songs already in the library (matched on title within the same songbook) will be skipped automatically.",
+      "searchPlaceholder": "Search title or songbook…",
+      "selectedOf": "{selected} of {total} selected",
+      "importCount": "Import 1 song | Import {count} songs"
+    },
+    "table": {
+      "title": "Title",
+      "songbook": "Songbook",
+      "verses": "Verses",
+      "selectTitle": "Select {title}",
+      "noMatch": "No songs match."
+    },
+    "result": {
+      "title": "Import complete",
+      "created": "Created",
+      "skipped": "Skipped",
+      "total": "Total",
+      "songbooksTouched": "Songbooks touched",
+      "skippedExplain": "1 song was skipped because a song with the same title already exists in the same songbook. Existing edits are preserved. | {count} songs were skipped because a song with the same title already exists in the same songbook. Existing edits are preserved.",
+      "importAnother": "Import another archive",
+      "viewLibrary": "View library"
+    },
+    "toast": {
+      "imported": "Imported {created} song (skipped {skipped}). | Imported {created} songs (skipped {skipped})."
+    },
+    "errors": {
+      "wrongType": "Please choose a VideoPsalm .vpagd file.",
+      "parse": "Could not parse archive.",
+      "selectAtLeastOne": "Select at least one song to import.",
+      "importFailed": "Import failed."
+    }
+  },
+  "account": {
+    "title": "Account settings",
+    "subtitle": "Update how your name appears across the workspace, or rotate your password.",
+    "signedInAs": "Signed in as",
+    "noRoles": "No roles",
+    "emailRolesHint": "Email and roles can only be changed by an administrator.",
+    "profile": {
+      "title": "Profile",
+      "subtitle": "This is the name shown in the sidebar, on shared playlists, and in admin lists.",
+      "displayName": "Display name",
+      "save": "Save changes"
+    },
+    "password": {
+      "title": "Change password",
+      "subtitle": "Choose a strong password — at least 8 characters with mixed case and a number. Changing it will sign you out of every other device.",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "update": "Update password",
+      "updating": "Updating…"
+    },
+    "errors": {
+      "emptyName": "Display name cannot be empty.",
+      "updateProfile": "Could not update profile.",
+      "passwordMismatch": "Passwords do not match.",
+      "changePassword": "Could not change password.",
+      "currentPasswordWrong": "The current password is incorrect.",
+      "passwordTooShort": "The new password must be at least 8 characters.",
+      "passwordCase": "The new password must include both uppercase and lowercase letters.",
+      "passwordDigit": "The new password must include at least one number.",
+      "passwordRules": "The new password does not meet the required complexity rules."
+    },
+    "toast": {
+      "profileUpdated": "Profile updated.",
+      "passwordChanged": "Password changed. Other devices have been signed out."
+    }
   }
 }

@@ -2,6 +2,7 @@
 // Song Library — 2-pane layout: searchable list on the left, preview on the right.
 // Search is debounced (250ms) so each keystroke doesn't fire an API call.
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import KeyBadge from '@/components/KeyBadge.vue'
@@ -20,6 +21,7 @@ const songs = useSongsStore()
 const songbooks = useSongbooksStore()
 const projection = useProjectionStore()
 const router = useRouter()
+const { t } = useI18n()
 
 const query = ref('')
 const songbookFilter = ref<string>('')
@@ -44,7 +46,7 @@ async function refresh() {
       selectedId.value = songs.list[0]?.id ?? null
     }
   } catch (err) {
-    errorToast.value = extractErrorMessage(err, 'Failed to load songs.')
+    errorToast.value = extractErrorMessage(err, t('library.errors.load'))
   }
 }
 
@@ -74,7 +76,7 @@ async function onProjectSong(): Promise<void> {
     const created = await projection.createFromSong(selected.value)
     await router.push({ name: 'projection-control', params: { id: created.sessionId } })
   } catch (err) {
-    errorToast.value = extractErrorMessage(err, 'Could not start projection.')
+    errorToast.value = extractErrorMessage(err, t('library.errors.project'))
   } finally {
     projecting.value = false
   }
@@ -88,14 +90,14 @@ async function onProjectSong(): Promise<void> {
       <div class="border-r border-border flex flex-col min-h-0">
         <div class="px-4 pt-[14px] pb-[10px] border-b border-border">
           <div class="flex justify-between items-center mb-[10px]">
-            <div class="font-display font-semibold text-[20px]">Song Library</div>
+            <div class="font-display font-semibold text-[20px]">{{ t('library.title') }}</div>
             <router-link
               v-if="auth.canEditSongs"
               to="/songs/new"
               class="btn btn-primary"
               style="padding: 6px 10px; font-size: 12px"
             >
-              <Icon name="plus" /> New song
+              <Icon name="plus" /> {{ t('library.newSong') }}
             </router-link>
           </div>
           <div class="relative">
@@ -104,7 +106,7 @@ async function onProjectSong(): Promise<void> {
               v-model="query"
               class="input"
               style="padding-left: 30px"
-              placeholder="Search title, author, lyrics…"
+              :placeholder="t('library.searchPlaceholder')"
               data-testid="library-search"
             />
           </div>
@@ -114,7 +116,7 @@ async function onProjectSong(): Promise<void> {
             class="input mt-2 text-[12px]"
             data-testid="library-songbook-filter"
           >
-            <option value="">All songbooks</option>
+            <option value="">{{ t('library.allSongbooks') }}</option>
             <option v-for="sb in songbooks.list" :key="sb.id" :value="sb.id">
               {{ sb.name }}
             </option>
@@ -122,10 +124,10 @@ async function onProjectSong(): Promise<void> {
         </div>
         <div class="overflow-auto flex-1" data-testid="library-list">
           <div v-if="songs.loading && songs.list.length === 0" class="p-5 text-[13px] text-text-faint">
-            Loading…
+            {{ t('common.loading') }}
           </div>
           <div v-else-if="songs.list.length === 0" class="p-5 text-[13px] text-text-faint">
-            No songs match your search.
+            {{ t('library.noMatches') }}
           </div>
           <div
             v-for="s in songs.list"
@@ -143,7 +145,7 @@ async function onProjectSong(): Promise<void> {
               <div class="flex-1 min-w-0">
                 <div class="text-[14px] font-semibold truncate">{{ s.title }}</div>
                 <div class="text-[11.5px] text-text-faint mt-[2px] truncate">
-                  {{ s.author ?? 'Unknown' }}
+                  {{ s.author ?? t('musician.unknownAuthor') }}
                 </div>
               </div>
               <KeyBadge :musical-key="s.original_key" />
@@ -158,10 +160,10 @@ async function onProjectSong(): Promise<void> {
           <div class="flex-1">
             <div class="font-display font-semibold text-[22px]">{{ selected.title }}</div>
             <div class="text-[12px] text-text-faint mt-[2px]">
-              {{ selected.author ?? 'Unknown' }}
+              {{ selected.author ?? t('musician.unknownAuthor') }}
               <span v-if="selected.time_signature"> · {{ selected.time_signature }}</span>
-              <span v-if="selected.tempo"> · {{ selected.tempo }} bpm</span>
-              <span v-if="selected.ccli_number"> · CCLI {{ selected.ccli_number }}</span>
+              <span v-if="selected.tempo"> · {{ selected.tempo }} {{ t('musician.bpm') }}</span>
+              <span v-if="selected.ccli_number"> · {{ t('musician.ccli') }} {{ selected.ccli_number }}</span>
               <span> · {{ songbookName(selected.songbook_id) }}</span>
             </div>
           </div>
@@ -170,7 +172,7 @@ async function onProjectSong(): Promise<void> {
             class="btn btn-primary"
             data-testid="library-play"
           >
-            Switch to musician view
+            {{ t('library.switchMusician') }}
           </router-link>
           <button
             type="button"
@@ -180,7 +182,7 @@ async function onProjectSong(): Promise<void> {
             @click="onProjectSong"
           >
             <Icon name="cast" />
-            {{ projecting ? 'Starting…' : 'Project song' }}
+            {{ projecting ? t('library.starting') : t('library.projectSong') }}
           </button>
           <router-link
             v-if="auth.canEditSongs"
@@ -188,7 +190,7 @@ async function onProjectSong(): Promise<void> {
             class="btn"
             data-testid="library-edit"
           >
-            Edit
+            {{ t('common.edit') }}
           </router-link>
         </div>
         <div class="px-9 py-6 overflow-auto flex-1">
@@ -196,7 +198,7 @@ async function onProjectSong(): Promise<void> {
         </div>
       </div>
       <div v-else class="grid place-items-center text-text-faint text-[13px]">
-        Select a song to preview
+        {{ t('library.selectToPreview') }}
       </div>
     </div>
     <Toast

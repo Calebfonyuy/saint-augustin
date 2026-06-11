@@ -7,7 +7,11 @@
  * `to` are rendered disabled so the navigation chrome stays stable as
  * later phases land.
  */
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+
+const { t } = useI18n()
 
 defineProps<{
   /** Active tab id — controls underline and text color. */
@@ -26,16 +30,16 @@ interface Tab {
   to?: string
 }
 
-const tabs: Tab[] = [
-  { id: 'users', label: 'Users', to: '/admin/users' },
-  { id: 'songbooks', label: 'Songbooks', to: '/admin/songbooks' },
-  { id: 'import', label: 'Import / Export', to: '/admin/import' },
-  { id: 'settings', label: 'Settings' },
-]
+const tabs = computed<Tab[]>(() => [
+  { id: 'users', label: t('admin.tabs.users'), to: '/admin/users' },
+  { id: 'songbooks', label: t('admin.tabs.songbooks'), to: '/admin/songbooks' },
+  { id: 'import', label: t('admin.tabs.import'), to: '/admin/import' },
+  { id: 'settings', label: t('admin.tabs.settings') },
+])
 
-function goTab(t: Tab): void {
-  if (t.to) {
-    void router.push(t.to)
+function goTab(tab: Tab): void {
+  if (tab.to) {
+    void router.push(tab.to)
   }
 }
 </script>
@@ -45,26 +49,26 @@ function goTab(t: Tab): void {
     class="px-6 py-[14px] border-b border-border flex items-center gap-3 flex-wrap"
     data-testid="admin-tabs"
   >
-    <div class="font-display font-semibold text-[22px]">{{ title ?? 'Admin' }}</div>
+    <div class="font-display font-semibold text-[22px]">{{ title ?? t('admin.title') }}</div>
     <div v-if="subtitle" class="text-[12px] text-text-faint ml-1">{{ subtitle }}</div>
     <div class="flex gap-1 ml-4">
       <button
-        v-for="t in tabs"
-        :key="t.id"
+        v-for="tab in tabs"
+        :key="tab.id"
         type="button"
         class="px-[10px] py-[6px] text-[12.5px] rounded-none border-b-2 transition-colors"
         :class="[
-          active === t.id
+          active === tab.id
             ? 'border-accent text-text font-medium'
             : 'border-transparent text-text-muted hover:text-text',
-          !t.to ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
+          !tab.to ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
         ]"
-        :disabled="!t.to"
-        :aria-current="active === t.id ? 'page' : undefined"
-        :data-testid="`admin-tab-${t.id}`"
-        @click="goTab(t)"
+        :disabled="!tab.to"
+        :aria-current="active === tab.id ? 'page' : undefined"
+        :data-testid="`admin-tab-${tab.id}`"
+        @click="goTab(tab)"
       >
-        {{ t.label }}
+        {{ tab.label }}
       </button>
     </div>
     <div class="flex-1" />

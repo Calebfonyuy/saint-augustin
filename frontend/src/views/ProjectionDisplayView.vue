@@ -33,6 +33,7 @@
  *   /projection/display/<id>?bg=%231a1a2e&fg=%23e8e0d0&align=left&font=serif
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import BrandMark from '@/components/BrandMark.vue'
 import SlideRenderer from '@/components/SlideRenderer.vue'
@@ -40,6 +41,7 @@ import { useProjectionStore } from '@/stores/projection'
 
 const route = useRoute()
 const projection = useProjectionStore()
+const { t } = useI18n()
 
 const sessionId = computed(() => route.params.id as string)
 const isFullscreen = ref(false)
@@ -168,18 +170,18 @@ onBeforeUnmount(() => {
         <div class="waiting-inner">
           <BrandMark :size="44" class="waiting-brand" />
           <p class="waiting-headline" data-testid="display-not-started-name">
-            {{ projection.state?.name ?? 'Session' }}
+            {{ projection.state?.name ?? t('projectionDisplay.fallbackName') }}
           </p>
-          <p class="waiting-label">Hasn’t started yet</p>
+          <p class="waiting-label">{{ t('projectionDisplay.notStarted') }}</p>
           <p
             v-if="scheduledStartLabel"
             class="waiting-schedule"
             data-testid="display-not-started-schedule"
           >
-            Starts {{ scheduledStartLabel }}
+            {{ t('projectionDisplay.startsAt', { time: scheduledStartLabel }) }}
           </p>
           <p v-else class="waiting-schedule" data-testid="display-not-started-schedule">
-            No scheduled start time
+            {{ t('projectionDisplay.noScheduledStart') }}
           </p>
         </div>
       </div>
@@ -208,7 +210,7 @@ onBeforeUnmount(() => {
       <div class="waiting-screen" data-testid="display-waiting">
         <div class="waiting-inner">
           <BrandMark :size="44" class="waiting-brand" />
-          <p class="waiting-label">Waiting for projection…</p>
+          <p class="waiting-label">{{ t('projectionDisplay.waiting') }}</p>
           <p class="waiting-session" data-testid="display-session-id">
             {{ sessionId }}
           </p>
@@ -225,10 +227,10 @@ onBeforeUnmount(() => {
         :class="{ 'status-error': projection.status === 'error' }"
         data-testid="display-status"
       >
-        <span v-if="projection.status === 'connecting'">Connecting…</span>
-        <span v-else-if="projection.status === 'connected'">Live</span>
+        <span v-if="projection.status === 'connecting'">{{ t('projectionDisplay.connecting') }}</span>
+        <span v-else-if="projection.status === 'connected'">{{ t('projectionDisplay.live') }}</span>
         <span v-else-if="projection.status === 'error'">
-          {{ projection.lastError || 'Disconnected' }}
+          {{ projection.lastError || t('projectionDisplay.disconnected') }}
         </span>
       </div>
     </Transition>
@@ -240,11 +242,11 @@ onBeforeUnmount(() => {
       v-if="!isFullscreen"
       type="button"
       class="fs-button"
-      aria-label="Enter fullscreen"
+      :aria-label="t('projectionDisplay.enterFullscreen')"
       data-testid="display-fullscreen-btn"
       @click="toggleFullscreen"
     >
-      ⛶ Fullscreen
+      ⛶ {{ t('projectionDisplay.fullscreen') }}
     </button>
   </div>
 </template>

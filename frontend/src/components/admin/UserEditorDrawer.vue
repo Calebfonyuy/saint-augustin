@@ -18,9 +18,12 @@
  * Ref: saint-augustin-design/components/proto-screens.jsx — UserEditorDrawer.
  */
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Icon from '@/components/Icon.vue'
 import type { AdminMember } from '@/stores/users'
 import type { Role } from '@/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   /** Drawer is open when this is non-null. */
@@ -47,11 +50,11 @@ interface RoleDef {
   blurb: string
 }
 
-const ROLE_DEFS: RoleDef[] = [
-  { id: 'admin', label: 'Admin', blurb: 'Full control — users, songbooks, settings.' },
-  { id: 'musician', label: 'Musician', blurb: 'View musician sheets, build playlists.' },
-  { id: 'projectionist', label: 'Projectionist', blurb: 'Run projection during service.' },
-]
+const ROLE_DEFS = computed<RoleDef[]>(() => [
+  { id: 'admin', label: t('userDrawer.roles.admin.label'), blurb: t('userDrawer.roles.admin.blurb') },
+  { id: 'musician', label: t('userDrawer.roles.musician.label'), blurb: t('userDrawer.roles.musician.blurb') },
+  { id: 'projectionist', label: t('userDrawer.roles.projectionist.label'), blurb: t('userDrawer.roles.projectionist.blurb') },
+])
 
 // ── Local form state — kept in sync with the incoming member ──────────────
 
@@ -100,15 +103,20 @@ const initials = computed(() => {
     .toUpperCase()
 })
 
-const headerLabel = computed(() => (isInvite.value ? 'Invite user' : 'Edit user'))
+const headerLabel = computed(() =>
+  isInvite.value ? t('userDrawer.header.invite') : t('userDrawer.header.edit'),
+)
 const headerName = computed(() => {
-  if (isInvite.value) return 'New member'
-  return form.display_name || (isPending.value ? 'Pending member' : 'Unnamed')
+  if (isInvite.value) return t('userDrawer.headerName.newMember')
+  return (
+    form.display_name ||
+    (isPending.value ? t('userDrawer.headerName.pendingMember') : t('userDrawer.headerName.unnamed'))
+  )
 })
 const subline = computed(() => {
-  if (isInvite.value) return 'An invitation email will be sent on save.'
-  if (isPending.value) return 'Invitation pending — they have not yet accepted.'
-  return 'Member of this workspace.'
+  if (isInvite.value) return t('userDrawer.subline.invite')
+  if (isPending.value) return t('userDrawer.subline.pending')
+  return t('userDrawer.subline.active')
 })
 
 const emailLooksValid = computed(() => /.+@.+\..+/.test(form.email))
@@ -156,7 +164,7 @@ function onResend(): void {
 
 function onCancelInvite(): void {
   if (props.member?.kind === 'invitation') {
-    if (confirm('Cancel this invitation? The link will stop working.')) {
+    if (confirm(t('userDrawer.confirmCancelInvite'))) {
       emit('cancelInvite', props.member.id)
     }
   }
@@ -164,7 +172,7 @@ function onCancelInvite(): void {
 
 function onDelete(): void {
   if (!props.member || props.member.kind !== 'user') return
-  if (confirm(`Remove ${props.member.email} from the workspace? They will lose access.`)) {
+  if (confirm(t('userDrawer.confirmDelete', { email: props.member.email }))) {
     emit('deleteUser', props.member.id)
   }
 }
@@ -231,53 +239,53 @@ function onReset(): void {
               v-if="isPending"
               class="chip chip-accent"
               style="font-size: 10px"
-            >Pending</span>
+            >{{ t('userDrawer.pending') }}</span>
             <span
               v-else-if="!isInvite"
               class="chip"
               style="font-size: 10px; color: var(--success); border-color: transparent; background: color-mix(in oklch, var(--success) 15%, transparent)"
-            >● Active</span>
+            >● {{ t('userDrawer.active') }}</span>
           </div>
 
           <!-- Identity form -->
           <div class="mt-[22px] mb-2">
             <div class="mono uppercase tracking-[0.16em] text-[10px] text-text-faint">
-              Identity
+              {{ t('userDrawer.sections.identity') }}
             </div>
           </div>
 
           <div v-if="!isInvite && !isPending" class="mb-[10px]">
-            <label class="field-label">Full name</label>
+            <label class="field-label">{{ t('userDrawer.fullName') }}</label>
             <input
               v-model="form.display_name"
               class="input"
-              placeholder="e.g. Jonah Pereira"
+              :placeholder="t('userDrawer.fullNamePlaceholder')"
               data-testid="user-drawer-name"
             />
           </div>
 
           <div class="mb-[10px]">
-            <label class="field-label">Email</label>
+            <label class="field-label">{{ t('userDrawer.email') }}</label>
             <input
               v-model="form.email"
               :disabled="!isInvite"
               type="email"
               class="input"
-              placeholder="name@staug.app"
+              :placeholder="t('userDrawer.emailPlaceholder')"
               data-testid="user-drawer-email"
             />
             <div v-if="!isInvite" class="text-[10.5px] text-text-faint mt-1">
-              The email is the user's primary identifier and cannot be changed here.
+              {{ t('userDrawer.emailHint') }}
             </div>
           </div>
 
           <!-- Roles -->
           <div class="mt-[22px] mb-2">
             <div class="mono uppercase tracking-[0.16em] text-[10px] text-text-faint">
-              Roles
+              {{ t('userDrawer.sections.roles') }}
             </div>
             <div class="text-[11.5px] text-text-muted mt-1">
-              Pick one or more. An Admin can manage users, songbooks, and settings.
+              {{ t('userDrawer.rolesHint') }}
             </div>
           </div>
 
@@ -315,7 +323,7 @@ function onReset(): void {
           <template v-if="!isInvite">
             <div class="mt-[22px] mb-2">
               <div class="mono uppercase tracking-[0.16em] text-[10px] text-text-faint">
-                Actions
+                {{ t('userDrawer.sections.actions') }}
               </div>
             </div>
             <div class="flex flex-col gap-[6px]">
@@ -327,13 +335,13 @@ function onReset(): void {
                 data-testid="user-drawer-reset"
                 @click="onReset"
               >
-                Send password reset link
+                {{ t('userDrawer.sendResetLink') }}
               </button>
               <div
                 v-if="showOnReset"
                 class="text-[11px] text-text-faint pl-1"
               >
-                Reset link emailed.
+                {{ t('userDrawer.resetLinkSent') }}
               </div>
               <button
                 v-if="isPending"
@@ -343,13 +351,13 @@ function onReset(): void {
                 data-testid="user-drawer-resend"
                 @click="onResend"
               >
-                Resend invitation email
+                {{ t('userDrawer.resendInvitation') }}
               </button>
             </div>
 
             <div class="mt-[22px] mb-2">
               <div class="mono uppercase tracking-[0.16em] text-[10px] text-text-faint">
-                Danger zone
+                {{ t('userDrawer.sections.dangerZone') }}
               </div>
             </div>
             <button
@@ -360,7 +368,7 @@ function onReset(): void {
               data-testid="user-drawer-cancel-invite"
               @click="onCancelInvite"
             >
-              Cancel invitation
+              {{ t('userDrawer.cancelInvitation') }}
             </button>
             <button
               v-else
@@ -370,7 +378,7 @@ function onReset(): void {
               data-testid="user-drawer-delete"
               @click="onDelete"
             >
-              Remove from workspace
+              {{ t('userDrawer.removeFromWorkspace') }}
             </button>
           </template>
         </div>
@@ -383,7 +391,7 @@ function onReset(): void {
             data-testid="user-drawer-cancel"
             @click="emit('close')"
           >
-            Cancel
+            {{ t('common.cancel') }}
           </button>
           <div class="flex-1" />
           <button
@@ -396,12 +404,12 @@ function onReset(): void {
           >
             {{
               saving
-                ? 'Saving…'
+                ? t('common.saving')
                 : isInvite
-                  ? 'Send invitation'
+                  ? t('userDrawer.sendInvitation')
                   : isPending
-                    ? 'Resend with new roles'
-                    : 'Save changes'
+                    ? t('userDrawer.resendWithRoles')
+                    : t('userDrawer.saveChanges')
             }}
           </button>
         </div>

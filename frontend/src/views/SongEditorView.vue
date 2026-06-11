@@ -4,6 +4,7 @@
 // songbook, tags, preview_url, CCLI number.
 // Phase 2 (FR5) adds the Sheets panel: PDF / image attachments via the File Service.
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import ChordProPreview from '@/components/ChordProPreview.vue'
@@ -22,6 +23,7 @@ const auth = useAuthStore()
 const songs = useSongsStore()
 const songbooks = useSongbooksStore()
 const sheets = useSongSheetsStore()
+const { t } = useI18n()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const sheetError = ref<string | null>(null)
@@ -82,7 +84,7 @@ onMounted(async () => {
         // Non-fatal — the rest of the editor still works.
       })
     } catch (err) {
-      error.value = extractErrorMessage(err, 'Failed to load song.')
+      error.value = extractErrorMessage(err, t('songEditor.errors.load'))
     } finally {
       loading.value = false
     }
@@ -109,9 +111,9 @@ async function onSheetSelected(event: Event): Promise<void> {
 
   try {
     await sheets.upload(songId.value, file)
-    success.value = 'Sheet uploaded.'
+    success.value = t('songEditor.toast.sheetUploaded')
   } catch (err) {
-    sheetError.value = extractErrorMessage(err, 'Could not upload sheet.')
+    sheetError.value = extractErrorMessage(err, t('songEditor.errors.uploadSheet'))
   } finally {
     // Reset so picking the same file twice still triggers `change`.
     input.value = ''
@@ -119,11 +121,11 @@ async function onSheetSelected(event: Event): Promise<void> {
 }
 
 async function onSheetDelete(id: string): Promise<void> {
-  if (!confirm('Delete this sheet? This permanently removes the file.')) return
+  if (!confirm(t('songEditor.confirmDeleteSheet'))) return
   try {
     await sheets.remove(id)
   } catch (err) {
-    sheetError.value = extractErrorMessage(err, 'Could not delete sheet.')
+    sheetError.value = extractErrorMessage(err, t('songEditor.errors.deleteSheet'))
   }
 }
 
@@ -142,14 +144,14 @@ async function onSave() {
   try {
     if (isNew.value) {
       const song = await songs.create(cleanPayload())
-      success.value = 'Song created.'
+      success.value = t('songEditor.toast.songCreated')
       await router.replace(`/songs/${song.id}`)
     } else if (songId.value) {
       await songs.update(songId.value, cleanPayload())
-      success.value = 'Saved.'
+      success.value = t('common.saved')
     }
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not save song.')
+    error.value = extractErrorMessage(err, t('songEditor.errors.save'))
   } finally {
     saving.value = false
   }
@@ -157,13 +159,13 @@ async function onSave() {
 
 async function onDelete() {
   if (!songId.value) return
-  if (!confirm('Delete this song? It can be restored by an admin within 30 days.')) return
+  if (!confirm(t('songEditor.confirmDelete'))) return
   deleting.value = true
   try {
     await songs.remove(songId.value)
     await router.push('/library')
   } catch (err) {
-    error.value = extractErrorMessage(err, 'Could not delete song.')
+    error.value = extractErrorMessage(err, t('songEditor.errors.delete'))
   } finally {
     deleting.value = false
   }
@@ -174,10 +176,10 @@ async function onDelete() {
   <AppShell>
     <div class="px-6 py-[14px] border-b border-border flex items-center gap-3">
       <router-link to="/library" class="text-[12px] text-text-faint flex items-center gap-1">
-        <Icon name="arrow-left" /> Library
+        <Icon name="arrow-left" /> {{ t('musician.library') }}
       </router-link>
       <div class="flex-1" />
-      <span v-if="saving" class="chip">Saving…</span>
+      <span v-if="saving" class="chip">{{ t('common.saving') }}</span>
       <span v-else-if="success" class="chip chip-accent">{{ success }}</span>
       <button
         v-if="!isNew"
@@ -187,7 +189,7 @@ async function onDelete() {
         data-testid="editor-delete"
         @click="onDelete"
       >
-        <Icon name="trash" /> Delete
+        <Icon name="trash" /> {{ t('common.delete') }}
       </button>
       <button
         type="button"
@@ -196,16 +198,16 @@ async function onDelete() {
         data-testid="editor-save"
         @click="onSave"
       >
-        {{ isNew ? 'Create song' : 'Save' }}
+        {{ isNew ? t('songEditor.createSong') : t('common.save') }}
       </button>
     </div>
 
-    <div v-if="loading" class="p-8 text-text-faint">Loading…</div>
+    <div v-if="loading" class="p-8 text-text-faint">{{ t('common.loading') }}</div>
 
     <div v-else class="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 px-8 py-6 overflow-auto flex-1">
       <form class="flex flex-col gap-3" novalidate @submit.prevent="onSave">
         <div>
-          <label class="field-label" for="f-title">Title</label>
+          <label class="field-label" for="f-title">{{ t('songEditor.fields.title') }}</label>
           <input
             id="f-title"
             v-model="form.title"
@@ -216,26 +218,26 @@ async function onDelete() {
         </div>
         <div class="grid grid-cols-2 gap-[10px]">
           <div>
-            <label class="field-label" for="f-author">Author</label>
+            <label class="field-label" for="f-author">{{ t('songEditor.fields.author') }}</label>
             <input id="f-author" v-model="form.author" class="input" />
           </div>
           <div>
-            <label class="field-label" for="f-songbook">Songbook</label>
+            <label class="field-label" for="f-songbook">{{ t('songEditor.fields.songbook') }}</label>
             <select id="f-songbook" v-model="form.songbook_id" class="input" required>
-              <option value="" disabled>Select a songbook</option>
+              <option value="" disabled>{{ t('songEditor.selectSongbook') }}</option>
               <option v-for="sb in songbooks.list" :key="sb.id" :value="sb.id">
-                {{ sb.name }}{{ sb.is_default ? ' (default)' : '' }}
+                {{ sb.name }}{{ sb.is_default ? ` (${t('songEditor.default')})` : '' }}
               </option>
             </select>
           </div>
         </div>
         <div class="grid grid-cols-3 gap-[10px]">
           <div>
-            <label class="field-label" for="f-key">Key</label>
+            <label class="field-label" for="f-key">{{ t('songEditor.fields.key') }}</label>
             <input id="f-key" v-model="form.original_key" class="input" placeholder="G" />
           </div>
           <div>
-            <label class="field-label" for="f-tempo">Tempo</label>
+            <label class="field-label" for="f-tempo">{{ t('songEditor.fields.tempo') }}</label>
             <input
               id="f-tempo"
               v-model.number="form.tempo"
@@ -246,14 +248,14 @@ async function onDelete() {
             />
           </div>
           <div>
-            <label class="field-label" for="f-time">Time</label>
+            <label class="field-label" for="f-time">{{ t('songEditor.fields.time') }}</label>
             <select id="f-time" v-model="form.time_signature" class="input">
-              <option v-for="t in TIME_SIGNATURES" :key="t" :value="t">{{ t }}</option>
+              <option v-for="ts in TIME_SIGNATURES" :key="ts" :value="ts">{{ ts }}</option>
             </select>
           </div>
         </div>
         <div>
-          <label class="field-label" for="f-lyrics">Lyrics · ChordPro</label>
+          <label class="field-label" for="f-lyrics">{{ t('songEditor.fields.lyrics') }}</label>
           <textarea
             id="f-lyrics"
             v-model="form.lyrics"
@@ -268,7 +270,7 @@ async function onDelete() {
 
       <aside class="flex flex-col gap-3">
         <div>
-          <label class="field-label" for="f-preview">Preview URL</label>
+          <label class="field-label" for="f-preview">{{ t('songEditor.fields.previewUrl') }}</label>
           <input
             id="f-preview"
             v-model="form.preview_url"
@@ -278,18 +280,18 @@ async function onDelete() {
           />
         </div>
         <div>
-          <label class="field-label" for="f-ccli">CCLI number</label>
+          <label class="field-label" for="f-ccli">{{ t('songEditor.fields.ccli') }}</label>
           <input id="f-ccli" v-model="form.ccli_number" class="input" />
         </div>
         <div>
-          <label class="field-label" for="f-tags">Tags (comma-separated)</label>
-          <input id="f-tags" v-model="tagsText" class="input" placeholder="hymn, grace, communion" />
+          <label class="field-label" for="f-tags">{{ t('songEditor.fields.tags') }}</label>
+          <input id="f-tags" v-model="tagsText" class="input" :placeholder="t('songEditor.tagsPlaceholder')" />
           <div class="mt-2 flex flex-wrap gap-[6px]">
-            <span v-for="t in form.tags" :key="t" class="chip chip-accent">{{ t }}</span>
+            <span v-for="tag in form.tags" :key="tag" class="chip chip-accent">{{ tag }}</span>
           </div>
         </div>
         <div>
-          <label class="field-label">Live preview</label>
+          <label class="field-label">{{ t('songEditor.livePreview') }}</label>
           <div class="card p-4 max-h-[380px] overflow-auto">
             <ChordProPreview :source="form.lyrics" />
           </div>
@@ -298,7 +300,7 @@ async function onDelete() {
         <!-- Phase 2 / FR5 — sheet attachments. Only available once the song
              has been saved (we need an id to attach to). -->
         <div v-if="!isNew" data-testid="sheets-panel">
-          <label class="field-label">Sheets</label>
+          <label class="field-label">{{ t('songEditor.sheets.title') }}</label>
           <div class="card p-4 flex flex-col gap-3">
             <div v-if="auth.canEditSongs" class="flex items-center gap-2">
               <input
@@ -317,20 +319,20 @@ async function onDelete() {
                 @click="pickSheet"
               >
                 <Icon name="upload" />
-                {{ sheets.uploading ? 'Uploading…' : 'Upload sheet' }}
+                {{ sheets.uploading ? t('songEditor.sheets.uploading') : t('songEditor.sheets.upload') }}
               </button>
-              <span class="text-[12px] text-text-faint">PDF or image, max 10 MB.</span>
+              <span class="text-[12px] text-text-faint">{{ t('songEditor.sheets.hint') }}</span>
             </div>
 
             <p v-if="sheetError" data-testid="sheet-error" class="field-error">{{ sheetError }}</p>
 
-            <div v-if="sheets.loading" class="text-text-faint text-[12px]">Loading sheets…</div>
+            <div v-if="sheets.loading" class="text-text-faint text-[12px]">{{ t('musician.loadingSheets') }}</div>
             <div
               v-else-if="sheets.list.length === 0"
               class="text-text-faint text-[12px]"
               data-testid="sheets-empty"
             >
-              No sheets attached.
+              {{ t('songEditor.sheets.empty') }}
             </div>
             <ul v-else class="flex flex-col gap-2" data-testid="sheets-list">
               <li
@@ -353,7 +355,7 @@ async function onDelete() {
                   v-if="auth.isAdmin"
                   type="button"
                   class="btn btn-icon btn-danger-ghost"
-                  :title="`Delete ${sheet.original_filename}`"
+                  :title="t('songEditor.sheets.deleteTitle', { name: sheet.original_filename })"
                   data-testid="sheet-delete"
                   @click="onSheetDelete(sheet.id)"
                 >
