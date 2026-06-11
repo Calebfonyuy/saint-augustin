@@ -65,48 +65,48 @@ jobs:
   # ---------------------------------------------------------------------------
   # Auth Service: lint + test (Phase 1+)
   # ---------------------------------------------------------------------------
-  # auth:
-  #   name: Auth Service (Laravel)
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: services/auth
-  #
-  #   services:
-  #     postgres:
-  #       image: postgres:16-alpine
-  #       env:
-  #         POSTGRES_USER: saintaugustin
-  #         POSTGRES_PASSWORD: testing
-  #         POSTGRES_DB: saintaugustin_db_test
-  #       ports:
-  #         - 5432:5432
-  #       options: >-
-  #         --health-cmd pg_isready
-  #         --health-interval 5s
-  #         --health-timeout 3s
-  #         --health-retries 5
-  #
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - uses: shivammathur/setup-php@v2
-  #       with:
-  #         php-version: 8.3
-  #         extensions: pdo_pgsql, redis, mbstring, zip, intl
-  #         tools: composer:v2
-  #
-  #     - run: composer install --no-interaction --prefer-dist
-  #     - run: vendor/bin/pint --test
-  #     - run: vendor/bin/phpstan analyse
-  #     - run: vendor/bin/pest
-  #       env:
-  #         DB_CONNECTION: pgsql
-  #         DB_HOST: localhost
-  #         DB_PORT: 5432
-  #         DB_DATABASE: saintaugustin_db_test
-  #         DB_USERNAME: saintaugustin
-  #         DB_PASSWORD: testing
+  auth:
+    name: Auth Service (Laravel)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/auth
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: saintaugustin
+          POSTGRES_PASSWORD: testing
+          POSTGRES_DB: saintaugustin_db_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          extensions: pdo_pgsql, redis, mbstring, zip, intl
+          tools: composer:v2
+
+      - run: composer install --no-interaction --prefer-dist
+      - run: vendor/bin/pint --test
+      - run: vendor/bin/phpstan analyse
+      - run: vendor/bin/pest
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: saintaugustin_db_test
+          DB_USERNAME: saintaugustin
+          DB_PASSWORD: testing
 
   # ---------------------------------------------------------------------------
   # Docker build smoke test
