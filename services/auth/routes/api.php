@@ -45,6 +45,10 @@ Route::prefix('auth')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout',  [AuthController::class, 'logout']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
+        // Token introspection — returns the authenticated user. Other
+        // microservices (projection) call this to resolve a Bearer token
+        // to a user identity and role set.
+        Route::get('/me',       [AuthController::class, 'me']);
         // Self-service profile editing — change display_name and/or password.
         Route::patch('/me',     [AuthController::class, 'updateProfile']);
 

@@ -174,6 +174,29 @@ class AuthController
     }
 
     /**
+     * Return the authenticated user — token introspection.
+     *
+     * Other microservices (currently the NestJS projection service) hit this
+     * endpoint to resolve a Bearer token to a user identity and role set
+     * before authorising session ownership / admin actions.
+     *
+     * GET /api/auth/me
+     */
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'user' => [
+                'id'           => $user->id,
+                'email'        => $user->email,
+                'display_name' => $user->display_name,
+                'roles'        => $user->roles,
+            ],
+        ]);
+    }
+
+    /**
      * Update the authenticated user's own profile.
      *
      * Lets a signed-in user change their display name and/or password without

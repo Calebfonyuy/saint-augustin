@@ -142,6 +142,29 @@ test('refresh rotates the token — old token is revoked, new one works', functi
         ->assertOk();
 });
 
+// ── GET /auth/me (token introspection) ───────────────────────────────
+
+test('me requires authentication', function () {
+    $this->getJson('/api/auth/me')->assertStatus(401);
+});
+
+test('me returns the authenticated user', function () {
+    $user  = User::factory()->create([
+        'email'        => 'leader@example.com',
+        'display_name' => 'Worship Leader',
+        'roles'        => ['admin', 'musician'],
+    ]);
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/auth/me')
+        ->assertOk()
+        ->assertJsonPath('user.id', $user->id)
+        ->assertJsonPath('user.email', 'leader@example.com')
+        ->assertJsonPath('user.display_name', 'Worship Leader')
+        ->assertJsonPath('user.roles', ['admin', 'musician']);
+});
+
 // ── PATCH /auth/me (self-service profile) ────────────────────────────
 
 test('updateProfile requires authentication', function () {
