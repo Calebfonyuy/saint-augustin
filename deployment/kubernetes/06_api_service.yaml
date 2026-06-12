@@ -11,7 +11,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: auth-service
-  namespace: saintaugustin
+  namespace: staug
 spec:
   selector:
     app: auth-service
@@ -23,7 +23,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: auth-migrate
-  namespace: saintaugustin
+  namespace: staug
 spec:
   backoffLimit: 3
   ttlSecondsAfterFinished: 600
@@ -32,19 +32,19 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: migrate
-          image: ghcr.io/REPLACE_ME/saintaugustin-auth:latest
+          image: calebfonyuy/staug-api:0.1
           command: ["php", "artisan", "migrate", "--force"]
           envFrom:
             - configMapRef:
-                name: saintaugustin-config
+                name: staug-config
             - secretRef:
-                name: saintaugustin-secrets
+                name: staug-secrets
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auth-service
-  namespace: saintaugustin
+  namespace: staug
 spec:
   replicas: 1
   selector:
@@ -57,7 +57,7 @@ spec:
     spec:
       containers:
         - name: auth
-          image: ghcr.io/REPLACE_ME/saintaugustin-auth:latest
+          image: calebfonyuy/staug-api:0.1
           command:
             - php
             - artisan
@@ -69,9 +69,9 @@ spec:
             - containerPort: 8000
           envFrom:
             - configMapRef:
-                name: saintaugustin-config
+                name: staug-config
             - secretRef:
-                name: saintaugustin-secrets
+                name: staug-secrets
           readinessProbe:
             httpGet:
               path: /health

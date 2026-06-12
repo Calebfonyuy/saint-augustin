@@ -7,7 +7,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend
-  namespace: saintaugustin
+  namespace: staug
 spec:
   selector:
     app: frontend
@@ -19,7 +19,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: saintaugustin
+  namespace: staug
 spec:
   replicas: 1
   selector:
@@ -32,9 +32,25 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/REPLACE_ME/saintaugustin-frontend:latest
+          image: calebfonyuy/staug-frontend:0.1
           ports:
             - containerPort: 80
+          env:
+            - name: VITE_API_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: staug-config
+                  key: APP_URL
+            - name: VITE_WS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: staug-config
+                  key: WS_URL
+            - name: VITE_PROJECTION_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: staug-config
+                  key: PROJECTION_URL
           readinessProbe:
             httpGet:
               path: /

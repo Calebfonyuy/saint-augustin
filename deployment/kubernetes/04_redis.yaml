@@ -6,7 +6,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis
-  namespace: saintaugustin
+  namespace: staug
 spec:
   selector:
     app: redis
@@ -18,7 +18,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: redis-data
-  namespace: saintaugustin
+  namespace: staug
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
@@ -29,7 +29,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
-  namespace: saintaugustin
+  namespace: staug
 spec:
   replicas: 1
   strategy:

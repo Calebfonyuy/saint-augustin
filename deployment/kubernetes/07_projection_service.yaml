@@ -9,7 +9,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: projection-service
-  namespace: saintaugustin
+  namespace: staug
 spec:
   selector:
     app: projection-service
@@ -21,7 +21,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: projection-service
-  namespace: saintaugustin
+  namespace: staug
 spec:
   replicas: 1
   selector:
@@ -34,29 +34,29 @@ spec:
     spec:
       containers:
         - name: projection
-          image: ghcr.io/REPLACE_ME/saintaugustin-projection:latest
+          image: calebfonyuy/staug-projection:0.1
           ports:
             - containerPort: 3000
           env:
             - name: NODE_ENV
               valueFrom:
                 configMapKeyRef:
-                  name: saintaugustin-config
+                  name: staug-config
                   key: NODE_ENV
             - name: PORT
               valueFrom:
                 configMapKeyRef:
-                  name: saintaugustin-config
+                  name: staug-config
                   key: PROJECTION_PORT
             - name: REDIS_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: saintaugustin-config
+                  name: staug-config
                   key: REDIS_HOST
             - name: REDIS_PORT
               valueFrom:
                 configMapKeyRef:
-                  name: saintaugustin-config
+                  name: staug-config
                   key: REDIS_PORT
           readinessProbe:
             httpGet:

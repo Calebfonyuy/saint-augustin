@@ -118,8 +118,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Build Auth Service Image
+        run: docker build -t sa-auth:ci services/auth
+
       - name: Build Projection Service image
-        run: docker build -t sa-projection:ci --target development services/projection
+        run: docker build -t sa-projection:ci services/projection
 
       - name: Build Frontend image
-        run: docker build -t sa-frontend:ci --target development frontend
+        run: docker build -t sa-frontend:ci frontend
+
+  # ---------------------------------------------------------------------------
+  # Docker Compose build test
+  # ---------------------------------------------------------------------------
+  docker-compose:
+    name: Docker Compose Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: cp .env.example .env
+
+      - name: Build images via docker compose
+        run: docker compose up -d --build
