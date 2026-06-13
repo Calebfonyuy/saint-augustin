@@ -1,69 +1,86 @@
 # =============================================================================
 # SaintAugustin Auth Service – Dockerfile
-# Laravel 12 + Octane (FrankenPHP) on PHP 8.3 Alpine
-#
-# Dev mode: mounts source via volume, Octane watches for changes.
-# Prod mode: COPY source, no volumes, optimized autoloader.
-#
-# Ref: https://laravel.com/docs/12.x/octane
-# Ref: https://hub.docker.com/_/php (official PHP images)
 # =============================================================================
 
-FROM php:8.3-cli-alpine AS base
+# ---------- Stage 1: composer dependencies (cacheable) ----------
+FROM composer:2 AS vendor
 
-# System dependencies required by PHP extensions and Composer
-RUN apk add --no-cache \
-    curl \
-    libpq-dev \
-    libzip-dev \
-    icu-dev \
-    oniguruma-dev \
-    linux-headers \
-    $PHPIZE_DEPS
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install \
+        --no-dev \
+        --no-scripts \
+        --no-autoloader \
+        --prefer-dist \
+        --no-interaction \
+        --no-progress
 
-# PHP extensions required by Laravel + PostgreSQL
-RUN docker-php-ext-install \
-    pdo \
-    pdo_pgsql \
-    pgsql \
-    mbstring \
-    zip \
-    intl \
-    opcache \
-    pcntl \
-    sockets
+# ---------- Stage 2: runtime ----------
+FROM php:8.3-apache AS runtime
 
-# Redis extension via PECL
-RUN pecl install redis && docker-php-ext-enable redis
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# Custom php.ini overrides — bumps upload/post limits + memory_limit so
-# bulk imports (e.g. VideoPsalm .vpagd archives) aren't rejected by PHP
-# before Laravel sees them. Prefixed `zz-` so it loads after the
-# docker-php-ext-*.ini extension files and our values win on any conflict.
-COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/zz-uploads.ini
+# --- System + PHP extension build deps ---
+# pdo_pgsql -> PostgreSQL 16 (sa_auth)
+# redis (pecl) -> Sanctum sessions / cache
+# intl, mbstring, bcmath, zip, opcache, pcntl -> Laravel defaults + queue workers
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        curl \
+        ca-certificates \
+        libpq-dev \
+        libzip-dev \
+        libonig-dev \
+        libicu-dev \
+        libxml2-dev
+RUN docker-php-ext-configure intl
+RUN docker-php-ext-install -j"$(nproc)" \
+        pdo_pgsql \
+        mbstring \
+        bcmath \
+        zip \
+        intl \
+        opcache \
+        pcntl
 
-# Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+RUN pecl install redis \
+    && docker-php-ext-enable redis
 
-WORKDIR /var/www
+# --- Apache config: rewrite + DocumentRoot -> /public ---
+RUN a2enmod rewrite headers
 
-# Copy application source
+# --- PHP production ini + opcache tuning ---
+RUN { \
+        echo 'opcache.enable=1'; \
+        echo 'opcache.enable_cli=0'; \
+        echo 'opcache.memory_consumption=128'; \
+        echo 'opcache.interned_strings_buffer=16'; \
+        echo 'opcache.max_accelerated_files=20000'; \
+        echo 'opcache.validate_timestamps=0'; \
+        echo 'opcache.revalidate_freq=0'; \
+        echo 'realpath_cache_size=4096K'; \
+        echo 'realpath_cache_ttl=600'; \
+    } > "$PHP_INI_DIR/conf.d/zz-opcache.ini"
+
+WORKDIR /var/www/html
+
+# --- App: vendor first (cached), then source, then optimized autoload ---
+COPY --from=vendor /app/vendor ./vendor
+COPY --from=vendor /usr/bin/composer /usr/bin/composer
 COPY . .
+COPY ./apache2.conf /etc/apache2/apache2.conf
+COPY ./php.ini /usr/local/etc/php/php.ini
 
-# Install dependencies (no dev in production, with dev in development)
-ARG APP_ENV=local
-RUN if [ "$APP_ENV" = "production" ]; then \
-        composer install --no-dev --optimize-autoloader --no-interaction; \
-    else \
-        composer install --no-interaction; \
-    fi
+RUN composer dump-autoload --optimize --classmap-authoritative --no-dev \
+    && php artisan package:discover --ansi \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R ug+rwX storage bootstrap/cache
 
-# Ensure storage and cache directories exist and are writable
-RUN mkdir -p storage/logs storage/framework/{cache,sessions,views} bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
+# Laravel's built-in health endpoint (Laravel 11+; available in 12)
+# HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+#   CMD curl -fsS http://127.0.0.1/up || exit 1
 
-EXPOSE 8000
+EXPOSE 80
 
-# Development: Octane with --watch for hot reload
-# Override in production with: php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=8000
-CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=8000", "--watch"]
+# Inherits CMD ["apache2-foreground"] from base image.

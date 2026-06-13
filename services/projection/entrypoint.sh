@@ -1,10 +1,9 @@
 #!/bin/sh
 set -xe
 
-touch /app/.env
+export NODE_ENV="$NODE_ENV"
+export REDIS_HOST="$REDIS_HOST"
+export REDIS_PORT="$REDIS_PORT"
+export AUTH_SERVICE_URL="$AUTH_SERVICE_URL"
 
-echo "VITE_API_BASE_URL=$VITE_API_BASE_URL" >> /app/.env
-echo "VITE_WS_URL=$VITE_WS_URL" >> /app/.env
-echo "VITE_PROJECTION_BASE_URL=$VITE_PROJECTION_BASE_URL" >> /app/.env
-
-exec "$@"
+node /app/dist/main.js

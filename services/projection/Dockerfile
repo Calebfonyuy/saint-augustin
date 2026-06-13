@@ -14,7 +14,7 @@ FROM node:26-alpine3.22
 ENV NODE_ENV="production"
 ENV REDIS_HOST="redis"
 ENV REDIS_PORT=6379
-ENV PORT=3000
+ENV AUTH_SERVICE_URL="http://localhost:8021"
 
 WORKDIR /app
 COPY package*.json ./
@@ -29,7 +29,4 @@ RUN npm run build
 
 EXPOSE 3000
 
-ENTRYPOINT [ "/entrypoint.sh" ]
-
-# CMD ["http-server", "dist", "--cors", "-p", "3000"]
-CMD ["npm", "run", "start:prod", "--", "--host", "0.0.0.0", "--port", "3000"]
+CMD [ "/entrypoint.sh" ]
