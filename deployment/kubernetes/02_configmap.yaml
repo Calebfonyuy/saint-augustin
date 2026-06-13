@@ -14,32 +14,34 @@ data:
   # The three URLs below must match the public hostnames the operator
   # exposes via the Ingress (see `ingress.yaml`). Adjust per environment
   # in the matching overlay.
-  APP_URL: "http://staugapi.suuynyuy.com"
-  APP_FRONTEND_URL: "http://staug.suuynyuy.com"
+  APP_URL: "http://10.0.0.80:31001"
+  APP_FRONTEND_URL: "http://10.0.0.80:31000"
 
   # ── Database ──────────────────────────────────────────────────────
   DB_CONNECTION: "pgsql"
-  DB_HOST: "postgres"
-  DB_PORT: "5432"
+  DB_HOST: "10.0.0.80"
+  DB_PORT: "31006"
   DB_DATABASE: "staug_db"
 
   # ── Redis ─────────────────────────────────────────────────────────
-  REDIS_HOST: "redis"
-  REDIS_PORT: "6379"
+  REDIS_HOST: "10.0.0.80"
+  REDIS_PORT: "31005"
   CACHE_DRIVER: "redis"
   QUEUE_CONNECTION: "redis"
   SESSION_DRIVER: "redis"
 
   # ── Object storage (MinIO) ────────────────────────────────────────
   FILESYSTEM_DISK: "minio"
-  MINIO_ENDPOINT: "http://staugftp.suuynyuy.com"
+  MINIO_PORT: "31003"
+  MINIO_CONSOLE_PORT: "31004"
+  MINIO_ENDPOINT: "http://10.0.0.80:31003"
   MINIO_BUCKET: "staugbkt"
   MINIO_REGION: "us-east-1"
   SONG_SHEET_URL_TTL: "15"
 
   # ── Upload caps (MB) ──────────────────────────────────────────────
-  # UPLOAD_IMPORT_MAX_MB: "100"
-  # UPLOAD_SHEET_MAX_MB: "10"
+  UPLOAD_IMPORT_MAX_MB: "100"
+  UPLOAD_SHEET_MAX_MB: "10"
 
   # ── Mail (override per env; defaults to log driver) ───────────────
   MAIL_MAILER: "smtp"
@@ -49,5 +51,5 @@ data:
   # ── Projection service ────────────────────────────────────────────
   NODE_ENV: "production"
   PROJECTION_PORT: "3000"
-  PROJECTION_URL: "http://stgprj.suuynyuy.com"
-  WS_URL: "ws://stgprj.suuynyuy.com/ws"
+  PROJECTION_URL: "http://10.0.0.80:31002"
+  WS_URL: "ws://10.0.0.80:31002/ws"

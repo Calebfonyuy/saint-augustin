@@ -137,9 +137,7 @@ services:
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@saintaugustin.local}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-"SaintAugustin"}
     ports:
-      - "${AUTH_SERVICE_PORT:-8000}:8000"
-    volumes:
-      - ./services/auth:/var/www
+      - "${AUTH_SERVICE_PORT:-8000}:80"
     depends_on:
       postgres:
         condition: service_healthy
@@ -147,12 +145,6 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    # Run migrations before starting Octane so the schema is always current
-    # on every container start. `migrate --force` is required in non-interactive
-    # environments; it is safe here because this is a dev-only compose file.
-    command: >
-      sh -c "php artisan migrate --force &&
-             php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=8000 --watch"
     # healthcheck:
     #   test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
     #   interval: 10s
@@ -170,7 +162,7 @@ services:
       NODE_ENV: production
       REDIS_HOST: "${REDIS_HOST:-redis}"
       REDIS_PORT: "${REDIS_PORT:-6379}"
-      PORT: "${PROJECTION_SERVICE_PORT:-3000}"
+      AUTH_SERVICE_URL: "http://${BASE_SERVER_IP:-localhost}:${API_PORT:-8020}"
     depends_on:
       redis:
         condition: service_healthy

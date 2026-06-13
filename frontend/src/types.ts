@@ -1,6 +1,16 @@
 // Shared domain types mirroring the Auth Service API responses.
 // Ref: services/auth/app/Http/Controllers/*.php
 
+declare global {
+  interface Window {
+    config?: {
+      VITE_API_BASE_URL?: string
+      VITE_PROJECTION_BASE_URL?: string
+      VITE_WS_URL?: string
+    }
+  }
+}
+
 export type Role = 'admin' | 'musician' | 'projectionist'
 
 export interface User {

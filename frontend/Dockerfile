@@ -7,21 +7,31 @@
 #
 # Ref: https://vite.dev/guide/
 # =============================================================================
-FROM node:26-alpine3.22
-
-ENV VITE_API_BASE_URL="http://staug-api:8080/api"
-ENV VITE_WS_URL="ws://staug-projection:3000/ws"
-ENV VITE_PROJECTION_BASE_URL="http://staug-projection:3000"
+FROM node:26-alpine3.22 AS builder
 
 WORKDIR /app
 COPY package*.json ./
 RUN npm i
 
 COPY . .
+RUN npm run build
+
+
+
+FROM nginx:stable-alpine3.23
+
+ENV VITE_API_BASE_URL="http://staug-api:8080/api"
+ENV VITE_WS_URL="ws://staug-projection:3000/ws"
+ENV VITE_PROJECTION_BASE_URL="http://staug-projection:3000"
+
+COPY --from=builder /app/dist /app
+
 COPY ./entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+COPY ./nginx.conf /etc/nginx/nginx.conf
+
 EXPOSE 80
 
-ENTRYPOINT [ "/entrypoint.sh" ]
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "80"]
+CMD [ "/entrypoint.sh" ]
+

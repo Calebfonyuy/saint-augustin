@@ -54,13 +54,12 @@ interface MutationResult {
 
 /** Resolve the gateway socket URL. Falls back to localhost in dev. */
 function resolveSocketUrl(): string {
-  const wsUrl = import.meta.env.VITE_PROJECTION_BASE_URL
+  const wsUrl = window.config?.VITE_PROJECTION_BASE_URL;
   if (wsUrl) {
     // socket.io-client accepts both ws:// and http:// — prefer http:// so
     // the polling transport works during the upgrade dance.
     return wsUrl.replace(/^ws:/, 'http:').replace(/^wss:/, 'https:')
   }
-  console.log('WS URL NOT CONFIGURED, FALLING BACK TO LOCALHOST')
   return 'http://localhost:8080'
 }
 
