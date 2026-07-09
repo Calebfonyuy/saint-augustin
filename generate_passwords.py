@@ -27,7 +27,8 @@ ROOT = Path(__file__).parent
 ROOT_ENV = ROOT / ".env"
 AUTH_ENV = ROOT / "services" / "auth" / ".env"
 
-PASSWORD_ALPHABET = string.ascii_letters + string.digits + "!@#$%^&*"
+# PASSWORD_ALPHABET = string.ascii_letters + string.digits + "!@#$%^&*"
+PASSWORD_ALPHABET = string.ascii_letters + string.digits
 PASSWORD_LENGTH = 32
 
 
@@ -82,6 +83,7 @@ def apply_secrets(write: bool) -> None:
     root_content = set_env_value(root_content, "POSTGRES_PASSWORD", postgres_password)
     root_content = set_env_value(root_content, "MINIO_ROOT_PASSWORD", minio_password)
     root_content = set_env_value(root_content, "JWT_SECRET", jwt_secret)
+    root_content = set_env_value(root_content, "APP_KEY", laravel_app_key)
 
     # ── services/auth/.env ────────────────────────────────────────────────────
     auth_content = load(AUTH_ENV)

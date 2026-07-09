@@ -24,8 +24,8 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 # pdo_pgsql -> PostgreSQL 16 (sa_auth)
 # redis (pecl) -> Sanctum sessions / cache
 # intl, mbstring, bcmath, zip, opcache, pcntl -> Laravel defaults + queue workers
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        git \
+RUN apt-get update
+RUN apt-get install -y \
         unzip \
         curl \
         ca-certificates \
