@@ -19,7 +19,8 @@ class InvitationNotification extends Notification
         private readonly string $token,
         private readonly string $inviterName,
         private readonly int $expireHours,
-    ) {}
+    ) {
+    }
 
     /** @return string[] */
     public function via(object $notifiable): array
@@ -43,7 +44,7 @@ class InvitationNotification extends Notification
             .'?token='.urlencode($this->token)
             .'&email='.urlencode($email);
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject(__('You have been invited to SaintAugustin'))
             ->greeting(__('Hello,'))
             ->line(__(':inviter has invited you to join SaintAugustin, a worship management platform.', [

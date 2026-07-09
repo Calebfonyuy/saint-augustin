@@ -22,7 +22,8 @@ final readonly class ParsedSong
         public array $verses,
         public ?string $songbookName,
         public ?string $songbookGuid,
-    ) {}
+    ) {
+    }
 
     /**
      * Concatenate the verses into a ChordPro-ish lyrics block.

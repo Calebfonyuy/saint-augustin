@@ -145,7 +145,7 @@ class InvitationController
         ]);
 
         // Send via anonymous notifiable so we don't need a User model instance
-        (new AnonymousNotifiable)
+        (new AnonymousNotifiable())
             ->route('mail', $email)
             ->notify(new InvitationNotification(
                 token: $invitation->token,
@@ -346,7 +346,7 @@ class InvitationController
             'expires_at' => now()->addHours($expireHours),
         ]);
 
-        (new AnonymousNotifiable)
+        (new AnonymousNotifiable())
             ->route('mail', $invitation->email)
             ->notify(new InvitationNotification(
                 token: $invitation->token,

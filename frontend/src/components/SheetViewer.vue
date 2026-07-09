@@ -19,9 +19,9 @@ import { useI18n } from 'vue-i18n'
 import type { SongSheet } from '@/types'
 import Icon from './Icon.vue'
 
-const { t } = useI18n()
-
 const props = defineProps<{ sheet: SongSheet }>()
+
+const { t } = useI18n()
 
 const isPdf = computed(() => props.sheet.file_type === 'pdf')
 const isImage = computed(() => props.sheet.file_type === 'image')

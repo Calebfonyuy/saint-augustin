@@ -11,8 +11,6 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-const { t } = useI18n()
-
 defineProps<{
   /** Active tab id — controls underline and text color. */
   active: 'users' | 'songbooks' | 'import' | 'settings'
@@ -21,6 +19,8 @@ defineProps<{
   /** Subtitle hint shown after the title. */
   subtitle?: string
 }>()
+
+const { t } = useI18n()
 
 const router = useRouter()
 

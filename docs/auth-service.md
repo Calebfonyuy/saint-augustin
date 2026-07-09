@@ -1,18 +1,18 @@
 # Auth Service
 
-The Auth Service is a Laravel 12 application that acts as the primary backend for SaintAugustin. It handles authentication, user management, songs, songbooks, song sheets, playlists, and share links — capabilities that will be split into separate microservices as the project scales.
+The Auth Service is a Laravel 12 application that acts as SaintAugustin's unified content-and-auth API. It handles authentication, user management, songs, songbooks, song sheets, playlists, and share links. Per [ADR-0001](adr/0001-unified-api-as-content-service.md), this is the deliberate architecture, not a temporary phase-limited stepping stone — the v1.2-planned per-domain microservice split is deferred, and new domains (e.g. Bible, v0.2) are added here rather than as new deployables.
 
-- **Runtime:** PHP 8.3 with Laravel Octane (FrankenPHP worker)
+- **Runtime:** PHP 8.3 with Apache (mod_php) — see `services/auth/Dockerfile`
 - **Database:** PostgreSQL 16 (`saintaugustin_db` schema)
 - **Object storage:** MinIO (S3-compatible) for song sheet files
 - **Auth mechanism:** Laravel Sanctum — stateless Bearer tokens
-- **Container port:** 8000 (exposed via Nginx gateway at `/api/...`)
+- **Container port:** 80 internally, published as `AUTH_SERVICE_PORT` (default 8000) — no gateway in front of it in the current stack (see `docs/infrastructure.md`)
 
 ---
 
 ## API Routes
 
-All routes are prefixed `/api` by Laravel. The Nginx gateway routes them from port 8080.
+All routes are prefixed `/api` by Laravel, reached directly on the Auth Service's own port.
 
 ### Authentication (`/api/auth`)
 
@@ -101,7 +101,7 @@ Each playlist item stores `position`, an optional `target_key` (transpose destin
 - **Sanctum stateless mode only.** The `statefulApi()` helper is not used on any route — all API consumers send `Authorization: Bearer {token}` headers. This avoids CSRF complications in the SPA and keeps the service truly stateless.
 - **Soft deletes on songs.** Songs are never hard-deleted by users. The `trashed` query parameter on the list endpoint lets admins view and restore deleted songs.
 - **MinIO presigned URLs.** File content never passes through the Laravel process on download; only the presigned URL is issued. This keeps the auth service lean and avoids large request bodies in PHP.
-- **Single-service monolith for phases 1–3.** Songs, sheets, and playlists live in the same Laravel app to simplify development. The Nginx gateway already defines stub upstreams for future extraction.
+- **Unified API, not a temporary monolith (ADR-0001).** Songs, sheets, playlists, and (from v0.2) Bible content all live in the same Laravel app. The Nginx gateway config retains stub upstreams as a documented extraction seam, but no current work depends on that split happening.
 
 ---
 
@@ -117,3 +117,5 @@ Each playlist item stores `position`, an optional `target_key` (transpose destin
 | `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | MinIO credentials | — |
 | `MINIO_BUCKET` | Default bucket name | `saintaugustin` |
 | `SONG_SHEET_URL_TTL` | Presigned URL lifetime (minutes) | `15` |
+| `QUEUE_CONNECTION` | Laravel queue driver; must be `redis` so `queue-worker` processes jobs (e.g. the STAUG full-DB export) | `redis` |
+| `STAUG_SIGNING_KEY` | HMAC key used to sign/verify STAUG export archives. DR-critical — must match across instances that validate each other's exports. Generate with `openssl rand -base64 32` | — |

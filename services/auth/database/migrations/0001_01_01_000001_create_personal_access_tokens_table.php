@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\Schema;
  * Sanctum personal access tokens table.
  * Ref: https://laravel.com/docs/12.x/sanctum#api-token-authentication
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('personal_access_tokens', function (Blueprint $table) {

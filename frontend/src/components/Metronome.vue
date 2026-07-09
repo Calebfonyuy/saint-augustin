@@ -16,14 +16,14 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Icon from './Icon.vue'
 
-const { t } = useI18n()
-
 const props = defineProps<{
   /** Target BPM. May be null (e.g. song has no tempo) — we fall back to 90. */
   tempo: number | null | undefined
   /** "4/4", "3/4", "6/8" — the numerator drives the bar length and accent. */
   timeSignature: string | null | undefined
 }>()
+
+const { t } = useI18n()
 
 // User-controlled override BPM. Initialised from `tempo` and stays in sync
 // only while the user hasn't manually edited it.

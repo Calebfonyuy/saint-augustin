@@ -1,12 +1,13 @@
-# Auth Service — Laravel 12 + FrankenPHP (Octane).
+# Auth Service — Laravel 12 + Apache/mod_php (see services/auth/Dockerfile).
 #
 # Migrations run as a Job on each `kubectl apply` (the Job's `name` is
 # generated from the image tag at overlay time, so a new tag = a new
 # Job = fresh migration run). This keeps multi-replica deployments
 # safe: only one pod ever runs `migrate --force`.
 #
-# The Deployment itself starts Octane directly with no migration step,
+# The Deployment itself starts Apache directly with no migration step,
 # so individual pod restarts don't race the database.
+# See 06b_queue_worker.yaml for the background job processor.
 apiVersion: v1
 kind: Service
 metadata:

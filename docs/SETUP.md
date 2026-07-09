@@ -57,6 +57,7 @@ Edit `.env` and change at minimum:
 - `POSTGRES_PASSWORD` — pick a dev password
 - `MINIO_ROOT_PASSWORD` — pick a dev password
 - `JWT_SECRET` — at least 32 random characters
+- `STAUG_SIGNING_KEY` — at least 32 random characters (`openssl rand -base64 32`); DR-critical, keep it backed up
 
 ## Step 4: Install Application Dependencies
 
@@ -112,27 +113,31 @@ docker compose exec auth-service php artisan db:seed
 ## Step 8: Verify Everything Works
 
 ```bash
-# Auth Service health
-curl http://localhost:8080/health
+# Auth Service health (host port from AUTH_SERVICE_PORT, default 8000)
+curl http://localhost:8000/health
 # Expected: {"status":"ok"}  (or similar Laravel health response)
 
 # Auth API status
-curl http://localhost:8080/api/auth/status
+curl http://localhost:8000/api/auth/status
 # Expected: {"service":"auth-service","status":"ok","version":"0.1.0"}
 
 # Projection Service health
 curl http://localhost:3000/health
 # Expected: {"status":"ok","service":"projection-service","timestamp":"..."}
+
+# Queue worker is up and processing jobs (see docs/infrastructure.md)
+docker compose logs queue-worker
 ```
 
+There is no API gateway container in the current stack — the frontend talks to the Auth Service and Projection Service directly (see `docs/infrastructure.md`).
+
 Open in browser (replace `your-server` with your server IP or hostname):
-- **Frontend (direct):** http://your-server:5173
-- **Frontend (via gateway):** http://your-server:8080
+- **Frontend:** http://your-server:5173
 - **MinIO Console:** http://your-server:9001 (login with MINIO_ROOT_USER/PASSWORD)
 
 If connecting from VS Code Remote SSH, you can forward ports:
 - VS Code auto-detects open ports and offers to forward them
-- Or manually: `Ctrl+Shift+P` → "Forward a Port" → enter `8080`, `5173`, `9001`
+- Or manually: `Ctrl+Shift+P` → "Forward a Port" → enter `5173`, `8000`, `3000`, `9001`
 
 ## Step 9: Initialize Git Repository
 
@@ -239,9 +244,9 @@ docker compose down -v                  # removes volumes
 docker compose up -d postgres           # recreates with init
 ```
 
-**Frontend can't reach backend through gateway:**
-Check that all services are healthy:
+**Frontend can't reach the backend:**
+Check that all services are healthy, and that `VITE_API_BASE_URL` / `VITE_WS_URL` / `VITE_PROJECTION_BASE_URL` in `.env` point at the Auth/Projection service ports:
 ```bash
 docker compose ps
-docker compose logs gateway             # check nginx errors
+docker compose logs auth-service
 ```

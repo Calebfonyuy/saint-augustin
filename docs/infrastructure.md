@@ -12,10 +12,12 @@ SaintAugustin's local development environment is fully containerised via Docker 
 | `sa-redis` | `redis:7-alpine` | 6379 | `redis_data` volume |
 | `sa-minio` | `minio/minio:latest` | 9000 (S3), 9001 (console) | `minio_data` volume |
 | `sa-minio-init` | `minio/mc:latest` | — | One-shot bucket creator |
-| `sa-gateway` | `nginx:1.27-alpine` | **8080** (public) | — |
-| `sa-auth` | Built from `services/auth` | 8000 | `./services/auth` (bind mount) |
-| `sa-projection` | Built from `services/projection` | 3000 | `./services/projection` (bind mount) |
-| `sa-frontend` | Built from `frontend` | 5173 | `./frontend` (bind mount) |
+| `staug-api` | Built from `services/auth` | 8000 (host) → 80 | Auth Service (Apache/mod_php) |
+| `staug-queue-worker` | Built from `services/auth` | — | `php artisan queue:work` — background job processor |
+| `staug-projection` | Built from `services/projection` | 3000 | Projection Service |
+| `staug-frontend` | Built from `frontend` | 5173 | Static SPA served by its own Nginx (`frontend/nginx.conf`) |
+
+There is no separate API gateway container — the frontend calls the Auth Service and Projection Service directly via `VITE_API_BASE_URL` / `VITE_WS_URL` / `VITE_PROJECTION_BASE_URL` (CORS-enabled on the Laravel side). `docker/nginx/default.conf` documents a gateway routing layout that is not currently deployed in `docker-compose.yml`.
 
 Startup order is enforced via `depends_on` with `condition: service_healthy` checks on PostgreSQL, Redis, and MinIO.
 
@@ -46,6 +48,14 @@ docker compose exec postgres psql -U saintaugustin -d saintaugustin_db
 
 ---
 
+## Queue Worker
+
+- **Container:** `staug-queue-worker`, same image/build as the Auth Service, running `php artisan queue:work redis --tries=3 --backoff=5 --sleep=3` instead of serving HTTP.
+- Processes Laravel's queued jobs (`QUEUE_CONNECTION=redis`) — e.g. the STAUG full-DB export job. Without this container, jobs dispatched with `dispatch()` sit in Redis and never run.
+- Runs alongside `staug-api`; check `docker compose logs queue-worker` if queued jobs aren't completing.
+
+---
+
 ## MinIO (Object Storage)
 
 - **Image:** `minio/minio:latest`
@@ -60,31 +70,9 @@ Song sheets are stored in the `saintaugustin` bucket. The Auth Service generates
 
 ---
 
-## Nginx Gateway
+## API Gateway (not currently deployed)
 
-- **Image:** `nginx:1.27-alpine`
-- **Config:** `docker/nginx/default.conf`
-- **Public port:** 8080 (configurable via `GATEWAY_HTTP_PORT`)
-- **Max upload body:** 50 MB (for song sheet uploads)
-
-The gateway routes all traffic by URL prefix. WebSocket connections (projection and Vite HMR) are handled with `Upgrade` / `Connection` headers and an extended `proxy_read_timeout` (86400 s).
-
-### Path routing summary
-
-```
-/api/auth/        → auth-service:8000
-/api/songs        → auth-service:8000   (currently; placeholder upstreams exist for future split)
-/api/songbooks    → auth-service:8000
-/api/playlists    → auth-service:8000
-/api/share/       → auth-service:8000
-/api/sheets       → auth-service:8000
-/api/projection/  → projection-service:3000
-/ws/projection/   → projection-service:3000 (WebSocket)
-/socket.io/       → projection-service:3000 (Socket.IO)
-/                 → frontend:5173
-```
-
-> **Note:** The Nginx config retains stub upstreams (`song_service`, `playlist_service`, `file_service`, `import_service`) pointing at containers that don't yet exist. These upstreams will return errors if ever matched, but the routing rules that reference them are not currently active.
+`docker/nginx/default.conf` still documents a path-based Nginx gateway (auth/songs/playlists/projection routing, incl. stub upstreams for a future service split), but no `gateway` container is defined in `docker-compose.yml` today. Each service is reached directly on its own host port instead (see the table above). If the gateway is reintroduced, update this section and the Services table together.
 
 ---
 

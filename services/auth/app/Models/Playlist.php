@@ -14,16 +14,18 @@ use Illuminate\Database\Eloquent\Model;
  * cast to a plain array and queried via whereJsonContains, mirroring the
  * Song model's tagging behaviour.
  *
- * @property string      $id
- * @property string      $name
- * @property string|null $event_date
- * @property string[]    $tags
- * @property string|null $created_by
- * @property string|null $duplicated_from_id
+ * @property string                            $id
+ * @property string                            $name
+ * @property \Illuminate\Support\Carbon|null   $event_date
+ * @property string[]                          $tags
+ * @property string|null                       $created_by
+ * @property string|null                       $duplicated_from_id
  */
 class Playlist extends Model
 {
-    use HasFactory, HasUuids;
+    /** @use HasFactory<\Database\Factories\PlaylistFactory> */
+    use HasFactory;
+    use HasUuids;
 
     protected $fillable = [
         'name',
@@ -43,16 +45,19 @@ class Playlist extends Model
 
     // ── Relationships ─────────────────────────────────────────────────
 
+    /** @return \Illuminate\Database\Eloquent\Relations\HasMany<PlaylistItem, $this> */
     public function items(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(PlaylistItem::class)->orderBy('position');
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<User, $this> */
     public function creator(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\HasMany<ShareLink, $this> */
     public function shareLinks(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(ShareLink::class);

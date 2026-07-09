@@ -23,7 +23,11 @@ use Laravel\Sanctum\HasApiTokens;
  */
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, HasUuids, Notifiable;
+    use HasApiTokens;
+    /** @use HasFactory<\Database\Factories\UserFactory> */
+    use HasFactory;
+    use HasUuids;
+    use Notifiable;
 
     protected $fillable = [
         'email',
@@ -49,6 +53,7 @@ class User extends Authenticatable
 
     // ── Relationships ─────────────────────────────────────────────────
 
+    /** @return \Illuminate\Database\Eloquent\Relations\HasMany<Invitation, $this> */
     public function invitations(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Invitation::class, 'invited_by');

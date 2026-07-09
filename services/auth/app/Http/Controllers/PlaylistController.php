@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\Song;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,9 +32,6 @@ use OpenApi\Attributes as OA;
 )]
 class PlaylistController
 {
-    /** Re-used by both Playlist and PlaylistItem validation. */
-    private const KEY_PATTERN = '/^[A-G][#b]?m?$/';
-
     // ── List + filter ─────────────────────────────────────────────────
 
     #[OA\Get(

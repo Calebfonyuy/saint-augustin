@@ -205,5 +205,5 @@ Test files live alongside the code they test in `__tests__` subdirectories.
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_API_BASE_URL` | REST API base URL (e.g. `http://localhost:8080/api`) |
-| `VITE_WS_URL` | WebSocket base URL (e.g. `ws://localhost:8080`) |
+| `VITE_API_BASE_URL` | REST API base URL — Auth Service directly, no gateway (e.g. `http://localhost:8000/api`) |
+| `VITE_WS_URL` | WebSocket base URL (e.g. `ws://localhost:8000`) |

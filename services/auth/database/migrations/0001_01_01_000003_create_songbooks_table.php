@@ -11,8 +11,7 @@ use Illuminate\Support\Facades\Schema;
  * ships with one default songbook ("is_default = true"); admins may create
  * additional songbooks. A song must belong to exactly one songbook.
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('songbooks', function (Blueprint $table) {

@@ -1,5 +1,5 @@
-vendor/*
-storage/logs/*
+node_modules/*
+dist/*
 .env
 .env.*
 !.env.example

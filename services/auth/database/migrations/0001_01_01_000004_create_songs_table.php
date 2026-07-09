@@ -18,8 +18,7 @@ use Illuminate\Support\Facades\Schema;
  *     NFR-8 audit trail; full version history is a later-phase concern).
  *   - Soft-deletes give the 30-day recovery window required by NFR-8.
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('songs', function (Blueprint $table) {

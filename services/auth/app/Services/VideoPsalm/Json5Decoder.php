@@ -77,9 +77,15 @@ final class Json5Decoder
         // Bare identifier — bool / null. (We don't see these in VPAGD, but
         // it's cheap to support.)
         $word = $this->readIdent();
-        if ($word === 'true')  return true;
-        if ($word === 'false') return false;
-        if ($word === 'null')  return null;
+        if ($word === 'true') {
+            return true;
+        }
+        if ($word === 'false') {
+            return false;
+        }
+        if ($word === 'null') {
+            return null;
+        }
         throw new RuntimeException("Unexpected token '{$word}' at offset {$this->pos}.");
     }
 

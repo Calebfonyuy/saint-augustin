@@ -23,7 +23,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 class PlaylistItem extends Model
 {
-    use HasFactory, HasUuids;
+    /** @use HasFactory<\Database\Factories\PlaylistItemFactory> */
+    use HasFactory;
+    use HasUuids;
 
     protected $fillable = [
         'playlist_id',
@@ -40,11 +42,13 @@ class PlaylistItem extends Model
         ];
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<Playlist, $this> */
     public function playlist(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Playlist::class);
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<Song, $this> */
     public function song(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         // Use withTrashed so deleted songs still show in playlists with a

@@ -51,4 +51,9 @@ return [
         public_path('storage') => storage_path('app/public'),
     ],
 
+    // How long song-sheet presigned download URLs stay valid (minutes).
+    // Read here (not inline in the controller) so it still resolves
+    // correctly once `php artisan config:cache` snapshots this file.
+    'song_sheet_url_ttl' => env('SONG_SHEET_URL_TTL', 15),
+
 ];

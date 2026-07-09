@@ -22,8 +22,7 @@ use Illuminate\Support\Facades\Schema;
  * Multiple share links can exist per playlist (e.g. one musician + one
  * projection link), so no uniqueness constraint on `playlist_id`.
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('share_links', function (Blueprint $table) {

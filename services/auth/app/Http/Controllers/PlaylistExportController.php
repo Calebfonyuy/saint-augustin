@@ -132,13 +132,14 @@ class PlaylistExportController
 
     private function formatTextLine(int $n, PlaylistItem $item): string
     {
+        // song_id is a required FK and song() resolves withTrashed(), so the
+        // related song always resolves under this app's soft-delete-only
+        // architecture (songs are never hard-deleted).
         $song = $item->song;
-        $title = $song?->title ?? '(deleted song)';
-        $author = $song?->author ? ' — '.$song->author : '';
+        $title = $song->title;
+        $author = $song->author ? ' — '.$song->author : '';
 
-        $key = $item->target_key
-            ?? $song?->original_key
-            ?? '?';
+        $key = $item->target_key ?? $song->original_key ?? '?';
 
         return sprintf('%2d. %s%s   [%s]', $n, $title, $author, $key);
     }

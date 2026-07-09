@@ -20,8 +20,7 @@ use Illuminate\Support\Facades\Schema;
  *   - storage_disk is recorded so a later migration to a different disk
  *     (S3 in prod, local in tests, etc.) doesn't break existing rows.
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('song_sheets', function (Blueprint $table) {

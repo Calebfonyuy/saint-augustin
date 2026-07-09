@@ -16,7 +16,9 @@ use Illuminate\Notifications\Notification;
  */
 class ResetPasswordNotification extends Notification
 {
-    public function __construct(private readonly string $token) {}
+    public function __construct(private readonly string $token)
+    {
+    }
 
     /** @return string[] */
     public function via(object $notifiable): array
@@ -33,7 +35,7 @@ class ResetPasswordNotification extends Notification
 
         $expireMinutes = config('auth.passwords.users.expire', 60);
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject(__('Reset your SaintAugustin password'))
             ->greeting(__('Hello,'))
             ->line(__('You are receiving this email because a password reset was requested for your account.'))

@@ -9,26 +9,21 @@ SaintAugustin is a church music management platform that helps worship teams org
 ```
 Browser
   │
-  ▼
-┌─────────────────────────────────────────┐
-│  Nginx Gateway  (:8080)                 │
-│  Path-based routing to upstream services│
-└────┬────────────┬───────────┬───────────┘
-     │            │           │
-     ▼            ▼           ▼
- Auth Service  Projection  Frontend
- (Laravel 12)  Service     (Vue 3 / Vite)
- :8000         (NestJS 10)  :5173
-               :3000
-     │
-     ▼
-┌──────────────────────────────────────┐
-│  Infrastructure                      │
+  ├──────────────┬───────────────┬───────────────┐
+  ▼              ▼               ▼               │
+Frontend     Auth Service    Projection           │
+(Vue 3/Vite) (Laravel 12)    Service               │
+:5173        :8000           (NestJS 10) :3000     │
+                  │                                │
+                  ▼                                │
+┌──────────────────────────────────────┐           │
+│  Infrastructure                      │◄──────────┘
 │  PostgreSQL 16  Redis 7  MinIO       │
+│  + queue-worker (php artisan queue:work)
 └──────────────────────────────────────┘
 ```
 
-All HTTP traffic from the browser passes through the Nginx gateway on port 8080. The gateway routes by path prefix:
+The frontend calls the Auth Service and Projection Service directly (`VITE_API_BASE_URL`, `VITE_WS_URL`, `VITE_PROJECTION_BASE_URL`; CORS-enabled on the Laravel side) — there is no separate API gateway container in the current stack. `docker/nginx/default.conf` still documents a path-based gateway routing layout (see below) as a design reference, but it is not deployed in `docker-compose.yml` today.
 
 | Path prefix        | Upstream            |
 |--------------------|---------------------|
@@ -55,7 +50,7 @@ All HTTP traffic from the browser passes through the Nginx gateway on port 8080.
 
 ### Deliberately merged services
 
-Several logically distinct capabilities were merged into the Auth Service to reduce operational overhead during development:
+Several logically distinct capabilities were merged into the Auth Service to reduce operational overhead during development. As of [ADR-0001](adr/0001-unified-api-as-content-service.md), this is the deliberate v0.2 architecture (not just a development-time simplification) — new domains, including Bible content, are added here rather than as new deployables:
 
 - **Song & Songbook CRUD** (would be a separate Song Service in production)
 - **File Service** (song sheet upload/download via MinIO presigned URLs)

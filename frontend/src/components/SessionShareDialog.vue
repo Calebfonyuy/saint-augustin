@@ -9,13 +9,14 @@ import Icon from './Icon.vue'
 import QrCode from './QrCode.vue'
 import type { ProjectionSessionSummary } from '@/types'
 
-const { t } = useI18n()
-
 const props = defineProps<{
   session: ProjectionSessionSummary
   open: boolean
 }>()
+
 const emit = defineEmits<(e: 'close') => void>()
+
+const { t } = useI18n()
 
 const router = useRouter()
 

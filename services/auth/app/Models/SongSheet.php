@@ -26,7 +26,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 class SongSheet extends Model
 {
-    use HasFactory, HasUuids;
+    /** @use HasFactory<\Database\Factories\SongSheetFactory> */
+    use HasFactory;
+    use HasUuids;
 
     public const TYPE_PDF = 'pdf';
 
@@ -50,11 +52,13 @@ class SongSheet extends Model
         ];
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<Song, $this> */
     public function song(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Song::class);
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<User, $this> */
     public function uploader(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');

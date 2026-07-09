@@ -1,0 +1,46 @@
+# Auth queue worker — Laravel 12 + Apache/mod_php (same image as
+# auth-service), running `php artisan queue:work` instead of serving HTTP.
+# Required for queued jobs (e.g. the STAUG full-DB export job) instead of
+# running them synchronously in-request. Not exposed via a Service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-queue-worker
+  namespace: staug
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-queue-worker
+  template:
+    metadata:
+      labels:
+        app: auth-queue-worker
+    spec:
+      containers:
+        - name: queue-worker
+          image: calebfonyuy/staug-api:0.1
+          command: ["php", "artisan", "queue:work", "redis", "--tries=3", "--backoff=5", "--sleep=3"]
+          envFrom:
+            - configMapRef:
+                name: staug-config
+            - secretRef:
+                name: staug-secrets
+          env:
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: staug-secrets
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: staug-secrets
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "192Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"

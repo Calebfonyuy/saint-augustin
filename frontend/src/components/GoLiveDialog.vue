@@ -19,16 +19,17 @@ import { useProjectionStore } from '@/stores/projection'
 import { extractErrorMessage } from '@/api/client'
 import type { Playlist } from '@/types'
 
-const { t } = useI18n()
-
 const props = defineProps<{
   playlist: Playlist
   open: boolean
 }>()
+
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'launched', sessionId: string): void
 }>()
+
+const { t } = useI18n()
 
 const auth = useAuthStore()
 const projection = useProjectionStore()
@@ -210,7 +211,7 @@ async function onLaunch(): Promise<void> {
           <p
             v-else-if="
               selectedSessionId &&
-              availableSessions.find((s) => s.id === selectedSessionId)?.status ===
+                availableSessions.find((s) => s.id === selectedSessionId)?.status ===
                 'NOT_STARTED'
             "
             class="text-[11px] text-text-faint"

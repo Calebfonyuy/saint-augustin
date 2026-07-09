@@ -145,7 +145,7 @@ class PasswordResetController
 
         if ($status !== Password::PASSWORD_RESET) {
             return response()->json([
-                'message'=> __('validation.custom.token.invalid'),
+                'message' => __('validation.custom.token.invalid'),
                 'errors' => ['token' => [__($status)]],
             ], 422);
         }

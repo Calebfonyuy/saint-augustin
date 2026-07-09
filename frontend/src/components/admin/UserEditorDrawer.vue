@@ -23,8 +23,6 @@ import Icon from '@/components/Icon.vue'
 import type { AdminMember } from '@/stores/users'
 import type { Role } from '@/types'
 
-const { t } = useI18n()
-
 const props = defineProps<{
   /** Drawer is open when this is non-null. */
   member: AdminMember | null
@@ -43,6 +41,8 @@ const emit = defineEmits<{
   cancelInvite: [id: string]
   resetPassword: [user: AdminMember]
 }>()
+
+const { t } = useI18n()
 
 interface RoleDef {
   id: Role
