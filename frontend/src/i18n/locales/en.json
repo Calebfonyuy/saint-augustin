@@ -241,7 +241,7 @@
     "fullName": "Full name",
     "fullNamePlaceholder": "e.g. Jonah Pereira",
     "email": "Email",
-    "emailPlaceholder": "name@staug.app",
+    "emailPlaceholder": "name{'@'}staug.app",
     "emailHint": "The email is the user's primary identifier and cannot be changed here.",
     "rolesHint": "Pick one or more. An Admin can manage users, songbooks, and settings.",
     "roles": {
@@ -258,7 +258,9 @@
     "resendWithRoles": "Resend with new roles",
     "saveChanges": "Save changes",
     "confirmCancelInvite": "Cancel this invitation? The link will stop working.",
-    "confirmDelete": "Remove {email} from the workspace? They will lose access."
+    "confirmDelete": "Remove {email} from the workspace? They will lose access.",
+    "cantRemoveSelf": "You can't remove your own account. Ask another admin to do it.",
+    "cantRemoveOwnAdminRole": "You can't remove your own admin role. Ask another admin to do it."
   },
   "dashboard": {
     "welcome": "{greeting}, {name}.",

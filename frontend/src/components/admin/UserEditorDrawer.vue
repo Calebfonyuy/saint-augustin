@@ -30,6 +30,8 @@ const props = defineProps<{
   mode: 'invite' | 'edit'
   /** Disable Save while a request is in-flight. */
   saving?: boolean
+  /** Signed-in admin's own id — used to guard against self-lockout. */
+  currentUserId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -91,6 +93,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 const isInvite = computed(() => props.mode === 'invite')
 const isPending = computed(() => props.member?.kind === 'invitation')
+/** True when editing the signed-in admin's own account — guards against self-lockout. */
+const isSelf = computed(
+  () => !!props.member && props.member.kind === 'user' && props.member.id === props.currentUserId,
+)
 
 const initials = computed(() => {
   const src = form.display_name || form.email || '?'
@@ -129,6 +135,7 @@ const canSave = computed(() => {
 // ── Role toggling ─────────────────────────────────────────────────────────
 
 function toggleRole(r: Role): void {
+  if (r === 'admin' && isSelf.value) return
   if (form.roles.includes(r)) {
     form.roles = form.roles.filter((x) => x !== r)
   } else {
@@ -171,7 +178,7 @@ function onCancelInvite(): void {
 }
 
 function onDelete(): void {
-  if (!props.member || props.member.kind !== 'user') return
+  if (!props.member || props.member.kind !== 'user' || isSelf.value) return
   if (confirm(t('userDrawer.confirmDelete', { email: props.member.email }))) {
     emit('deleteUser', props.member.id)
   }
@@ -293,18 +300,20 @@ function onReset(): void {
             <label
               v-for="r in ROLE_DEFS"
               :key="r.id"
-              class="flex items-start gap-3 px-3 py-[10px] rounded-[8px] cursor-pointer transition-colors"
-              :class="
+              class="flex items-start gap-3 px-3 py-[10px] rounded-[8px] transition-colors"
+              :class="[
                 form.roles.includes(r.id)
                   ? 'border border-accent bg-accent-soft'
-                  : 'border border-border bg-bg-raised'
-              "
+                  : 'border border-border bg-bg-raised',
+                r.id === 'admin' && isSelf ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
+              ]"
               :data-testid="`user-drawer-role-${r.id}`"
             >
               <input
                 type="checkbox"
                 class="mt-[3px]"
                 :checked="form.roles.includes(r.id)"
+                :disabled="r.id === 'admin' && isSelf"
                 @change="toggleRole(r.id)"
               />
               <div class="flex-1">
@@ -315,6 +324,12 @@ function onReset(): void {
                   {{ r.label }}
                 </div>
                 <div class="text-[11.5px] text-text-muted mt-[2px]">{{ r.blurb }}</div>
+                <div
+                  v-if="r.id === 'admin' && isSelf"
+                  class="text-[10.5px] text-text-faint mt-1"
+                >
+                  {{ t('userDrawer.cantRemoveOwnAdminRole') }}
+                </div>
               </div>
             </label>
           </div>
@@ -375,11 +390,19 @@ function onReset(): void {
               type="button"
               class="btn btn-danger"
               style="justify-content: flex-start"
+              :disabled="isSelf"
+              :class="{ 'opacity-40 cursor-not-allowed': isSelf }"
               data-testid="user-drawer-delete"
               @click="onDelete"
             >
               {{ t('userDrawer.removeFromWorkspace') }}
             </button>
+            <div
+              v-if="!isPending && isSelf"
+              class="text-[10.5px] text-text-faint mt-1"
+            >
+              {{ t('userDrawer.cantRemoveSelf') }}
+            </div>
           </template>
         </div>
 

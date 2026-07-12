@@ -241,7 +241,7 @@
     "fullName": "Nom complet",
     "fullNamePlaceholder": "ex. Jonah Pereira",
     "email": "E-mail",
-    "emailPlaceholder": "nom@staug.app",
+    "emailPlaceholder": "nom{'@'}staug.app",
     "emailHint": "L'e-mail est l'identifiant principal de l'utilisateur et ne peut pas être modifié ici.",
     "rolesHint": "Choisissez-en un ou plusieurs. Un administrateur peut gérer les utilisateurs, les carnets de chants et les paramètres.",
     "roles": {
@@ -258,7 +258,9 @@
     "resendWithRoles": "Renvoyer avec les nouveaux rôles",
     "saveChanges": "Enregistrer les modifications",
     "confirmCancelInvite": "Annuler cette invitation ? Le lien cessera de fonctionner.",
-    "confirmDelete": "Retirer {email} de cet espace ? Cet utilisateur perdra l'accès."
+    "confirmDelete": "Retirer {email} de cet espace ? Cet utilisateur perdra l'accès.",
+    "cantRemoveSelf": "Vous ne pouvez pas retirer votre propre compte. Demandez à un autre administrateur de le faire.",
+    "cantRemoveOwnAdminRole": "Vous ne pouvez pas retirer votre propre rôle d'administrateur. Demandez à un autre administrateur de le faire."
   },
   "dashboard": {
     "welcome": "{greeting}, {name}.",

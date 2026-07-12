@@ -187,6 +187,12 @@ Public projector screen (no auth, no navigation chrome). Connects as a display s
 
 Public read-only playlist view accessed via a share link token. The mode (`musician` or `projection`) is determined by the share link. In musician mode the full song lyrics are shown; in projection mode only the setlist overview is visible.
 
+### `AdminUsersView`
+
+Admin-only user management (`/admin/users`). Lists registered users and pending invitations side-by-side (merged via `useUsersStore`'s `members` computed, an `AdminMember` discriminated union), with search, role filtering, invite, edit-roles, remove, resend/cancel invitation, bulk actions, and send-password-reset. Editing happens in the `UserEditorDrawer` slide-in panel (`components/admin/UserEditorDrawer.vue`).
+
+The drawer proactively guards a signed-in admin against locking themselves out: their own "Remove from workspace" action is disabled and their own `admin` role checkbox is locked (each with inline explanatory copy), mirroring the backend's self-delete/self-demotion 409 guards in `UserController`.
+
 ---
 
 ## Components

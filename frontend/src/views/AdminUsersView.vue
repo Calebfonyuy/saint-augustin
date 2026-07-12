@@ -19,11 +19,13 @@ import UserEditorDrawer from '@/components/admin/UserEditorDrawer.vue'
 import Icon from '@/components/Icon.vue'
 import Toast from '@/components/Toast.vue'
 import { useUsersStore, type AdminMember } from '@/stores/users'
+import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/api/client'
 import { requestPasswordReset } from '@/api/password'
 import type { Role } from '@/types'
 
 const usersStore = useUsersStore()
+const authStore = useAuthStore()
 const { t } = useI18n()
 
 // ── Filter state ──────────────────────────────────────────────────────────
@@ -490,6 +492,7 @@ async function bulkRemove() {
       :member="drawerMember"
       :mode="drawerMode"
       :saving="saving"
+      :current-user-id="authStore.user?.id ?? null"
       @close="closeDrawer"
       @save-user="onSaveUser"
       @delete-user="onDeleteUser"

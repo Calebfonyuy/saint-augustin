@@ -100,6 +100,7 @@ Each playlist item stores `position`, an optional `target_key` (transpose destin
 
 - **Sanctum stateless mode only.** The `statefulApi()` helper is not used on any route — all API consumers send `Authorization: Bearer {token}` headers. This avoids CSRF complications in the SPA and keeps the service truly stateless.
 - **Soft deletes on songs.** Songs are never hard-deleted by users. The `trashed` query parameter on the list endpoint lets admins view and restore deleted songs.
+- **Soft deletes on users.** Removing a user from the Admin → Users screen soft-deletes the record (`deleted_at`) rather than hard-deleting it, so accidental removals are recoverable at the DB level (via `User::withTrashed()`). Unlike songs, there is no `trashed` query param or `/restore` endpoint for users in v0.2 — a deliberate scope decision, not an oversight: soft delete here exists purely for DB-level recoverability, not an admin-facing undo UI.
 - **MinIO presigned URLs.** File content never passes through the Laravel process on download; only the presigned URL is issued. This keeps the auth service lean and avoids large request bodies in PHP.
 - **Unified API, not a temporary monolith (ADR-0001).** Songs, sheets, playlists, and (from v0.2) Bible content all live in the same Laravel app. The Nginx gateway config retains stub upstreams as a documented extraction seam, but no current work depends on that split happening.
 
