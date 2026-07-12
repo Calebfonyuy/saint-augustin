@@ -9,7 +9,19 @@
 # Ref: https://hub.docker.com/_/node
 # =============================================================================
 
+FROM node:26-alpine3.22 AS builder
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm i
+
+COPY . .
+
+RUN npm run build
+
+
 FROM node:26-alpine3.22
+
 
 ENV NODE_ENV="production"
 ENV REDIS_HOST="redis"
@@ -18,14 +30,12 @@ ENV AUTH_SERVICE_URL="http://localhost:8021"
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm i
-# RUN npm i -g http-server
+RUN npm ci --omit=dev
 
-COPY . .
+COPY --from=builder /app/dist /app/dist
+
 COPY ./entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-RUN npm run build
 
 EXPOSE 3000
 
