@@ -28,12 +28,14 @@ installUnauthorizedHandler(() => {
   }
 })
 
-// Hydrate the auth store before the first navigation resolves so that guards
-// requiring `user.roles` (admin-only routes) have the user object available.
-// The token itself is already hydrated synchronously inside the store, so even
-// if init() (which calls /auth/refresh) is slow, the basic isAuthenticated
-// check passes and protected routes don't redirect to /login on hard refresh.
+// Kick off auth bootstrap (validates the stored token via /auth/refresh and
+// hydrates `user`/roles) but don't block first paint on it — the token
+// itself already hydrated synchronously into the store above, so
+// isAuthenticated-gated routes render immediately. Role-gated routes
+// (requiresAdmin/requiresEditor) are handled separately: the router's
+// beforeEach guard awaits this same `ready()` promise before evaluating
+// those checks, so this doesn't reintroduce the refresh-to-dashboard bounce.
 const auth = useAuthStore()
-auth.init().finally(() => {
-  app.mount('#app')
-})
+void auth.ready()
+
+app.mount('#app')

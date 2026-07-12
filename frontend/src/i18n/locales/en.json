@@ -648,5 +648,10 @@
       "profileUpdated": "Profile updated.",
       "passwordChanged": "Password changed. Other devices have been signed out."
     }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "The page you're looking for doesn't exist or has moved.",
+    "backHome": "Back to dashboard"
   }
 }

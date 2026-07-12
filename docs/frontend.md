@@ -23,6 +23,19 @@ Routes are defined in `src/router/index.ts`. Three meta flags control access:
 | `public: true` + `hideForAuthed: true` | Authenticated users are sent to `/` (login, register pages) |
 | `public: true` (no `hideForAuthed`) | Publicly accessible with no auth check (share, projection display) |
 
+### Auth bootstrap ordering
+
+`main.ts` mounts the app immediately — it does not wait on `auth.init()`. The token
+hydrates synchronously from `localStorage` into the auth store at creation, so
+`isAuthenticated`-gated routes (`requiresAuth`, `hideForAuthed`) are correct from the
+first render. `main.ts` also kicks off `auth.ready()`, a promise cached on the store
+that wraps `init()` (which calls `/auth/refresh` to validate the token and populate
+`user`/roles). The router's `beforeEach` guard awaits that same `ready()` promise
+before evaluating `requiresAdmin`/`requiresEditor`, since those checks depend on
+`user.roles`, which isn't available until `/auth/refresh` resolves. This avoids a
+cold hard-refresh of an admin/editor route bouncing to `/` because roles hadn't
+loaded yet.
+
 ### Route Map
 
 | Path | View | Access |
@@ -32,16 +45,22 @@ Routes are defined in `src/router/index.ts`. Three meta flags control access:
 | `/forgot-password` | `ForgotPasswordView` | Public, hidden for authed |
 | `/reset-password` | `ResetPasswordView` | Public, hidden for authed |
 | `/` | `DashboardView` | Auth required |
+| `/account` | `AccountSettingsView` | Auth required |
 | `/library` | `SongLibraryView` | Auth required |
 | `/songs/new` | `SongEditorView` | Auth + editor role |
 | `/songs/:id` | `SongEditorView` | Auth + editor role |
 | `/songs/:id/play` | `MusicianView` | Auth required |
+| `/admin` | — (redirects to `/admin/users`) | Auth + admin |
+| `/admin/users` | `AdminUsersView` | Auth + admin |
 | `/admin/songbooks` | `SongbookAdminView` | Auth + admin |
+| `/admin/import` | `AdminImportView` | Auth + admin |
 | `/playlists` | `PlaylistsListView` | Auth required |
 | `/playlists/:id` | `PlaylistBuilderView` | Auth required |
 | `/s/:token` | `SharedPlaylistView` | Public |
+| `/sessions` | `SessionsListView` | Auth required |
 | `/projection/control/:id` | `ProjectionControlView` | Auth required |
 | `/projection/display/:id` | `ProjectionDisplayView` | Public |
+| `/:pathMatch(.*)*` | `NotFound` | Public — renders for any unmatched URL |
 
 ---
 

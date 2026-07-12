@@ -1,6 +1,6 @@
 {
   "name": "saintaugustin-projection-service",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "SaintAugustin Projection Service – WebSocket real-time slide synchronization",
   "private": true,
   "scripts": {

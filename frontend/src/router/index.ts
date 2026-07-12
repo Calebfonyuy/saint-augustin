@@ -1,12 +1,14 @@
 // App routing with auth guards.
 //
-// Two guard rules:
+// Guard rules:
 //   - Any route with `meta.requiresAuth` sends unauthenticated users to
 //     /login, preserving the attempted path in `?redirect=`.
 //   - /login and /register redirect already-authenticated users to /.
-//
-// Admin-only routes additionally check the `admin` role; non-admins are
-// bounced to / with no destructive navigation.
+//   - Admin/editor-only routes additionally check roles; unauthorized users
+//     are bounced to / with no destructive navigation. Role checks await
+//     auth.ready() first since `user.roles` is only populated once the
+//     background /auth/refresh kicked off in main.ts resolves.
+//   - Unknown URLs render NotFound.vue via the catch-all route.
 //
 // Ref: https://router.vuejs.org/guide/advanced/navigation-guards.html
 import { createRouter, createWebHistory } from 'vue-router'
@@ -147,12 +149,14 @@ const router = createRouter({
     },
     {
       path: '/:pathMatch(.*)*',
-      redirect: '/',
+      name: 'not-found',
+      component: () => import('@/views/NotFound.vue'),
+      meta: { public: true },
     },
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
@@ -161,6 +165,21 @@ router.beforeEach((to) => {
 
   if (to.meta.hideForAuthed && auth.isAuthenticated) {
     return { name: 'dashboard' }
+  }
+
+  if (to.meta.requiresAdmin || to.meta.requiresEditor) {
+    // user.roles is only populated once /auth/refresh resolves — wait for
+    // the (cached, idempotent) auth bootstrap before evaluating role
+    // guards so a cold hard-refresh of an admin/editor route doesn't see
+    // stale (empty) roles and bounce to dashboard.
+    await auth.ready()
+
+    // ready() may have discovered the stored token was dead and cleared
+    // auth state after the requiresAuth check above already passed on the
+    // stale token — re-check so we land on /login, not a fake-authed /.
+    if (to.meta.requiresAuth && !auth.isAuthenticated) {
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
   }
 
   if (to.meta.requiresAdmin && !auth.isAdmin) {

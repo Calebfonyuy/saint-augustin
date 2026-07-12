@@ -648,5 +648,10 @@
       "profileUpdated": "Profil mis à jour.",
       "passwordChanged": "Mot de passe modifié. Les autres appareils ont été déconnectés."
     }
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "subtitle": "La page que vous recherchez n'existe pas ou a été déplacée.",
+    "backHome": "Retour au tableau de bord"
   }
 }
