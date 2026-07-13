@@ -123,11 +123,18 @@ describe('SessionsService — persistent lifecycle', () => {
     expect(result.state.name).toBe('Sunday 9:30');
   });
 
-  it('rejects PERSISTENT without a name', async () => {
+  it('PERSISTENT with no name falls back to playlistName', async () => {
     const { svc } = makeService();
-    await expect(
-      svc.create({ kind: 'PERSISTENT', playlistName: 'x' }, OWNER),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    const result = await svc.create({ kind: 'PERSISTENT', playlistName: 'x' }, OWNER);
+    expect(result.state.name).toBe('x');
+  });
+
+  it('omitting kind defaults to PERSISTENT (not TEMPORARY)', async () => {
+    const { svc } = makeService();
+    const result = await svc.create({ playlistName: 'Ad-hoc' }, OWNER);
+    expect(result.state.kind).toBe('PERSISTENT');
+    expect(result.state.status).toBe('NOT_STARTED');
+    expect(result.controlToken).toBeNull();
   });
 
   it('rejects scheduledEnd before scheduledStart', async () => {
@@ -342,5 +349,84 @@ describe('SessionsService — listing', () => {
     const onlyOwner = await svc.list(OWNER, { mine: true });
     expect(onlyOwner).toHaveLength(1);
     expect(onlyOwner[0].name).toBe('O');
+  });
+});
+
+describe('SessionsService — reclaim', () => {
+  async function makeLiveSession(svc: SessionsService) {
+    const created = await svc.create(persistentDto(), OWNER);
+    await svc.loadSlides(created.state.id, OWNER, {
+      playlistName: 'Sunday',
+      slides: [slide()],
+    });
+    const { state, controlToken } = await svc.start(created.state.id, OWNER);
+    return { id: state.id, controlToken };
+  }
+
+  it('succeeds with the correct token on a LIVE session', async () => {
+    const { svc } = makeService();
+    const { id, controlToken } = await makeLiveSession(svc);
+    const state = await svc.reclaim(id, controlToken);
+    expect(state.id).toBe(id);
+  });
+
+  it('rejects a wrong token', async () => {
+    const { svc } = makeService();
+    const { id } = await makeLiveSession(svc);
+    await expect(svc.reclaim(id, 'not-the-token')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+  });
+
+  it('rejects when the session is not live', async () => {
+    const { svc } = makeService();
+    const created = await svc.create(persistentDto(), OWNER);
+    await expect(svc.reclaim(created.state.id, 'anything')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+  });
+});
+
+describe('SessionsService — takeover', () => {
+  async function makeLiveSession(svc: SessionsService) {
+    const created = await svc.create(persistentDto(), OWNER);
+    await svc.loadSlides(created.state.id, OWNER, {
+      playlistName: 'Sunday',
+      slides: [slide()],
+    });
+    const { state, controlToken } = await svc.start(created.state.id, OWNER);
+    return { id: state.id, controlToken };
+  }
+
+  it('rotates the control token — the old token stops working', async () => {
+    const { svc } = makeService();
+    const { id, controlToken: oldToken } = await makeLiveSession(svc);
+    const { controlToken: newToken } = await svc.takeover(id, ADMIN);
+    expect(newToken).not.toBe(oldToken);
+    expect(await svc.isController(id, oldToken)).toBe(false);
+    expect(await svc.isController(id, newToken)).toBe(true);
+  });
+
+  it('rejects a stranger', async () => {
+    const { svc } = makeService();
+    const { id } = await makeLiveSession(svc);
+    await expect(svc.takeover(id, STRANGER)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+  });
+
+  it('allows an admin', async () => {
+    const { svc } = makeService();
+    const { id } = await makeLiveSession(svc);
+    const { state } = await svc.takeover(id, ADMIN);
+    expect(state.id).toBe(id);
+  });
+
+  it('rejects when the session is not live', async () => {
+    const { svc } = makeService();
+    const created = await svc.create(persistentDto(), OWNER);
+    await expect(svc.takeover(created.state.id, OWNER)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
   });
 });

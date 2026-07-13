@@ -72,6 +72,12 @@ COPY . .
 COPY ./apache2.conf /etc/apache2/apache2.conf
 COPY ./php.ini /usr/local/etc/php/php.ini
 
+RUN mkdir -p storage/framework/cache/data \
+    && mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/views \
+    && mkdir -p storage/logs \
+    && mkdir -p bootstrap/cache 
+
 RUN composer dump-autoload --optimize --classmap-authoritative --no-dev \
     && php artisan package:discover --ansi \
     && chown -R www-data:www-data storage bootstrap/cache \

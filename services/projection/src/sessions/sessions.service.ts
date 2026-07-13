@@ -28,6 +28,11 @@
 //   • Get state:              public (sessionId is the share token).
 //   • Start / End / Delete:   owner of the session, or an admin.
 //   • Load slides:            owner of the session, or an admin.
+//   • Reclaim:                anyone holding a still-valid control token
+//                             (token possession is the proof of authority).
+//   • Takeover:               owner of the session, or an admin. Rotates
+//                             the control token and revokes any connected
+//                             controller sockets (see ProjectionGateway).
 
 import {
   BadRequestException,
@@ -82,7 +87,7 @@ export class SessionsService {
     input: CreateSessionDto,
     user: AuthUser | null,
   ): Promise<CreatedSession> {
-    const kind: SessionKind = input.kind ?? 'TEMPORARY';
+    const kind: SessionKind = input.kind ?? 'PERSISTENT';
     const id = randomUUID();
     const now = new Date().toISOString();
 
@@ -90,9 +95,6 @@ export class SessionsService {
       throw new BadRequestException(
         'TEMPORARY sessions require slides at creation time',
       );
-    }
-    if (kind === 'PERSISTENT' && !input.name?.trim()) {
-      throw new BadRequestException('PERSISTENT sessions require a name');
     }
     if (
       input.scheduledStartAt &&
@@ -244,6 +246,42 @@ export class SessionsService {
 
     this.logger.log(`Ended session ${id} by ${user.email}`);
     return state;
+  }
+
+  /**
+   * Re-confirm control using a previously-issued token, without rotating
+   * it. Used when a browser reloads/reconnects and wants to know whether
+   * the control token it persisted client-side is still good.
+   */
+  async reclaim(id: string, token: string): Promise<SessionState> {
+    const state = await this.get(id);
+    if (state.status !== 'LIVE') {
+      throw new ConflictException('Session is not live');
+    }
+    if (!(await this.isController(id, token))) {
+      throw new ForbiddenException('Invalid or expired control token');
+    }
+    return state;
+  }
+
+  /**
+   * Owner or admin forcibly takes control of a LIVE session, rotating the
+   * control token. The caller must separately notify/revoke connected
+   * sockets — see ProjectionGateway.handleTakeover.
+   */
+  async takeover(
+    id: string,
+    user: AuthUser,
+  ): Promise<{ state: SessionState; controlToken: string }> {
+    const state = await this.get(id);
+    this.assertOwnerOrAdmin(state, user);
+    if (state.status !== 'LIVE') {
+      throw new ConflictException('Session is not live');
+    }
+    const controlToken = randomBytes(24).toString('base64url');
+    await this.persist(state, controlToken);
+    this.logger.log(`Session ${id} control taken over by ${user.email}`);
+    return { state, controlToken };
   }
 
   /** Delete the session entirely. Owner or admin only. */

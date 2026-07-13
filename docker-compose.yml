@@ -129,6 +129,7 @@ services:
       SONG_SHEET_URL_TTL: ${SONG_SHEET_URL_TTL:-15}
       # Frontend URL (for CORS and email links)
       APP_FRONTEND_URL: ${APP_FRONTEND_URL:-http://localhost:5173}
+      APP_PROJECTION_URL: ${VITE_PROJECTION_BASE_URL:-http://localhost:3000}
       # Email settings
       MAIL_MAILER: ${MAIL_MAILER:-smtp}
       MAIL_HOST: ${MAIL_HOST:-sandbox.smtp.mailtrap.io}

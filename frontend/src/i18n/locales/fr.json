@@ -288,7 +288,6 @@
     "noMatches": "Aucun chant ne correspond à votre recherche.",
     "switchMusician": "Passer à la vue musicien",
     "projectSong": "Projeter le chant",
-    "starting": "Démarrage…",
     "selectToPreview": "Sélectionnez un chant pour l'aperçu",
     "errors": {
       "load": "Échec du chargement des chants.",
@@ -492,10 +491,15 @@
     "fullscreenTip": "Plein écran (F)",
     "exitFullscreenTip": "Quitter le plein écran (F)",
     "confirmEnd": "Terminer cette session de projection ? Les affichages seront déconnectés.",
+    "takeControl": "Prendre le contrôle",
+    "confirmTakeover": "Prendre le contrôle de cette session ? Le contrôleur actuel passera en lecture seule.",
+    "reclaimedBanner": "Reconnecté — vous avez repris le contrôle.",
+    "takenOverNotice": "Un autre appareil a pris le contrôle de cette session. Vous êtes maintenant en lecture seule.",
     "errors": {
       "copy": "Impossible de copier — maintenez le lien appuyé.",
       "connect": "Impossible de se connecter à la session de projection.",
-      "end": "Impossible de terminer la session."
+      "end": "Impossible de terminer la session.",
+      "takeover": "Impossible de prendre le contrôle de cette session."
     }
   },
   "projectionDisplay": {

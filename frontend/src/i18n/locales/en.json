@@ -288,7 +288,6 @@
     "noMatches": "No songs match your search.",
     "switchMusician": "Switch to musician view",
     "projectSong": "Project song",
-    "starting": "Starting…",
     "selectToPreview": "Select a song to preview",
     "errors": {
       "load": "Failed to load songs.",
@@ -492,10 +491,15 @@
     "fullscreenTip": "Fullscreen (F)",
     "exitFullscreenTip": "Exit fullscreen (F)",
     "confirmEnd": "End this projection session? Displays will disconnect.",
+    "takeControl": "Take control",
+    "confirmTakeover": "Take control of this session? The current controller will be switched to view-only.",
+    "reclaimedBanner": "Reconnected — you're back in control.",
+    "takenOverNotice": "Another device has taken control of this session. You're now in view-only mode.",
     "errors": {
       "copy": "Could not copy — long-press the link instead.",
       "connect": "Could not connect to the projection session.",
-      "end": "Could not end session."
+      "end": "Could not end session.",
+      "takeover": "Could not take control of this session."
     }
   },
   "projectionDisplay": {

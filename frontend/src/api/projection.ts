@@ -89,3 +89,23 @@ export async function loadSlides(
 export async function destroySession(id: string): Promise<void> {
   await projectionClient.delete(`${BASE}/${id}`)
 }
+
+/** Re-confirm a previously-issued control token still works, without rotating it. */
+export async function reclaimSession(
+  id: string,
+  token: string,
+): Promise<CreateProjectionSessionResponse> {
+  const { data } = await projectionClient.post<CreateProjectionSessionResponse>(
+    `${BASE}/${id}/reclaim`,
+    { token },
+  )
+  return data
+}
+
+/** Force-rotate the control token and revoke any connected controller sockets. */
+export async function takeoverSession(id: string): Promise<CreateProjectionSessionResponse> {
+  const { data } = await projectionClient.post<CreateProjectionSessionResponse>(
+    `${BASE}/${id}/takeover`,
+  )
+  return data
+}

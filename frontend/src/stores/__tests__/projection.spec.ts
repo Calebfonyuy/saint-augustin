@@ -76,6 +76,8 @@ vi.mock('@/api/projection', () => ({
   startSession: vi.fn(),
   endSession: vi.fn(),
   loadSlides: vi.fn(),
+  reclaimSession: vi.fn(),
+  takeoverSession: vi.fn(),
 }))
 
 import * as projectionApi from '@/api/projection'
@@ -117,6 +119,7 @@ describe('useProjectionStore', () => {
     setActivePinia(createPinia())
     lastSocket.current = null
     vi.clearAllMocks()
+    localStorage.clear()
   })
 
   it('connect resolves with role=display and stores state on join ok', async () => {
@@ -280,5 +283,158 @@ describe('useProjectionStore', () => {
     expect(store.status).toBe('idle')
     expect(store.state).toBeNull()
     expect(store.role).toBeNull()
+  })
+
+  describe('control-token persistence', () => {
+    it('connecting as controller persists the token to localStorage', async () => {
+      const store = useProjectionStore()
+      const promise = store.connect({ sessionId: 'sess-1', controlToken: 'tok' })
+      const sock = lastSocket.current!
+      sock.fire('connect')
+      sock.ackLast({ ok: true, role: 'controller', state: makeState() })
+      await promise
+      expect(localStorage.getItem('sa_proj_control_token:sess-1')).toBe('tok')
+    })
+
+    it('connecting as display does not persist a token', async () => {
+      const store = useProjectionStore()
+      const promise = store.connect({ sessionId: 'sess-1' })
+      const sock = lastSocket.current!
+      sock.fire('connect')
+      sock.ackLast({ ok: true, role: 'display', state: makeState() })
+      await promise
+      expect(localStorage.getItem('sa_proj_control_token:sess-1')).toBeNull()
+    })
+
+    it('disconnect clears the persisted token', async () => {
+      const store = useProjectionStore()
+      const promise = store.connect({ sessionId: 'sess-1', controlToken: 'tok' })
+      const sock = lastSocket.current!
+      sock.fire('connect')
+      sock.ackLast({ ok: true, role: 'controller', state: makeState() })
+      await promise
+      store.disconnect()
+      expect(localStorage.getItem('sa_proj_control_token:sess-1')).toBeNull()
+    })
+
+    it('endById clears the persisted token for that session', async () => {
+      localStorage.setItem('sa_proj_control_token:sess-1', 'tok')
+      vi.mocked(projectionApi.endSession).mockResolvedValueOnce(makeState())
+      const store = useProjectionStore()
+      await store.endById('sess-1')
+      expect(localStorage.getItem('sa_proj_control_token:sess-1')).toBeNull()
+    })
+
+    it('deleteById clears the persisted token for that session', async () => {
+      localStorage.setItem('sa_proj_control_token:sess-1', 'tok')
+      vi.mocked(projectionApi.destroySession).mockResolvedValueOnce(undefined)
+      const store = useProjectionStore()
+      await store.deleteById('sess-1')
+      expect(localStorage.getItem('sa_proj_control_token:sess-1')).toBeNull()
+    })
+  })
+
+  describe('tryReclaim', () => {
+    it('returns reclaimed=false with no stored token, without calling the API', async () => {
+      const store = useProjectionStore()
+      const result = await store.tryReclaim('sess-1')
+      expect(result).toEqual({ reclaimed: false })
+      expect(projectionApi.reclaimSession).not.toHaveBeenCalled()
+    })
+
+    it('reclaims and connects as controller when the stored token is valid', async () => {
+      localStorage.setItem('sa_proj_control_token:sess-1', 'tok')
+      vi.mocked(projectionApi.reclaimSession).mockResolvedValueOnce({
+        sessionId: 'sess-1',
+        controlToken: 'tok',
+        state: makeState(),
+      })
+      const store = useProjectionStore()
+      const promise = store.tryReclaim('sess-1')
+      // Drain the reclaimSession call + connect() handshake.
+      await Promise.resolve()
+      await Promise.resolve()
+      const sock = lastSocket.current!
+      sock.fire('connect')
+      sock.ackLast({ ok: true, role: 'controller', state: makeState() })
+      const result = await promise
+      expect(result).toEqual({ reclaimed: true })
+      expect(store.role).toBe('controller')
+    })
+
+    it('clears storage and returns reclaimed=false when the API rejects the token', async () => {
+      localStorage.setItem('sa_proj_control_token:sess-1', 'stale')
+      vi.mocked(projectionApi.reclaimSession).mockRejectedValueOnce(new Error('forbidden'))
+      const store = useProjectionStore()
+      const result = await store.tryReclaim('sess-1')
+      expect(result).toEqual({ reclaimed: false })
+      expect(localStorage.getItem('sa_proj_control_token:sess-1')).toBeNull()
+    })
+  })
+
+  describe('control-transferred', () => {
+    it('demotes a controller to display, clears storage, and sets takenOver', async () => {
+      const store = useProjectionStore()
+      const promise = store.connect({ sessionId: 'sess-1', controlToken: 'tok' })
+      const sock = lastSocket.current!
+      sock.fire('connect')
+      sock.ackLast({ ok: true, role: 'controller', state: makeState() })
+      await promise
+      expect(store.role).toBe('controller')
+
+      sock.fire('control-transferred', { byName: 'Admin' })
+
+      expect(store.role).toBe('display')
+      expect(store.controlToken).toBeNull()
+      expect(store.takenOver).toBe(true)
+      expect(localStorage.getItem('sa_proj_control_token:sess-1')).toBeNull()
+    })
+
+    it('is a no-op for a socket that was already a display', async () => {
+      const store = useProjectionStore()
+      const promise = store.connect({ sessionId: 'sess-1' })
+      const sock = lastSocket.current!
+      sock.fire('connect')
+      sock.ackLast({ ok: true, role: 'display', state: makeState() })
+      await promise
+
+      sock.fire('control-transferred', { byName: 'Admin' })
+
+      expect(store.role).toBe('display')
+      expect(store.takenOver).toBe(false)
+    })
+
+    it('dismissTakenOver resets the flag', async () => {
+      const store = useProjectionStore()
+      const promise = store.connect({ sessionId: 'sess-1', controlToken: 'tok' })
+      const sock = lastSocket.current!
+      sock.fire('connect')
+      sock.ackLast({ ok: true, role: 'controller', state: makeState() })
+      await promise
+      sock.fire('control-transferred', {})
+      expect(store.takenOver).toBe(true)
+      store.dismissTakenOver()
+      expect(store.takenOver).toBe(false)
+    })
+  })
+
+  describe('takeover', () => {
+    it('calls the API and connects with the rotated token', async () => {
+      vi.mocked(projectionApi.takeoverSession).mockResolvedValueOnce({
+        sessionId: 'sess-1',
+        controlToken: 'new-tok',
+        state: makeState(),
+      })
+      const store = useProjectionStore()
+      const promise = store.takeover('sess-1')
+      await Promise.resolve()
+      const sock = lastSocket.current!
+      sock.fire('connect')
+      sock.ackLast({ ok: true, role: 'controller', state: makeState() })
+      await promise
+      expect(projectionApi.takeoverSession).toHaveBeenCalledWith('sess-1')
+      expect(store.role).toBe('controller')
+      expect(store.controlToken).toBe('new-tok')
+    })
   })
 })

@@ -18,6 +18,14 @@
 //   manage their lifecycle without the socket dance, plus the existing
 //   `createFromPlaylist` / `createFromSong` for the legacy temporary flow.
 //
+// Control-token continuity:
+//   The control token is persisted per-session in localStorage (see the
+//   helpers below) so `tryReclaim()` can silently regain controller status
+//   after a reload. `takeover()` lets an owner/admin forcibly reclaim
+//   control from another browser; the deposed client learns about it via
+//   the `control-transferred` socket event, which flips `role` to
+//   'display' and sets `takenOver` for the UI to surface a notice.
+//
 // Ref: services/projection/src/projection/projection.gateway.ts
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -63,6 +71,40 @@ function resolveSocketUrl(): string {
   return 'http://localhost:8080'
 }
 
+// ── Control-token persistence ────────────────────────────────────────
+//
+// Persisted per-session (not globally, unlike the auth token) so a browser
+// that reloads mid-service can reclaim controller status instead of
+// silently dropping to a read-only display. No expiry is tracked
+// client-side — the server (reclaim / socket join) is always re-consulted
+// before a stored token is trusted, so a stale entry just fails harmlessly.
+const CONTROL_TOKEN_PREFIX = 'sa_proj_control_token:'
+
+function controlTokenKey(sessionId: string): string {
+  return `${CONTROL_TOKEN_PREFIX}${sessionId}`
+}
+function getStoredControlToken(sessionId: string): string | null {
+  try {
+    return localStorage.getItem(controlTokenKey(sessionId))
+  } catch {
+    return null
+  }
+}
+function storeControlToken(sessionId: string, token: string): void {
+  try {
+    localStorage.setItem(controlTokenKey(sessionId), token)
+  } catch {
+    // Persisting is best-effort — controller mode still works this session.
+  }
+}
+function clearControlToken(sessionId: string): void {
+  try {
+    localStorage.removeItem(controlTokenKey(sessionId))
+  } catch {
+    // Nothing to do if storage is unavailable.
+  }
+}
+
 export const useProjectionStore = defineStore('projection', () => {
   const status = ref<ProjectionStatus>('idle')
   const role = ref<ProjectionRole | null>(null)
@@ -71,6 +113,8 @@ export const useProjectionStore = defineStore('projection', () => {
   /** Held only by the controller — display joins never see this. */
   const controlToken = ref<string | null>(null)
   const lastError = ref<string | null>(null)
+  /** True after a `control-transferred` event demoted us from controller. */
+  const takenOver = ref(false)
 
   /** Cached summaries for the SessionsListView. */
   const sessions = ref<ProjectionSessionSummary[]>([])
@@ -128,6 +172,20 @@ export const useProjectionStore = defineStore('projection', () => {
       lastError.value = err.message
       status.value = 'error'
     })
+    socket.on('control-transferred', () => {
+      // Only relevant if we were the one holding control — a display
+      // socket receiving this is a no-op (it was already read-only).
+      if (role.value === 'controller') {
+        role.value = 'display'
+        controlToken.value = null
+        if (sessionId.value) clearControlToken(sessionId.value)
+        takenOver.value = true
+      }
+    })
+  }
+
+  function dismissTakenOver(): void {
+    takenOver.value = false
   }
 
   /**
@@ -160,6 +218,9 @@ export const useProjectionStore = defineStore('projection', () => {
           status.value = 'connected'
           role.value = res.role
           state.value = res.state
+          if (res.role === 'controller' && args.controlToken) {
+            storeControlToken(args.sessionId, args.controlToken)
+          }
         } else {
           status.value = 'error'
           lastError.value = res.error
@@ -184,6 +245,7 @@ export const useProjectionStore = defineStore('projection', () => {
   }
 
   function disconnect(): void {
+    if (sessionId.value) clearControlToken(sessionId.value)
     teardown()
     status.value = 'idle'
     role.value = null
@@ -246,11 +308,17 @@ export const useProjectionStore = defineStore('projection', () => {
   }
 
   /**
-   * Project a single song without first creating a persisted playlist.
+   * Create a fresh TEMPORARY session from a single song and connect as
+   * controller — the song-projection equivalent of createFromPlaylist.
    * Synthesises an ephemeral one-item playlist client-side so we can re-use
    * the same slide pipeline (chord stripping, stanza splitting). The session
    * is created without a playlistId so the projection service has no
    * dangling reference back to a real row.
+   *
+   * This is the "Temporary" mode of the Go Live dialog when launched from a
+   * single song — fire-and-forget, self-cleans on the TEMPORARY TTL. Callers
+   * that want retention should use createPersistent + loadSongInto instead
+   * (the dialog's "Create persistent session" mode).
    */
   async function createFromSong(song: Song): Promise<CreateProjectionSessionResponse> {
     const ephemeral = ephemeralPlaylistFromSong(song)
@@ -338,13 +406,45 @@ export const useProjectionStore = defineStore('projection', () => {
   /** End any session by id (owner or admin). */
   async function endById(id: string): Promise<void> {
     await projectionApi.endSession(id)
+    clearControlToken(id)
     if (sessionId.value === id) disconnect()
   }
 
   /** Delete any session by id (owner or admin). */
   async function deleteById(id: string): Promise<void> {
     await projectionApi.destroySession(id)
+    clearControlToken(id)
     if (sessionId.value === id) disconnect()
+  }
+
+  /**
+   * Attempt to regain controller status using a token persisted from an
+   * earlier visit. Returns { reclaimed: true } already connected as
+   * controller, or { reclaimed: false } if there's nothing to reclaim or
+   * the token no longer works — caller should fall back to connect().
+   */
+  async function tryReclaim(id: string): Promise<{ reclaimed: boolean }> {
+    const stored = getStoredControlToken(id)
+    if (!stored) return { reclaimed: false }
+    try {
+      await projectionApi.reclaimSession(id, stored)
+    } catch {
+      clearControlToken(id)
+      return { reclaimed: false }
+    }
+    const result = await connect({ sessionId: id, controlToken: stored })
+    if (result.ok && result.role === 'controller') return { reclaimed: true }
+    clearControlToken(id)
+    return { reclaimed: false }
+  }
+
+  /** Owner/admin forcibly takes control of a LIVE session. */
+  async function takeover(id: string): Promise<CreateProjectionSessionResponse> {
+    const result = await projectionApi.takeoverSession(id)
+    if (result.controlToken) {
+      await connect({ sessionId: id, controlToken: result.controlToken })
+    }
+    return result
   }
 
   // ── Listing ───────────────────────────────────────────────────────
@@ -366,6 +466,7 @@ export const useProjectionStore = defineStore('projection', () => {
     sessionId,
     controlToken,
     lastError,
+    takenOver,
     sessions,
     sessionsLoading,
     // getters
@@ -375,6 +476,7 @@ export const useProjectionStore = defineStore('projection', () => {
     // actions
     connect,
     disconnect,
+    dismissTakenOver,
     next,
     previous,
     goto,
@@ -390,6 +492,8 @@ export const useProjectionStore = defineStore('projection', () => {
     destroy,
     endById,
     deleteById,
+    tryReclaim,
+    takeover,
     fetchSessions,
   }
 })
