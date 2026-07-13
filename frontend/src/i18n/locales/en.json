@@ -288,11 +288,36 @@
     "noMatches": "No songs match your search.",
     "switchMusician": "Switch to musician view",
     "projectSong": "Project song",
+    "addToPlaylistAction": "Add to playlist",
     "selectToPreview": "Select a song to preview",
+    "addToPlaylist": {
+      "added": "Added to \"{name}\".",
+      "already": "Already in \"{name}\"."
+    },
     "errors": {
       "load": "Failed to load songs.",
       "project": "Could not start projection."
     }
+  },
+  "createPlaylist": {
+    "title": "New playlist",
+    "nameLabel": "Name",
+    "namePlaceholder": "Sunday 9:30 — Advent II",
+    "dateLabel": "Event date",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "Add a tag…",
+    "tagsHint": "Press Enter or comma to add a tag.",
+    "removeTag": "Remove tag {tag}",
+    "nameRequired": "Give the playlist a name.",
+    "error": "Could not create playlist."
+  },
+  "addToPlaylist": {
+    "title": "Add to playlist",
+    "searchPlaceholder": "Search your playlists…",
+    "newPlaylist": "New playlist",
+    "empty": "No playlists yet — create one.",
+    "errorLoad": "Could not load playlists.",
+    "errorAdd": "Could not add the song."
   },
   "songEditor": {
     "createSong": "Create song",
@@ -359,6 +384,7 @@
     "searchPlaceholder": "Search by name or tag…",
     "tagFilterPlaceholder": "Filter by tag",
     "onlyMine": "Only mine",
+    "newPlaylist": "New playlist",
     "newName": "New playlist name",
     "newNamePlaceholder": "Sunday 9:30 — Advent II",
     "eventDate": "Event date",
@@ -393,6 +419,7 @@
     "exportPdf": "PDF",
     "exportText": "Plain text",
     "addSongs": "Add songs",
+    "alreadyAdded": "\"{name}\" is already in this playlist.",
     "pickerPlaceholder": "Search the library…",
     "noSongsMatch": "No songs match.",
     "emptyPart1": "Drag songs in from the right, or click the",

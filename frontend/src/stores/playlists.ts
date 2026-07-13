@@ -9,6 +9,7 @@ import { ref } from 'vue'
 import * as api from '@/api/playlists'
 import type {
   AddItemInput,
+  AddItemResult,
 } from '@/api/playlists'
 import type {
   Paginated,
@@ -69,16 +70,18 @@ export const usePlaylistsStore = defineStore('playlists', () => {
 
   // ── Items ──────────────────────────────────────────────────────────
 
-  async function addItem(playlistId: string, input: AddItemInput): Promise<PlaylistItem> {
-    const item = await api.addPlaylistItem(playlistId, input)
-    if (current.value?.id === playlistId) {
+  async function addItem(playlistId: string, input: AddItemInput): Promise<AddItemResult> {
+    const result = await api.addPlaylistItem(playlistId, input)
+    // Only patch local state on a real insertion — a no-op (song already
+    // present) leaves the list untouched, so we don't duplicate the row.
+    if (result.created && current.value?.id === playlistId) {
       const items = [...current.value.items]
-      items.splice(item.position, 0, item)
+      items.splice(result.item.position, 0, result.item)
       // Renumber locally to match the server-side shift.
       items.forEach((it, i) => (it.position = i))
       current.value = { ...current.value, items }
     }
-    return item
+    return result
   }
 
   async function updateItem(

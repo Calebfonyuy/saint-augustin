@@ -1350,7 +1350,7 @@
                     "Playlist Items"
                 ],
                 "summary": "Add a song to a playlist",
-                "description": "Inserts a song into the playlist at the given position (defaults to end). Subsequent items shift down by one. Requires ownership or the `admin` role.",
+                "description": "Inserts a song into the playlist at the given position (defaults to end). Subsequent items shift down by one. If the song is already in the playlist, nothing is inserted and the existing item is returned with 200. Requires ownership or the `admin` role.",
                 "operationId": "1f9ed3c17c71d18538589f6a41b39bba",
                 "parameters": [
                     {
@@ -1374,6 +1374,16 @@
                     }
                 },
                 "responses": {
+                    "200": {
+                        "description": "Song already in the playlist — the existing item is returned unchanged (no-op)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlaylistItem"
+                                }
+                            }
+                        }
+                    },
                     "201": {
                         "description": "Item added",
                         "content": {
@@ -3198,6 +3208,56 @@
                 }
             }
         },
+        "/tags": {
+            "get": {
+                "tags": [
+                    "Tags"
+                ],
+                "summary": "List all tags in use",
+                "description": "Returns the sorted, distinct union of tags used on songs and playlists. Soft-deleted songs are excluded. Any authenticated user may call this; it backs the tag autocomplete on playlist and song forms.",
+                "operationId": "8767fe41ed2e75df7ce6f99c8aeb47cb",
+                "responses": {
+                    "200": {
+                        "description": "Distinct tag list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "example": [
+                                                "advent",
+                                                "communion",
+                                                "easter"
+                                            ]
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/users": {
             "get": {
                 "tags": [
@@ -4590,6 +4650,10 @@
         {
             "name": "Songbooks",
             "description": "Songbook (song collection) management."
+        },
+        {
+            "name": "Tags",
+            "description": "Cross-entity tag suggestions for autocomplete."
         },
         {
             "name": "Users",

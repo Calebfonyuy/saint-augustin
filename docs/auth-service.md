@@ -78,7 +78,7 @@ Song sheets are PDF or image attachments stored in MinIO. On upload the file is 
 | PUT | `/api/playlists/{id}` | Bearer (Owner/Admin) | Update playlist metadata |
 | DELETE | `/api/playlists/{id}` | Bearer (Owner/Admin) | Delete playlist |
 | POST | `/api/playlists/{id}/duplicate` | Bearer | Duplicate (caller becomes owner) |
-| POST | `/api/playlists/{playlistId}/items` | Bearer (Owner/Admin) | Add a song to the playlist |
+| POST | `/api/playlists/{playlistId}/items` | Bearer (Owner/Admin) | Add a song to the playlist (idempotent — see below) |
 | PUT | `/api/playlists/{playlistId}/items/reorder` | Bearer (Owner/Admin) | Reorder items |
 | PUT | `/api/playlists/{playlistId}/items/{itemId}` | Bearer (Owner/Admin) | Update item (key, notes) |
 | DELETE | `/api/playlists/{playlistId}/items/{itemId}` | Bearer (Owner/Admin) | Remove item |
@@ -89,6 +89,16 @@ Song sheets are PDF or image attachments stored in MinIO. On upload the file is 
 | GET | `/api/share/{token}` | — (throttled 60/min) | Resolve public share link |
 
 Each playlist item stores `position`, an optional `target_key` (transpose destination for the musician), and free-text `notes`. The `reorder` endpoint accepts an ordered array of item IDs and re-assigns `position` values in one transaction.
+
+**Adding a song is idempotent (FR-SL-4).** If the song is already in the playlist, `POST /items` inserts nothing and returns the existing item with `200 OK` instead of `201 Created`. The frontend surfaces this as an "already in playlist" toast rather than an error, so re-adding the same song from the library is a harmless no-op.
+
+### Tags (`/api/tags`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/tags` | Bearer | Distinct, sorted union of all tags on songs and playlists |
+
+`GET /api/tags` (FR-PL-1) backs the tag autocomplete on the create-playlist modal and the song editor. Because songs and playlists share the one API database, it is a single query — `jsonb_array_elements_text(tags)` unnests each table's JSONB `tags` array and a `UNION` deduplicates across the two. Soft-deleted songs are excluded so a tag surviving only on a trashed song does not linger in suggestions. The response is `{ "data": ["advent", "communion", ...] }`.
 
 **Share links** carry a `mode` field (`musician` or `projection`). The `musician` payload includes full song lyrics; `projection` omits them. Public access is throttled to prevent token enumeration.
 

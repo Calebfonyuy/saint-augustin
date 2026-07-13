@@ -74,12 +74,19 @@ export interface AddItemInput {
   notes?: string | null
 }
 
+/** Result of adding a song. `created` is false when the song was already in
+ *  the playlist and the server returned the existing item as a no-op (200). */
+export interface AddItemResult {
+  item: PlaylistItem
+  created: boolean
+}
+
 export async function addPlaylistItem(
   playlistId: string,
   input: AddItemInput,
-): Promise<PlaylistItem> {
-  const { data } = await apiClient.post<PlaylistItem>(`/playlists/${playlistId}/items`, input)
-  return data
+): Promise<AddItemResult> {
+  const res = await apiClient.post<PlaylistItem>(`/playlists/${playlistId}/items`, input)
+  return { item: res.data, created: res.status === 201 }
 }
 
 export async function updatePlaylistItem(

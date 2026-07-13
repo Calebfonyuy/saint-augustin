@@ -73,6 +73,7 @@ loaded yet.
 | `songbooks` | `stores/songbooks.ts` | Songbook list and admin actions |
 | `songSheets` | `stores/songSheets.ts` | Sheet upload, list, and presigned URL management |
 | `playlists` | `stores/playlists.ts` | Playlist CRUD, item management, share links, export |
+| `tags` | `stores/tags.ts` | Cached tag suggestions (`GET /api/tags`) shared by tag-entry forms |
 | `projection` | `stores/projection.ts` | Projection session lifecycle, WebSocket state sync |
 
 The `auth` store persists the Bearer token to `localStorage` so sessions survive page reloads. All other stores are in-memory only.
@@ -92,6 +93,7 @@ Resource modules:
 | `api/songbooks.ts` | `/api/songbooks` |
 | `api/songSheets.ts` | `/api/songs/:id/sheets`, `/api/sheets/:id` |
 | `api/playlists.ts` | `/api/playlists` |
+| `api/tags.ts` | `/api/tags` |
 | `api/shareLinks.ts` | Share link sub-resources |
 | `api/invitations.ts` | `/api/auth/invitations` |
 | `api/password.ts` | `/api/auth/password/*` |
@@ -164,6 +166,14 @@ Full-featured playlist editor. Features:
 - Share link management (create musician/projection links, revoke, copy URL)
 - "Go Live" button that builds slides and creates a projection session
 
+### `SongLibraryView`
+
+Two-pane song library (`/library`): searchable list on the left, ChordPro preview on the right. Beyond the existing "Project song" (Go Live) action, the selected song's header carries an **"Add to playlist"** action that opens `AddToPlaylistDialog` (FR-SL-1..4) — the leader can drop the song into one of their playlists, or an admin into any playlist, without opening the builder.
+
+### `PlaylistsListView`
+
+Playlists index (`/playlists`): searchable, "only mine" filter, and inline row actions (Duplicate · Share · Go Live). Creating a playlist opens the shared `CreatePlaylistModal` (name, event date, tags) and routes into the new playlist's builder on success.
+
 ### `ProjectionControlView`
 
 Worship leader control panel (requires auth). Connects to the Projection Service WebSocket as a controller using the `controlToken`. Provides:
@@ -204,6 +214,9 @@ The drawer proactively guards a signed-in admin against locking themselves out: 
 | `SlideRenderer` | Full-screen slide display for projection |
 | `SheetViewer` | PDF/image viewer with presigned URL refresh logic |
 | `ShareDialog` | Modal for creating and managing share links |
+| `CreatePlaylistModal` | Shared create-playlist modal (name, event date, chip-based tag entry with `GET /api/tags` autocomplete). Used by `PlaylistsListView` and `AddToPlaylistDialog` |
+| `AddToPlaylistDialog` | Add-to-playlist picker opened from the song library: lists the caller's playlists (all, for an admin), adds the song (re-adds are a no-op toast), and offers inline new-playlist creation via `CreatePlaylistModal` |
+| `GoLiveDialog` | Launch modal for projecting a playlist or single song (temporary / existing / persistent session) |
 | `KeyBadge` | Pill showing a musical key (colour-coded by accidental type) |
 | `Metronome` | Visual + audio metronome with BPM input and tap-tempo |
 | `PreviewPlayer` | Minimal audio player for preview URLs |

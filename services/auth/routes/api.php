@@ -22,6 +22,7 @@ use App\Http\Controllers\SongController;
 use App\Http\Controllers\SongImportController;
 use App\Http\Controllers\SongSheetController;
 use App\Http\Controllers\StatusController;
+use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -153,6 +154,16 @@ Route::middleware('auth:sanctum')->prefix('sheets')->group(function () {
         Route::delete('/{id}', [SongSheetController::class, 'destroy']);
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Tag Suggestions (Stage 4 — FR-PL-1)
+|--------------------------------------------------------------------------
+| Cross-entity autocomplete source: the distinct union of tags used on
+| songs and playlists. Any authenticated user may read it.
+*/
+
+Route::middleware('auth:sanctum')->get('/tags', [TagController::class, 'index']);
 
 /*
 |--------------------------------------------------------------------------

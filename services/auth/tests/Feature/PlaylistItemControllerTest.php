@@ -77,6 +77,28 @@ test('add validates song_id exists', function () {
     ])->assertStatus(422);
 });
 
+test('re-adding a song already in the playlist is a no-op', function () {
+    $owner = User::factory()->create();
+    $playlist = Playlist::factory()->create(['created_by' => $owner->id]);
+    $song = Song::factory()->create();
+
+    $first = $this->actingAs($owner)->postJson("/api/playlists/{$playlist->id}/items", [
+        'song_id' => $song->id,
+    ])->assertCreated()->json();
+
+    // Second add of the same song returns 200 (not 201) with the same item,
+    // and does not create a duplicate row.
+    $this->actingAs($owner)->postJson("/api/playlists/{$playlist->id}/items", [
+        'song_id' => $song->id,
+    ])
+        ->assertOk()
+        ->assertJsonPath('id', $first['id'])
+        ->assertJsonPath('song_id', $song->id);
+
+    expect(PlaylistItem::where('playlist_id', $playlist->id)
+        ->where('song_id', $song->id)->count())->toBe(1);
+});
+
 // ── update ───────────────────────────────────────────────────────────
 
 test('owner can update target_key and notes', function () {

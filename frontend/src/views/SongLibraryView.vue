@@ -10,6 +10,7 @@ import Icon from '@/components/Icon.vue'
 import ChordProPreview from '@/components/ChordProPreview.vue'
 import Toast from '@/components/Toast.vue'
 import GoLiveDialog from '@/components/GoLiveDialog.vue'
+import AddToPlaylistDialog from '@/components/AddToPlaylistDialog.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSongsStore } from '@/stores/songs'
 import { useSongbooksStore } from '@/stores/songbooks'
@@ -26,7 +27,9 @@ const query = ref('')
 const songbookFilter = ref<string>('')
 const selectedId = ref<string | null>(null)
 const errorToast = ref<string | null>(null)
+const successToast = ref<string | null>(null)
 const goLiveOpen = ref(false)
+const addToPlaylistOpen = ref(false)
 
 const selected = computed<Song | null>(
   () => songs.list.find((s) => s.id === selectedId.value) ?? null,
@@ -68,6 +71,18 @@ function songbookName(id: string): string {
 function onProjectSong(): void {
   if (!selected.value) return
   goLiveOpen.value = true
+}
+
+function onAddToPlaylist(): void {
+  if (!selected.value) return
+  addToPlaylistOpen.value = true
+}
+
+function onAddedToPlaylist(payload: { playlistName: string; alreadyInPlaylist: boolean }): void {
+  addToPlaylistOpen.value = false
+  successToast.value = payload.alreadyInPlaylist
+    ? t('library.addToPlaylist.already', { name: payload.playlistName })
+    : t('library.addToPlaylist.added', { name: payload.playlistName })
 }
 
 async function onGoLiveLaunched(sessionId: string): Promise<void> {
@@ -173,6 +188,15 @@ async function onGoLiveLaunched(sessionId: string): Promise<void> {
           </router-link>
           <button
             type="button"
+            class="btn"
+            data-testid="library-add-to-playlist"
+            @click="onAddToPlaylist"
+          >
+            <Icon name="plus" />
+            {{ t('library.addToPlaylistAction') }}
+          </button>
+          <button
+            type="button"
             class="btn btn-primary"
             data-testid="library-project"
             @click="onProjectSong"
@@ -203,6 +227,12 @@ async function onGoLiveLaunched(sessionId: string): Promise<void> {
       kind="error"
       @close="errorToast = null"
     />
+    <Toast
+      v-if="successToast"
+      :message="successToast"
+      kind="success"
+      @close="successToast = null"
+    />
 
     <GoLiveDialog
       v-if="goLiveOpen && selected"
@@ -210,6 +240,14 @@ async function onGoLiveLaunched(sessionId: string): Promise<void> {
       :open="goLiveOpen"
       @close="goLiveOpen = false"
       @launched="onGoLiveLaunched"
+    />
+
+    <AddToPlaylistDialog
+      v-if="addToPlaylistOpen && selected"
+      :song="selected"
+      :open="addToPlaylistOpen"
+      @close="addToPlaylistOpen = false"
+      @added="onAddedToPlaylist"
     />
   </AppShell>
 </template>

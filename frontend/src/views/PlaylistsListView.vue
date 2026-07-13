@@ -11,6 +11,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import CreatePlaylistModal from '@/components/CreatePlaylistModal.vue'
 import GoLiveDialog from '@/components/GoLiveDialog.vue'
 import Icon from '@/components/Icon.vue'
 import ShareDialog from '@/components/ShareDialog.vue'
@@ -31,9 +32,8 @@ const mineOnly = ref(false)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
 
-const creating = ref(false)
-const newName = ref('')
-const newDate = ref('')
+/** Controls the shared create-playlist modal (name + event date + tags). */
+const createOpen = ref(false)
 
 /** Id of the row whose row-level action is currently in flight — used to
  *  disable that row's action buttons and surface a "…" affordance. */
@@ -68,24 +68,11 @@ watch([tag, mineOnly], refresh)
 
 onMounted(refresh)
 
-async function onCreate(): Promise<void> {
-  const name = newName.value.trim()
-  if (!name) return
-  creating.value = true
-  try {
-    const p = await playlists.create({
-      name,
-      event_date: newDate.value || null,
-      tags: [],
-    })
-    newName.value = ''
-    newDate.value = ''
-    await router.push(`/playlists/${p.id}`)
-  } catch (err) {
-    error.value = extractErrorMessage(err, t('playlistsList.errors.create'))
-  } finally {
-    creating.value = false
-  }
+/** The modal creates the playlist; we route straight into its builder so the
+ *  leader can start adding songs. */
+async function onCreated(p: Playlist): Promise<void> {
+  createOpen.value = false
+  await router.push(`/playlists/${p.id}`)
 }
 
 function formatDate(iso: string | null): string {
@@ -181,36 +168,14 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
       </label>
     </div>
 
-    <div class="px-6 py-4 border-b border-border flex items-end gap-2 flex-wrap">
-      <div class="flex-1 min-w-[260px]">
-        <label class="field-label" for="new-playlist-name">{{ t('playlistsList.newName') }}</label>
-        <input
-          id="new-playlist-name"
-          v-model="newName"
-          class="input"
-          :placeholder="t('playlistsList.newNamePlaceholder')"
-          data-testid="playlists-new-name"
-          @keydown.enter="onCreate"
-        />
-      </div>
-      <div>
-        <label class="field-label" for="new-playlist-date">{{ t('playlistsList.eventDate') }}</label>
-        <input
-          id="new-playlist-date"
-          v-model="newDate"
-          type="date"
-          class="input"
-          data-testid="playlists-new-date"
-        />
-      </div>
+    <div class="px-6 py-4 border-b border-border flex items-center gap-2 flex-wrap">
       <button
         type="button"
         class="btn btn-primary"
-        :disabled="creating || !newName.trim()"
         data-testid="playlists-create"
-        @click="onCreate"
+        @click="createOpen = true"
       >
-        <Icon name="plus" /> {{ t('common.create') }}
+        <Icon name="plus" /> {{ t('playlistsList.newPlaylist') }}
       </button>
     </div>
 
@@ -254,7 +219,7 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
               </div>
             </div>
             <div class="flex flex-wrap gap-1 max-w-[220px]">
-              <span v-for="tag in p.tags" :key="tag" class="chip">{{ tag }}</span>
+              <span v-for="tagName in p.tags" :key="tagName" class="chip">{{ tagName }}</span>
             </div>
           </router-link>
 
@@ -299,6 +264,13 @@ const isBusy = computed(() => (id: string) => busyId.value === id)
         </div>
       </div>
     </div>
+
+    <CreatePlaylistModal
+      v-if="createOpen"
+      :open="createOpen"
+      @close="createOpen = false"
+      @created="onCreated"
+    />
 
     <ShareDialog
       v-if="sharingId"

@@ -288,11 +288,36 @@
     "noMatches": "Aucun chant ne correspond à votre recherche.",
     "switchMusician": "Passer à la vue musicien",
     "projectSong": "Projeter le chant",
+    "addToPlaylistAction": "Ajouter à une playlist",
     "selectToPreview": "Sélectionnez un chant pour l'aperçu",
+    "addToPlaylist": {
+      "added": "Ajouté à « {name} ».",
+      "already": "Déjà dans « {name} »."
+    },
     "errors": {
       "load": "Échec du chargement des chants.",
       "project": "Impossible de démarrer la projection."
     }
+  },
+  "createPlaylist": {
+    "title": "Nouvelle playlist",
+    "nameLabel": "Nom",
+    "namePlaceholder": "Dimanche 9h30 — Avent II",
+    "dateLabel": "Date du culte",
+    "tagsLabel": "Étiquettes",
+    "tagsPlaceholder": "Ajouter une étiquette…",
+    "tagsHint": "Appuyez sur Entrée ou virgule pour ajouter une étiquette.",
+    "removeTag": "Retirer l'étiquette {tag}",
+    "nameRequired": "Donnez un nom à la playlist.",
+    "error": "Impossible de créer la playlist."
+  },
+  "addToPlaylist": {
+    "title": "Ajouter à une playlist",
+    "searchPlaceholder": "Rechercher vos playlists…",
+    "newPlaylist": "Nouvelle playlist",
+    "empty": "Aucune playlist — créez-en une.",
+    "errorLoad": "Impossible de charger les playlists.",
+    "errorAdd": "Impossible d'ajouter le chant."
   },
   "songEditor": {
     "createSong": "Créer le chant",
@@ -359,6 +384,7 @@
     "searchPlaceholder": "Rechercher par nom ou étiquette…",
     "tagFilterPlaceholder": "Filtrer par étiquette",
     "onlyMine": "Mes playlists",
+    "newPlaylist": "Nouvelle playlist",
     "newName": "Nom de la nouvelle playlist",
     "newNamePlaceholder": "Dimanche 9h30 — Avent II",
     "eventDate": "Date du culte",
@@ -393,6 +419,7 @@
     "exportPdf": "PDF",
     "exportText": "Texte brut",
     "addSongs": "Ajouter des chants",
+    "alreadyAdded": "« {name} » est déjà dans cette playlist.",
     "pickerPlaceholder": "Rechercher dans la bibliothèque…",
     "noSongsMatch": "Aucun chant ne correspond.",
     "emptyPart1": "Glissez des chants depuis la droite, ou cliquez sur le bouton",

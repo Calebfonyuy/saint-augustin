@@ -126,7 +126,10 @@ async function saveHeader(): Promise<void> {
 
 async function onAddSong(songId: string): Promise<void> {
   try {
-    await playlists.addItem(id.value, { song_id: songId })
+    const { created, item } = await playlists.addItem(id.value, { song_id: songId })
+    if (!created) {
+      success.value = t('playlistBuilder.alreadyAdded', { name: item.song?.title ?? '' })
+    }
   } catch (err) {
     error.value = extractErrorMessage(err, t('playlistBuilder.errors.addSong'))
   }

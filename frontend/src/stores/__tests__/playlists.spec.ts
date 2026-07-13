@@ -94,14 +94,33 @@ describe('playlists store', () => {
     store.current = makePlaylist({ items: [a, b] })
 
     // Server inserts at position 1, shifting `b` to position 2 implicitly.
-    vi.mocked(api.addPlaylistItem).mockResolvedValue(
-      makeItem({ id: 'c', position: 1 }),
-    )
+    vi.mocked(api.addPlaylistItem).mockResolvedValue({
+      item: makeItem({ id: 'c', position: 1 }),
+      created: true,
+    })
 
     await store.addItem('pl-1', { song_id: 'song-c' })
 
     expect(store.current!.items.map((i) => i.id)).toEqual(['a', 'c', 'b'])
     expect(store.current!.items.map((i) => i.position)).toEqual([0, 1, 2])
+  })
+
+  it('does not mutate local state when the add is a no-op (song already present)', async () => {
+    const store = usePlaylistsStore()
+    const a = makeItem({ id: 'a', position: 0 })
+    const b = makeItem({ id: 'b', position: 1 })
+    store.current = makePlaylist({ items: [a, b] })
+
+    // Server reports the song was already in the playlist (200 → created:false).
+    vi.mocked(api.addPlaylistItem).mockResolvedValue({
+      item: makeItem({ id: 'a', position: 0 }),
+      created: false,
+    })
+
+    const result = await store.addItem('pl-1', { song_id: 'song-a' })
+
+    expect(result.created).toBe(false)
+    expect(store.current!.items.map((i) => i.id)).toEqual(['a', 'b'])
   })
 
   it('removes an item and renumbers the remainder', async () => {

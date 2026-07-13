@@ -20,6 +20,8 @@ use OpenApi\Attributes as OA;
  *
  * Adding: position defaults to "end of list" when not specified; otherwise
  * the requested slot is reserved by shifting subsequent items down.
+ * Re-adding a song already in the playlist is a no-op — the existing
+ * item comes back with 200 instead of a duplicate row (FR-SL-4).
  */
 #[OA\Tag(
     name: 'Playlist Items',
@@ -34,7 +36,7 @@ class PlaylistItemController
     #[OA\Post(
         path: '/playlists/{playlistId}/items',
         summary: 'Add a song to a playlist',
-        description: 'Inserts a song into the playlist at the given position (defaults to end). Subsequent items shift down by one. Requires ownership or the `admin` role.',
+        description: 'Inserts a song into the playlist at the given position (defaults to end). Subsequent items shift down by one. If the song is already in the playlist, nothing is inserted and the existing item is returned with 200. Requires ownership or the `admin` role.',
         tags: ['Playlist Items'],
         security: [['sanctum' => []]],
         parameters: [
@@ -42,6 +44,7 @@ class PlaylistItemController
         ],
         requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/PlaylistItemInput')),
         responses: [
+            new OA\Response(response: 200, description: 'Song already in the playlist — the existing item is returned unchanged (no-op)', content: new OA\JsonContent(ref: '#/components/schemas/PlaylistItem')),
             new OA\Response(response: 201, description: 'Item added', content: new OA\JsonContent(ref: '#/components/schemas/PlaylistItem')),
             new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
             new OA\Response(response: 403, description: 'Not the playlist owner or admin', content: new OA\JsonContent(ref: '#/components/schemas/ErrorResponse')),
@@ -67,6 +70,14 @@ class PlaylistItemController
             'target_key' => ['nullable', 'string', 'regex:'.self::KEY_PATTERN],
             'notes'      => ['nullable', 'string', 'max:2000'],
         ]);
+
+        // Duplicate add is a no-op (FR-SL-4): return the existing item so
+        // the client can tell "already there" (200) from "added" (201).
+        $existing = $playlist->items()->where('song_id', $validated['song_id'])->first();
+
+        if ($existing) {
+            return response()->json($this->formatItem($existing->load('song')), 200);
+        }
 
         $item = DB::transaction(function () use ($playlist, $validated) {
             $count = $playlist->items()->count();
