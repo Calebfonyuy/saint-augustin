@@ -144,12 +144,14 @@ async function onRemoveItem(itemId: string): Promise<void> {
 }
 
 async function onItemFieldBlur(item: PlaylistItem): Promise<void> {
-  // Persist target_key/notes on blur — avoids spamming the API on every keystroke.
+  // Persist edits on blur — avoids spamming the API on every keystroke.
+  // Scripture items have no target_key, so only notes are editable here.
+  const payload =
+    item.item_type === 'scripture'
+      ? { notes: item.notes?.trim() || null }
+      : { target_key: item.target_key?.trim() || null, notes: item.notes?.trim() || null }
   try {
-    await playlists.updateItem(id.value, item.id, {
-      target_key: item.target_key?.trim() || null,
-      notes: item.notes?.trim() || null,
-    })
+    await playlists.updateItem(id.value, item.id, payload)
   } catch (err) {
     error.value = extractErrorMessage(err, t('playlistBuilder.errors.updateItem'))
   }
@@ -388,7 +390,41 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
                 >
                   {{ index + 1 }}
                 </span>
-                <div class="flex-1 min-w-0">
+                <!-- Scripture reading item (FR-PL-2) -->
+                <div v-if="element.item_type === 'scripture'" class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-[14px] font-semibold truncate">
+                      {{ element.scripture?.reference ?? t('playlistBuilder.scripture') }}
+                    </span>
+                    <span class="chip" data-testid="item-scripture-badge">
+                      {{ t('playlistBuilder.scripture') }}
+                    </span>
+                    <span v-if="element.scripture?.translation_id" class="text-[11px] text-text-faint mono">
+                      {{ element.scripture.translation_id }}
+                    </span>
+                  </div>
+                  <div class="text-[11.5px] text-text-faint mt-[2px] truncate">
+                    {{ t('playlistBuilder.scriptureReading') }}
+                  </div>
+                  <input
+                    v-if="canEdit"
+                    v-model="element.notes"
+                    class="input mt-2"
+                    style="padding: 5px 8px; font-size: 12px"
+                    :placeholder="t('playlistBuilder.notesPlaceholder')"
+                    data-testid="item-notes"
+                    @blur="onItemFieldBlur(element)"
+                  />
+                  <div
+                    v-else-if="element.notes"
+                    class="text-[12px] text-text-faint mt-1 italic"
+                  >
+                    {{ element.notes }}
+                  </div>
+                </div>
+
+                <!-- Song item -->
+                <div v-else class="flex-1 min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-[14px] font-semibold truncate">
                       {{ element.song?.title ?? t('shared.untitled') }}

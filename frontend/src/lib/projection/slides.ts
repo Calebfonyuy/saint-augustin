@@ -29,6 +29,10 @@ export interface Slide {
   songTitle: string
   section: string | null
   body: string
+  /** Parent item kind (FR-PL-2). Omitted/'song' for song slides. */
+  kind?: 'song' | 'scripture'
+  /** Resolved reference label for scripture slides. */
+  reference?: string | null
 }
 
 /** A directive of the form `{name: value}` or `{name}`. */

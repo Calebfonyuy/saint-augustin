@@ -90,6 +90,13 @@ Song sheets are PDF or image attachments stored in MinIO. On upload the file is 
 
 Each playlist item stores `position`, an optional `target_key` (transpose destination for the musician), and free-text `notes`. The `reorder` endpoint accepts an ordered array of item IDs and re-assigns `position` values in one transaction.
 
+**Polymorphic items — songs and scripture readings (FR-PL-2).** A playlist item is one of two kinds, discriminated by `item_type`:
+
+- `song` (the default) — carries a `song_id` and an optional `target_key`; the serialized item has a `song` block and a null `scripture`.
+- `scripture` — carries a resolved USFM reference in discrete columns (`translation_id`, `book_code`, `start_chapter`, `start_verse`, `end_chapter`, `end_verse`); the serialized item has a `scripture` block (including a composed `reference` label such as `JHN 3:16-4:2`) and a null `song`.
+
+This is a single `playlist_items` table with a discriminator, not a polymorphic join, so ordering, reorder, cascade, and duplication all work unchanged across both kinds. `song_id` is nullable (null for readings); the migration only drops its NOT NULL, leaving the FK and cascade intact. Scripture *text* is never stored — only the pointer to the passage, resolved and rendered at projection time (Stage 7). `POST /items` selects the shape via `item_type`: a song item requires `song_id`; a scripture item requires `book_code`, `start_chapter`, and `start_verse`, and rejects a backwards verse range (422). Duplicate detection (below) applies only to song items — readings may legitimately repeat.
+
 **Adding a song is idempotent (FR-SL-4).** If the song is already in the playlist, `POST /items` inserts nothing and returns the existing item with `200 OK` instead of `201 Created`. The frontend surfaces this as an "already in playlist" toast rather than an error, so re-adding the same song from the library is a harmless no-op.
 
 ### Tags (`/api/tags`)

@@ -45,31 +45,43 @@
         <div class="item">
             <div class="row">
                 <div class="num">{{ $idx + 1 }}.</div>
-                <div class="title">
-                    <div class="song-title{{ $item->song?->trashed() ? ' deleted' : '' }}">
-                        {{ $item->song?->title ?? '(deleted song)' }}
+                @if ($item->isScripture())
+                    <div class="title">
+                        <div class="song-title">{{ $item->scriptureReference() ?? 'Scripture' }}</div>
+                        <div class="author">Scripture reading</div>
                     </div>
-                    @if ($item->song?->author)
-                        <div class="author">{{ $item->song->author }}</div>
-                    @endif
-                </div>
-                <div class="key">
-                    @if ($item->target_key)
-                        <span class="key-badge">{{ $item->target_key }}</span>
-                        @if ($item->song?->original_key && $item->song->original_key !== $item->target_key)
-                            <span class="key-original">(orig {{ $item->song->original_key }})</span>
+                    <div class="key">
+                        @if ($item->translation_id)
+                            <span class="key-badge">{{ $item->translation_id }}</span>
                         @endif
-                    @elseif ($item->song?->original_key)
-                        <span class="key-badge">{{ $item->song->original_key }}</span>
-                    @endif
-                </div>
+                    </div>
+                @else
+                    <div class="title">
+                        <div class="song-title{{ $item->song?->trashed() ? ' deleted' : '' }}">
+                            {{ $item->song?->title ?? '(deleted song)' }}
+                        </div>
+                        @if ($item->song?->author)
+                            <div class="author">{{ $item->song->author }}</div>
+                        @endif
+                    </div>
+                    <div class="key">
+                        @if ($item->target_key)
+                            <span class="key-badge">{{ $item->target_key }}</span>
+                            @if ($item->song?->original_key && $item->song->original_key !== $item->target_key)
+                                <span class="key-original">(orig {{ $item->song->original_key }})</span>
+                            @endif
+                        @elseif ($item->song?->original_key)
+                            <span class="key-badge">{{ $item->song->original_key }}</span>
+                        @endif
+                    </div>
+                @endif
             </div>
             @if ($item->notes)
                 <div class="notes">{{ $item->notes }}</div>
             @endif
         </div>
     @empty
-        <div class="item"><em>(no songs)</em></div>
+        <div class="item"><em>(empty playlist)</em></div>
     @endforelse
 
     <div class="footer">SaintAugustin &middot; {{ now()->format('Y-m-d H:i') }}</div>

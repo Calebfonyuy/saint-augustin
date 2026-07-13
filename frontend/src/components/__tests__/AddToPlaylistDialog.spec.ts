@@ -92,7 +92,7 @@ describe('AddToPlaylistDialog', () => {
       meta: { current_page: 1, per_page: 100, total: 1, last_page: 1 },
     })
     vi.mocked(playlistApi.addPlaylistItem).mockResolvedValue({
-      item: { id: 'i1', song_id: 'song-1', position: 0, target_key: null, notes: null, song: null },
+      item: { id: 'i1', item_type: 'song', song_id: 'song-1', position: 0, target_key: null, notes: null, scripture: null, song: null },
       created: true,
     })
 
@@ -115,7 +115,7 @@ describe('AddToPlaylistDialog', () => {
       meta: { current_page: 1, per_page: 100, total: 1, last_page: 1 },
     })
     vi.mocked(playlistApi.addPlaylistItem).mockResolvedValue({
-      item: { id: 'i1', song_id: 'song-1', position: 0, target_key: null, notes: null, song: null },
+      item: { id: 'i1', item_type: 'song', song_id: 'song-1', position: 0, target_key: null, notes: null, scripture: null, song: null },
       created: false,
     })
 

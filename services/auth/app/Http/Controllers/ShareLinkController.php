@@ -251,6 +251,7 @@ class ShareLinkController
 
                 return [
                     'id'         => $item->id,
+                    'item_type'  => $item->item_type,
                     'position'   => $item->position,
                     'target_key' => $item->target_key,
                     'notes'      => $item->notes,
@@ -265,6 +266,17 @@ class ShareLinkController
                         // Deliberately NOT exposing preview_url / sheets in
                         // projection mode — those are musician-only assets.
                         'preview_url'    => $mode === ShareLink::MODE_MUSICIAN ? $song->preview_url : null,
+                    ] : null,
+                    // Scripture readings carry a reference instead of a song;
+                    // public rendering of readings arrives in Stage 7.
+                    'scripture'  => $item->isScripture() ? [
+                        'translation_id' => $item->translation_id,
+                        'book_code'      => $item->book_code,
+                        'start_chapter'  => $item->start_chapter,
+                        'start_verse'    => $item->start_verse,
+                        'end_chapter'    => $item->end_chapter,
+                        'end_verse'      => $item->end_verse,
+                        'reference'      => $item->scriptureReference(),
                     ] : null,
                 ];
             })->all(),

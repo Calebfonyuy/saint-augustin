@@ -51,10 +51,14 @@ interface ProjectionSlide {
   songTitle: string
   section: string | null  // e.g. "Verse 1", "Chorus"
   body: string            // plain text lyrics for this section
+  kind?: 'song' | 'scripture'  // parent item kind (FR-PL-2); defaults to 'song'
+  reference?: string | null    // resolved label for scripture slides
 }
 ```
 
 The slide-building logic lives in `frontend/src/lib/projection/buildSlides.ts`. It splits ChordPro lyrics into sections and creates one `ProjectionSlide` per section.
+
+**Scripture readings (FR-PL-2).** A playlist can now interleave songs and scripture readings. A reading currently builds a single placeholder slide tagged `kind: 'scripture'` carrying its `reference` label; the DTO (`SlideDto`) accepts these fields as optional, so both `/sessions` and `/sessions/:id/load` take mixed decks without change. Verse-by-verse rendering (fetch, auto-fit, verse numbers) is added in Stage 7 — until then the projector shows the reference text.
 
 ### Control Token
 

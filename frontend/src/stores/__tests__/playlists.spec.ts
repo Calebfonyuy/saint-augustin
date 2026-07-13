@@ -26,10 +26,12 @@ import type { Playlist, PlaylistItem } from '@/types'
 function makeItem(overrides: Partial<PlaylistItem> = {}): PlaylistItem {
   return {
     id: 'item-1',
+    item_type: 'song',
     song_id: 'song-1',
     position: 0,
     target_key: null,
     notes: null,
+    scripture: null,
     song: {
       id: 'song-1',
       title: 'Amazing Grace',

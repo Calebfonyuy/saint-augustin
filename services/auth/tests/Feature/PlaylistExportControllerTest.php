@@ -43,6 +43,26 @@ test('txt export contains song lines with keys', function () {
     expect($body)->toContain('Holy, Holy, Holy');
 });
 
+test('txt export renders scripture readings by reference', function () {
+    $playlist = Playlist::factory()->create(['name' => 'Sunday Morning']);
+    PlaylistItem::factory()->create([
+        'playlist_id' => $playlist->id, 'position' => 0,
+        'song_id' => Song::factory()->create(['title' => 'Amazing Grace'])->id,
+    ]);
+    PlaylistItem::factory()->scripture(['end_chapter' => 4, 'end_verse' => 2])->create([
+        'playlist_id' => $playlist->id, 'position' => 1,
+    ]);
+
+    $user = User::factory()->create();
+    $response = $this->actingAs($user)->get("/api/playlists/{$playlist->id}/export?format=txt");
+
+    $response->assertOk();
+    $body = $response->getContent();
+    expect($body)->toContain('Amazing Grace');
+    expect($body)->toContain('JHN 3:16-4:2');
+    expect($body)->toContain('[reading]');
+});
+
 test('pdf export returns a downloadable PDF', function () {
     $playlist = Playlist::factory()->create(['name' => 'Test Mass']);
     $song = Song::factory()->create();

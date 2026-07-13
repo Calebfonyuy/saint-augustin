@@ -155,13 +155,31 @@ export interface PlaylistItemSong {
   preview_url?: string | null
 }
 
+export type PlaylistItemType = 'song' | 'scripture'
+
+/** Resolved USFM scripture reference on a scripture playlist item (FR-PL-2). */
+export interface PlaylistItemScripture {
+  translation_id: string | null
+  book_code: string | null
+  start_chapter: number | null
+  start_verse: number | null
+  end_chapter: number | null
+  end_verse: number | null
+  /** Language-neutral label, e.g. "JHN 3:16-4:2". */
+  reference: string | null
+}
+
 export interface PlaylistItem {
   id: string
-  song_id: string
+  /** Discriminator: a `song` item has `song`; a `scripture` item has `scripture`. */
+  item_type: PlaylistItemType
+  /** Null for scripture items. */
+  song_id: string | null
   position: number
   target_key: string | null
   notes: string | null
   song: PlaylistItemSong | null
+  scripture: PlaylistItemScripture | null
 }
 
 export interface Playlist extends PlaylistSummary {

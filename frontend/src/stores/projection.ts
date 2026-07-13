@@ -512,10 +512,12 @@ function ephemeralPlaylistFromSong(song: Song): Playlist {
     items: [
       {
         id: 'ephemeral-item',
+        item_type: 'song',
         song_id: song.id,
         position: 0,
         target_key: null,
         notes: null,
+        scripture: null,
         song: {
           id: song.id,
           title: song.title,

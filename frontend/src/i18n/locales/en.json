@@ -420,6 +420,8 @@
     "exportText": "Plain text",
     "addSongs": "Add songs",
     "alreadyAdded": "\"{name}\" is already in this playlist.",
+    "scripture": "Scripture",
+    "scriptureReading": "Scripture reading",
     "pickerPlaceholder": "Search the library…",
     "noSongsMatch": "No songs match.",
     "emptyPart1": "Drag songs in from the right, or click the",

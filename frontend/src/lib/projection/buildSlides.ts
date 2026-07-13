@@ -51,7 +51,28 @@ export async function buildSlidesForPlaylist(
   const out: Slide[] = []
   for (let i = 0; i < items.length; i++) {
     const it = items[i]
-    const src = sources.get(it.song_id) ?? null
+
+    // Scripture readings render as a single placeholder slide for now — the
+    // real verse-by-verse rendering (fetch + auto-fit) arrives in Stage 7.
+    // The slide is tagged `kind: 'scripture'` so the display can branch, and
+    // carries the reference label as its body so the projector shows *what*
+    // is being read even before rich rendering exists.
+    if (it.item_type === 'scripture') {
+      const reference = it.scripture?.reference ?? 'Scripture'
+      out.push({
+        id: `${it.id}-0`,
+        itemIndex: i,
+        slideIndex: 0,
+        songTitle: reference,
+        section: null,
+        body: reference,
+        kind: 'scripture',
+        reference,
+      })
+      continue
+    }
+
+    const src = it.song_id ? (sources.get(it.song_id) ?? null) : null
     const title = src?.title ?? it.song?.title ?? 'Untitled'
     let lyrics = src?.lyrics ?? ''
     const originalKey = src?.original_key ?? it.song?.original_key ?? null
@@ -68,7 +89,7 @@ export async function buildSlidesForPlaylist(
       idPrefix: it.id,
       songTitle: title,
       lyrics,
-    })
+    }).map((s) => ({ ...s, kind: 'song' as const }))
     out.push(...slides)
   }
   return out
@@ -89,6 +110,8 @@ async function resolveSongSources(
   const toFetch: string[] = []
 
   for (const it of items) {
+    // Scripture items have no song to resolve.
+    if (it.item_type === 'scripture' || !it.song_id) continue
     if (sources.has(it.song_id)) continue
 
     const embedded = it.song
@@ -101,8 +124,8 @@ async function resolveSongSources(
       continue
     }
 
-    if (!it.song_id || embedded?.deleted) {
-      // Soft-deleted upstream or missing id — no point fetching.
+    if (embedded?.deleted) {
+      // Soft-deleted upstream — no point fetching.
       sources.set(it.song_id, null)
       continue
     }

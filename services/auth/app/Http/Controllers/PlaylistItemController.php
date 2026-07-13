@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
+use App\Services\PlaylistItemFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
 /**
@@ -64,22 +66,36 @@ class PlaylistItemController
             return $forbidden;
         }
 
-        $validated = $request->validate([
-            'song_id'    => ['required', 'uuid', 'exists:songs,id'],
-            'position'   => ['sometimes', 'integer', 'min:0'],
-            'target_key' => ['nullable', 'string', 'regex:'.self::KEY_PATTERN],
-            'notes'      => ['nullable', 'string', 'max:2000'],
-        ]);
+        $type = $request->input('item_type', PlaylistItem::TYPE_SONG);
 
-        // Duplicate add is a no-op (FR-SL-4): return the existing item so
-        // the client can tell "already there" (200) from "added" (201).
-        $existing = $playlist->items()->where('song_id', $validated['song_id'])->first();
-
-        if ($existing) {
-            return response()->json($this->formatItem($existing->load('song')), 200);
+        if (! in_array($type, PlaylistItem::TYPES, true)) {
+            // Validate the discriminator first so the branch below is safe.
+            $request->validate(['item_type' => [Rule::in(PlaylistItem::TYPES)]]);
         }
 
-        $item = DB::transaction(function () use ($playlist, $validated) {
+        $validated = $request->validate($this->addRules($type));
+
+        if ($type === PlaylistItem::TYPE_SCRIPTURE) {
+            if ($error = $this->assertValidRange($validated)) {
+                return $error;
+            }
+        } else {
+            // Re-adding a song already in the playlist is a no-op (FR-SL-4):
+            // return the existing item so the client can tell "already there"
+            // (200) from "added" (201). Scripture readings have no natural
+            // dedupe key and may legitimately repeat, so this only applies to
+            // song items.
+            $existing = $playlist->items()
+                ->where('item_type', PlaylistItem::TYPE_SONG)
+                ->where('song_id', $validated['song_id'])
+                ->first();
+
+            if ($existing) {
+                return response()->json($this->formatItem($existing->load('song')), 200);
+            }
+        }
+
+        $item = DB::transaction(function () use ($playlist, $validated, $type) {
             $count = $playlist->items()->count();
             $position = $validated['position'] ?? $count;
             $position = min($position, $count); // clamp; can't insert past end
@@ -103,16 +119,102 @@ class PlaylistItemController
                     $i->update(['position' => -$i->position]);
                 });
 
-            return PlaylistItem::create([
-                'playlist_id' => $playlist->id,
-                'song_id'     => $validated['song_id'],
-                'position'    => $position,
-                'target_key'  => $validated['target_key'] ?? null,
-                'notes'       => $validated['notes'] ?? null,
-            ]);
+            return PlaylistItem::create($this->buildAttributes($playlist, $validated, $type, $position));
         });
 
         return response()->json($this->formatItem($item->load('song')), 201);
+    }
+
+    /**
+     * Validation rules for adding an item, keyed by discriminator. Exactly
+     * one payload shape is accepted per `item_type`.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    private function addRules(string $type): array
+    {
+        $common = [
+            'item_type' => ['sometimes', Rule::in(PlaylistItem::TYPES)],
+            'position'  => ['sometimes', 'integer', 'min:0'],
+            'notes'     => ['nullable', 'string', 'max:2000'],
+        ];
+
+        if ($type === PlaylistItem::TYPE_SCRIPTURE) {
+            return $common + [
+                'translation_id' => ['nullable', 'string', 'max:32'],
+                'book_code'      => ['required', 'string', 'max:8'],
+                'start_chapter'  => ['required', 'integer', 'min:1'],
+                'start_verse'    => ['required', 'integer', 'min:1'],
+                'end_chapter'    => ['nullable', 'integer', 'min:1'],
+                'end_verse'      => ['nullable', 'integer', 'min:1', 'required_with:end_chapter'],
+            ];
+        }
+
+        return $common + [
+            'song_id'    => ['required', 'uuid', 'exists:songs,id'],
+            'target_key' => ['nullable', 'string', 'regex:'.self::KEY_PATTERN],
+        ];
+    }
+
+    /**
+     * Build the create payload for a new item, forcing the fields that don't
+     * belong to the item's type to null so a stray song_id never rides along
+     * on a scripture row (and vice versa).
+     *
+     * @param  array<string, mixed>  $v
+     * @return array<string, mixed>
+     */
+    private function buildAttributes(Playlist $playlist, array $v, string $type, int $position): array
+    {
+        $base = [
+            'playlist_id' => $playlist->id,
+            'item_type'   => $type,
+            'position'    => $position,
+            'notes'       => $v['notes'] ?? null,
+        ];
+
+        if ($type === PlaylistItem::TYPE_SCRIPTURE) {
+            return $base + [
+                'translation_id' => $v['translation_id'] ?? null,
+                'book_code'      => $v['book_code'],
+                'start_chapter'  => $v['start_chapter'],
+                'start_verse'    => $v['start_verse'],
+                'end_chapter'    => $v['end_chapter'] ?? null,
+                'end_verse'      => $v['end_verse'] ?? null,
+            ];
+        }
+
+        return $base + [
+            'song_id'    => $v['song_id'],
+            'target_key' => $v['target_key'] ?? null,
+        ];
+    }
+
+    /**
+     * Reject a scripture range whose end falls before its start. Returns a
+     * 422 response or null. Operates on already-validated integer fields.
+     *
+     * @param  array<string, mixed>  $v
+     */
+    private function assertValidRange(array $v): ?JsonResponse
+    {
+        if (! isset($v['end_verse'])) {
+            return null; // single-verse or open reference
+        }
+
+        $endChapter = $v['end_chapter'] ?? $v['start_chapter'];
+
+        $backwards = $endChapter < $v['start_chapter']
+            || ($endChapter === $v['start_chapter'] && $v['end_verse'] < $v['start_verse']);
+
+        if ($backwards) {
+            return response()->json([
+                'message' => 'The scripture range end must not come before its start.',
+                'errors'  => ['end_verse' => ['The reference range end is before its start.']],
+            ], 422);
+        }
+
+        return null;
     }
 
     // ── Update an item (target_key / notes) ───────────────────────────
@@ -148,10 +250,25 @@ class PlaylistItemController
             return $forbidden;
         }
 
-        $validated = $request->validate([
-            'target_key' => ['nullable', 'string', 'regex:'.self::KEY_PATTERN],
-            'notes'      => ['nullable', 'string', 'max:2000'],
-        ]);
+        // The item's type is fixed at creation; update only edits the fields
+        // that belong to it (scripture reference for a reading, key for a
+        // song). `notes` applies to both.
+        if ($item->isScripture()) {
+            $validated = $request->validate([
+                'notes'          => ['nullable', 'string', 'max:2000'],
+                'translation_id' => ['sometimes', 'nullable', 'string', 'max:32'],
+                'book_code'      => ['sometimes', 'string', 'max:8'],
+                'start_chapter'  => ['sometimes', 'integer', 'min:1'],
+                'start_verse'    => ['sometimes', 'integer', 'min:1'],
+                'end_chapter'    => ['sometimes', 'nullable', 'integer', 'min:1'],
+                'end_verse'      => ['sometimes', 'nullable', 'integer', 'min:1'],
+            ]);
+        } else {
+            $validated = $request->validate([
+                'target_key' => ['nullable', 'string', 'regex:'.self::KEY_PATTERN],
+                'notes'      => ['nullable', 'string', 'max:2000'],
+            ]);
+        }
 
         // Allow explicit clearing — only fill keys that were sent.
         $item->fill(array_intersect_key($validated, $request->all()))->save();
@@ -321,23 +438,6 @@ class PlaylistItemController
     /** @return array<string, mixed> */
     private function formatItem(PlaylistItem $item): array
     {
-        $song = $item->song;
-
-        return [
-            'id'         => $item->id,
-            'song_id'    => $item->song_id,
-            'position'   => $item->position,
-            'target_key' => $item->target_key,
-            'notes'      => $item->notes,
-            'song'       => $song ? [
-                'id'             => $song->id,
-                'title'          => $song->title,
-                'author'         => $song->author,
-                'original_key'   => $song->original_key,
-                'tempo'          => $song->tempo,
-                'time_signature' => $song->time_signature,
-                'deleted'        => $song->trashed(),
-            ] : null,
-        ];
+        return PlaylistItemFormatter::format($item);
     }
 }

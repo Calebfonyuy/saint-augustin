@@ -420,6 +420,8 @@
     "exportText": "Texte brut",
     "addSongs": "Ajouter des chants",
     "alreadyAdded": "« {name} » est déjà dans cette playlist.",
+    "scripture": "Écriture",
+    "scriptureReading": "Lecture biblique",
     "pickerPlaceholder": "Rechercher dans la bibliothèque…",
     "noSongsMatch": "Aucun chant ne correspond.",
     "emptyPart1": "Glissez des chants depuis la droite, ou cliquez sur le bouton",

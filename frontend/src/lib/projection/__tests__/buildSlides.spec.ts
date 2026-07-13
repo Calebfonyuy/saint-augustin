@@ -5,10 +5,12 @@ import type { Playlist, PlaylistItem, Song } from '@/types'
 function item(over: Partial<PlaylistItem> = {}): PlaylistItem {
   return {
     id: 'item-1',
+    item_type: 'song',
     song_id: 'song-1',
     position: 0,
     target_key: null,
     notes: null,
+    scripture: null,
     song: {
       id: 'song-1',
       title: 'Amazing Grace',
@@ -91,10 +93,12 @@ describe('buildSlidesForPlaylist', () => {
     // construct that shape to verify the build falls back to a fetch.
     const slim: PlaylistItem = {
       id: 'a',
+      item_type: 'song',
       song_id: 'song-1',
       position: 0,
       target_key: null,
       notes: null,
+      scripture: null,
       song: {
         id: 'song-1',
         title: 'Slim Stub',
@@ -140,10 +144,12 @@ describe('buildSlidesForPlaylist', () => {
   it('de-dupes fetches when the same song appears twice in a playlist', async () => {
     const slim = (id: string): PlaylistItem => ({
       id,
+      item_type: 'song',
       song_id: 'song-1',
       position: id === 'first' ? 0 : 1,
       target_key: null,
       notes: null,
+      scripture: null,
       song: {
         id: 'song-1',
         title: 'Slim',
@@ -300,5 +306,65 @@ describe('buildSlidesForPlaylist', () => {
     const slides = await buildSlidesForPlaylist(pl, { fetchSong: failingFetch })
     const indexes = [...new Set(slides.map((s) => s.itemIndex))]
     expect(indexes).toEqual([0, 1])
+  })
+
+  it('renders a scripture item as a single tagged placeholder slide', async () => {
+    const scriptureItem = item({
+      id: 'read-1',
+      item_type: 'scripture',
+      song_id: null,
+      song: null,
+      scripture: {
+        translation_id: 'BSB',
+        book_code: 'JHN',
+        start_chapter: 3,
+        start_verse: 16,
+        end_chapter: 4,
+        end_verse: 2,
+        reference: 'JHN 3:16-4:2',
+      },
+    })
+    const pl = playlist([scriptureItem])
+
+    // failingFetch guarantees no song fetch is attempted for a reading.
+    const slides = await buildSlidesForPlaylist(pl, { fetchSong: failingFetch })
+
+    expect(slides).toHaveLength(1)
+    expect(slides[0]).toMatchObject({
+      itemIndex: 0,
+      slideIndex: 0,
+      kind: 'scripture',
+      reference: 'JHN 3:16-4:2',
+      songTitle: 'JHN 3:16-4:2',
+      body: 'JHN 3:16-4:2',
+    })
+  })
+
+  it('interleaves song and scripture slides in playlist order', async () => {
+    const pl = playlist([
+      item({ id: 'song-a', position: 0 }),
+      item({
+        id: 'read-1',
+        position: 1,
+        item_type: 'scripture',
+        song_id: null,
+        song: null,
+        scripture: {
+          translation_id: null,
+          book_code: 'PSA',
+          start_chapter: 23,
+          start_verse: 1,
+          end_chapter: null,
+          end_verse: null,
+          reference: 'PSA 23:1',
+        },
+      }),
+    ])
+
+    const slides = await buildSlidesForPlaylist(pl, { fetchSong: failingFetch })
+    const kindsByItem = [0, 1].map(
+      (idx) => slides.find((s) => s.itemIndex === idx)?.kind,
+    )
+    expect(kindsByItem).toEqual(['song', 'scripture'])
   })
 })

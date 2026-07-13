@@ -132,9 +132,17 @@ class PlaylistExportController
 
     private function formatTextLine(int $n, PlaylistItem $item): string
     {
-        // song_id is a required FK and song() resolves withTrashed(), so the
-        // related song always resolves under this app's soft-delete-only
-        // architecture (songs are never hard-deleted).
+        // Scripture readings carry no song — render the reference instead.
+        if ($item->isScripture()) {
+            $ref = $item->scriptureReference() ?? 'Scripture';
+            $translation = $item->translation_id ? ' ('.$item->translation_id.')' : '';
+
+            return sprintf('%2d. %s%s   [reading]', $n, $ref, $translation);
+        }
+
+        // Song items: song_id is required for a song item and song() resolves
+        // withTrashed(), so the related song always resolves under this app's
+        // soft-delete-only architecture (songs are never hard-deleted).
         $song = $item->song;
         $title = $song->title;
         $author = $song->author ? ' — '.$song->author : '';

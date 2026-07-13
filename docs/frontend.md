@@ -133,11 +133,13 @@ Utilities for converting a playlist into a flat slide list for the Projection Se
 
 ### `buildSlides.ts`
 
-Takes a `Playlist` with items and returns `ProjectionSlide[]`. For each item it:
+Takes a `Playlist` with items and returns `ProjectionSlide[]`. For a **song** item it:
 
 1. Parses the song's ChordPro lyrics.
 2. Optionally transposes to the item's `target_key`.
-3. Splits sections into individual slides, stripping chord tokens to leave clean lyrics.
+3. Splits sections into individual slides, stripping chord tokens to leave clean lyrics, tagging each slide `kind: 'song'`.
+
+A **scripture** item (FR-PL-2) produces a single placeholder slide tagged `kind: 'scripture'`, carrying the reference label (e.g. `JHN 3:16-4:2`) as both title and body — no song fetch is attempted. Verse-by-verse rendering arrives in Stage 7; the `kind`/`reference` fields on `Slide` (mirrored by the projection service's `SlideDto`) let the display branch without re-parsing.
 
 ### `slides.ts`
 
@@ -160,8 +162,9 @@ Read-only song view for performers. Displays ChordPro lyrics with chords rendere
 
 Full-featured playlist editor. Features:
 
-- Drag-and-drop song ordering (or reorder via API)
-- Per-item key and notes editor
+- Drag-and-drop ordering of mixed items (or reorder via API)
+- Per-item key and notes editor for songs; notes-only for scripture readings
+- Scripture reading items (FR-PL-2) render as a stub row — the composed reference (e.g. `JHN 3:16-4:2`), a "Scripture" badge, and the translation id, with the key controls hidden. Reading *entry* (the reference picker) arrives in Stage 7; the builder already displays and reorders readings that exist.
 - Inline song preview
 - Share link management (create musician/projection links, revoke, copy URL)
 - "Go Live" button that builds slides and creates a projection session
