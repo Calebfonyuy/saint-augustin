@@ -418,6 +418,7 @@
     "export": "Exporter",
     "exportPdf": "PDF",
     "exportText": "Texte brut",
+    "exportStaug": "Archive STAUG",
     "addSongs": "Ajouter des chants",
     "alreadyAdded": "« {name} » est déjà dans cette playlist.",
     "scripture": "Écriture",
@@ -601,6 +602,37 @@
       "resend": "Impossible de renvoyer l'invitation.",
       "cancelInvite": "Impossible d'annuler l'invitation.",
       "resetLink": "Impossible d'envoyer le lien de réinitialisation."
+    }
+  },
+  "staug": {
+    "title": "Échange STAUG",
+    "intro": "STAUG est le format d'archive signé de SaintAugustin pour transférer du contenu entre instances. Importez une archive signée (les chants existants ne sont jamais écrasés) ou lancez un export complet de la bibliothèque.",
+    "import": {
+      "title": "Importer une archive STAUG",
+      "choose": "Choisir une archive…",
+      "parsing": "Vérification…",
+      "create": "{n} à créer",
+      "skip": "{n} déjà présents",
+      "conflict": "{n} conflits (importés comme nouveaux)",
+      "commit": "Importer",
+      "importing": "Import en cours…",
+      "another": "Importer une autre"
+    },
+    "result": "Importés {created} · ignorés {skipped} · {conflicted} conflits.",
+    "export": {
+      "title": "Export complet de la bibliothèque",
+      "hint": "Génère une archive signée de tous les chants et carnets. Vous recevrez un e-mail avec un lien de téléchargement une fois prête.",
+      "action": "Exporter toute la bibliothèque",
+      "queuing": "Mise en file…"
+    },
+    "toast": {
+      "imported": "Importés {created}, ignorés {skipped}, {conflicted} conflits.",
+      "exportQueued": "Export en file — vous recevrez un e-mail avec le lien de téléchargement."
+    },
+    "errors": {
+      "preview": "Impossible de lire l'archive. Est-ce un fichier STAUG signé valide ?",
+      "import": "Échec de l'import.",
+      "export": "Impossible de lancer l'export."
     }
   },
   "adminImport": {

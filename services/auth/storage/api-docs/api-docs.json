@@ -249,6 +249,73 @@
                 ]
             }
         },
+        "/exports/full": {
+            "post": {
+                "tags": [
+                    "Exports"
+                ],
+                "summary": "Queue a full-library STAUG export",
+                "description": "Queues a background job that builds a signed STAUG archive of every song and songbook and emails the requesting admin a 48h presigned download link. Only one full export may run at a time — a concurrent request returns 409. Requires the `admin` role.",
+                "operationId": "71f9058a2617ac3e1f5d96972d2988b5",
+                "responses": {
+                    "202": {
+                        "description": "Export queued",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Export queued."
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "queued"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An export is already in progress",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/auth/invitations": {
             "get": {
                 "tags": [
@@ -1276,7 +1343,8 @@
                             "default": "pdf",
                             "enum": [
                                 "pdf",
-                                "txt"
+                                "txt",
+                                "staug"
                             ]
                         }
                     }
@@ -3172,6 +3240,87 @@
                 ]
             }
         },
+        "/songbooks/{id}/export": {
+            "get": {
+                "tags": [
+                    "Songbooks"
+                ],
+                "summary": "Export a songbook as a STAUG archive",
+                "description": "Downloads a signed STAUG ZIP containing the songbook and every song in it. Any authenticated user may export a songbook they can see.",
+                "operationId": "d02a54df57f6cf19fee36038ec8f4fbc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "staug",
+                            "enum": [
+                                "staug"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "STAUG archive download",
+                        "content": {
+                            "application/zip": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Songbook not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Unsupported format",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/auth/status": {
             "get": {
                 "tags": [
@@ -3206,6 +3355,153 @@
                         }
                     }
                 }
+            }
+        },
+        "/imports/staug": {
+            "post": {
+                "tags": [
+                    "Imports"
+                ],
+                "summary": "Import (or preview) a signed STAUG archive",
+                "description": "Accepts a multipart upload of a `.staug`/`.zip` archive. The manifest signature is verified first — an invalid or unsigned archive returns 422 without writing anything. With `dry_run=true` the response lists the per-song action (create/skip/conflict). Committing is strictly non-destructive: existing songs are matched by id + title and never overwritten. Requires the `admin` role.",
+                "operationId": "0994d04412dfff1dff3ebc948ac4281a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "description": "The signed STAUG ZIP archive.",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "dry_run": {
+                                        "description": "If true, only preview the per-song actions; nothing is persisted.",
+                                        "type": "boolean",
+                                        "default": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Preview (dry run) — per-song action and per-songbook counts.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "example": "playlist"
+                                        },
+                                        "songs": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "action": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "create",
+                                                            "skip",
+                                                            "conflict"
+                                                        ]
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "songbooks": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Import committed — created/skipped/conflicted counts.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "created": {
+                                            "type": "integer"
+                                        },
+                                        "skipped": {
+                                            "type": "integer"
+                                        },
+                                        "conflicted": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        },
+                                        "songbooks": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "File missing/too large, or the archive is invalid or unsigned",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/tags": {
@@ -4753,6 +5049,10 @@
             "description": "Login, logout, and token refresh endpoints."
         },
         {
+            "name": "Exports",
+            "description": "Bulk library exports."
+        },
+        {
             "name": "Invitations",
             "description": "Admin-issued invitation management and invitation-based user registration."
         },
@@ -4786,7 +5086,7 @@
         },
         {
             "name": "Songbooks",
-            "description": "Songbook (song collection) management."
+            "description": "Songbook CRUD and export."
         },
         {
             "name": "Tags",

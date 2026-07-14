@@ -86,7 +86,8 @@ services:
         mc alias set local http://sa-minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
         mc mb --ignore-existing local/saintaugustin;
         mc anonymous set download local/saintaugustin/public;
-        echo '>>> Bucket saintaugustin created.';
+        mc ilm rule add local/saintaugustin --expire-days 2 --prefix 'exports/' || mc ilm add --expiry-days 2 --prefix 'exports/' local/saintaugustin || true;
+        echo '>>> Bucket saintaugustin created (exports/ auto-expire after 2 days).';
       "
 
   # ===========================================================================

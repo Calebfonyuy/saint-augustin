@@ -218,7 +218,7 @@ async function onGoLiveLaunched(sessionId: string): Promise<void> {
   await router.push({ name: 'projection-control', params: { id: sessionId } })
 }
 
-async function onExport(format: 'pdf' | 'txt'): Promise<void> {
+async function onExport(format: 'pdf' | 'txt' | 'staug'): Promise<void> {
   exportMenuOpen.value = false
   try {
     const { blob, filename } = await downloadPlaylistExport(id.value, format)
@@ -334,6 +334,14 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
               @click="onExport('txt')"
             >
               {{ t('playlistBuilder.exportText') }}
+            </button>
+            <button
+              type="button"
+              class="block w-full text-left px-3 py-2 text-[13px] hover:bg-bg-sunken"
+              data-testid="export-staug"
+              @click="onExport('staug')"
+            >
+              {{ t('playlistBuilder.exportStaug') }}
             </button>
           </div>
         </div>

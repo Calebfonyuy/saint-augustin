@@ -85,7 +85,7 @@ Song sheets are PDF or image attachments stored in MinIO. On upload the file is 
 | GET | `/api/playlists/{playlistId}/share` | Bearer (Owner/Admin) | List share links |
 | POST | `/api/playlists/{playlistId}/share` | Bearer (Owner/Admin) | Create a share link |
 | DELETE | `/api/share-links/{id}` | Bearer (Owner/Admin) | Revoke a share link |
-| GET | `/api/playlists/{id}/export` | Bearer | Download PDF export |
+| GET | `/api/playlists/{id}/export` | Bearer | Download export (`format=pdf\|txt\|staug`) |
 | GET | `/api/share/{token}` | — (throttled 60/min) | Resolve public share link |
 
 Each playlist item stores `position`, an optional `target_key` (transpose destination for the musician), and free-text `notes`. The `reorder` endpoint accepts an ordered array of item IDs and re-assigns `position` values in one transaction.
@@ -110,6 +110,19 @@ This is a single `playlist_items` table with a discriminator, not a polymorphic 
 **Share links** carry a `mode` field (`musician` or `projection`). The `musician` payload includes full song lyrics; `projection` omits them. Public access is throttled to prevent token enumeration.
 
 **PDF export** renders the playlist via a Blade view and returns a downloadable PDF using a Laravel PDF package.
+
+### STAUG data interchange (`/api/imports/staug`, `/api/exports/full`, `/api/songbooks/{id}/export`)
+
+STAUG is the signed ZIP archive format for moving content between instances — full spec in [staug-format.md](staug-format.md).
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/playlists/{id}/export?format=staug` | Bearer | Export a playlist as STAUG |
+| GET | `/api/songbooks/{id}/export?format=staug` | Bearer | Export a songbook as STAUG (`SongbookExportController`) |
+| POST | `/api/imports/staug` | Bearer (admin) | Import (or `dry_run` preview) a signed archive — non-destructive |
+| POST | `/api/exports/full` | Bearer (admin) | Queue a full-library export (202); 409 if one is already running |
+
+The implementation lives in `app/Services/Staug/` (`StaugSigner`, `StaugArchiveWriter`, `StaugArchiveReader`, `StaugImporter`). The manifest is HMAC-signed with `config('staug.signing_key')` (a new `config/staug.php` maps `STAUG_SIGNING_KEY` — provisioned in every env layer since Stage 0). Import verifies the signature and every per-song `sha256` **before** touching the database, then merges non-destructively (match on id+title; existing songs are never overwritten; UUIDs are preserved on clean creates). The full export runs as `App\Jobs\FullExportJob` on the Redis queue worker, writes to the MinIO `exports/` prefix (2-day lifecycle expiry), and emails the admin a 48h presigned link via `StaugExportReadyNotification`. One full export runs at a time, guarded by an atomic `Cache::add` marker.
 
 ---
 

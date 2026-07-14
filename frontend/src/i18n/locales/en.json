@@ -418,6 +418,7 @@
     "export": "Export",
     "exportPdf": "PDF",
     "exportText": "Plain text",
+    "exportStaug": "STAUG archive",
     "addSongs": "Add songs",
     "alreadyAdded": "\"{name}\" is already in this playlist.",
     "scripture": "Scripture",
@@ -601,6 +602,37 @@
       "resend": "Could not resend invitation.",
       "cancelInvite": "Could not cancel invitation.",
       "resetLink": "Could not send reset link."
+    }
+  },
+  "staug": {
+    "title": "STAUG interchange",
+    "intro": "STAUG is SaintAugustin's signed archive format for moving content between instances. Import a signed archive (existing songs are never overwritten), or queue a full-library export.",
+    "import": {
+      "title": "Import a STAUG archive",
+      "choose": "Choose archive…",
+      "parsing": "Verifying…",
+      "create": "{n} to create",
+      "skip": "{n} already present",
+      "conflict": "{n} conflicts (imported as new)",
+      "commit": "Import",
+      "importing": "Importing…",
+      "another": "Import another"
+    },
+    "result": "Imported {created} · skipped {skipped} · {conflicted} conflicts.",
+    "export": {
+      "title": "Full library export",
+      "hint": "Builds a signed archive of every song and songbook. You'll get an email with a download link when it's ready.",
+      "action": "Export full library",
+      "queuing": "Queuing…"
+    },
+    "toast": {
+      "imported": "Imported {created}, skipped {skipped}, {conflicted} conflicts.",
+      "exportQueued": "Export queued — you'll get an email with the download link."
+    },
+    "errors": {
+      "preview": "Could not read the archive. Is it a valid signed STAUG file?",
+      "import": "Import failed.",
+      "export": "Could not start the export."
     }
   },
   "adminImport": {

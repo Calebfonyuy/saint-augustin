@@ -206,6 +206,12 @@ Admin-only user management (`/admin/users`). Lists registered users and pending 
 
 The drawer proactively guards a signed-in admin against locking themselves out: their own "Remove from workspace" action is disabled and their own `admin` role checkbox is locked (each with inline explanatory copy), mirroring the backend's self-delete/self-demotion 409 guards in `UserController`.
 
+### `AdminImportView`
+
+Admin-only import/export (`/admin/import`). The VideoPsalm two-stage flow (pick `.vpagd` → preview/select → commit) is the main surface. Below it, `components/admin/StaugPanel.vue` (Stage 6) adds the STAUG interchange: import a signed STAUG archive (pick file → `dry_run` preview showing per-song create/skip/conflict counts → non-destructive commit) and a "Export full library" button that queues the server-side full export (`POST /api/exports/full`) with a "you'll get an email" toast. The panel is presentational and delegates toasts to the parent via a `notify` event.
+
+Playlists also gain a **STAUG archive** item in the builder's export dropdown (alongside PDF / plain text), downloading a signed `.staug.zip`.
+
 ---
 
 ## Components
@@ -220,6 +226,7 @@ The drawer proactively guards a signed-in admin against locking themselves out: 
 | `CreatePlaylistModal` | Shared create-playlist modal (name, event date, chip-based tag entry with `GET /api/tags` autocomplete). Used by `PlaylistsListView` and `AddToPlaylistDialog` |
 | `AddToPlaylistDialog` | Add-to-playlist picker opened from the song library: lists the caller's playlists (all, for an admin), adds the song (re-adds are a no-op toast), and offers inline new-playlist creation via `CreatePlaylistModal` |
 | `GoLiveDialog` | Launch modal for projecting a playlist or single song (temporary / existing / persistent session) |
+| `admin/StaugPanel` | STAUG interchange on the admin import screen: import a signed archive (preview → commit) and queue a full-library export |
 | `KeyBadge` | Pill showing a musical key (colour-coded by accidental type) |
 | `Metronome` | Visual + audio metronome with BPM input and tap-tempo |
 | `PreviewPlayer` | Minimal audio player for preview URLs |

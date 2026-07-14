@@ -56,3 +56,61 @@ export async function importVideopsalm(file: File, guids?: string[]): Promise<Vp
   })
   return data
 }
+
+// ── STAUG archive import / export (Stage 6) ────────────────────────────
+// Ref: services/auth/routes/api.php (/api/imports/staug, /api/exports/full)
+
+export type StaugAction = 'create' | 'skip' | 'conflict'
+
+export interface StaugPreviewSong {
+  id: string | null
+  title: string
+  /** What committing would do: create a new row, skip an exact match, or
+   *  create a new record because the id exists with a different title. */
+  action: StaugAction
+}
+
+export interface StaugImportPreview {
+  type: string
+  songs: StaugPreviewSong[]
+  /** Map of songbook name → number of songs in the archive under it. */
+  songbooks: Record<string, number>
+}
+
+export interface StaugImportResult {
+  created: number
+  skipped: number
+  conflicted: number
+  total: number
+  songbooks: string[]
+}
+
+export async function previewStaug(file: File): Promise<StaugImportPreview> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('dry_run', '1')
+
+  const { data } = await apiClient.post<StaugImportPreview>('/imports/staug', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60_000,
+  })
+  return data
+}
+
+export async function importStaug(file: File): Promise<StaugImportResult> {
+  const form = new FormData()
+  form.append('file', file)
+
+  const { data } = await apiClient.post<StaugImportResult>('/imports/staug', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120_000,
+  })
+  return data
+}
+
+/** Queue a full-library export. The archive is built server-side and a
+ *  download link is emailed to the requesting admin. */
+export async function requestFullExport(): Promise<{ message: string; status: string }> {
+  const { data } = await apiClient.post<{ message: string; status: string }>('/exports/full')
+  return data
+}

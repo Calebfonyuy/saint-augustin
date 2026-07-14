@@ -11,6 +11,7 @@
  */
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PlaylistController;
@@ -18,10 +19,12 @@ use App\Http\Controllers\PlaylistExportController;
 use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\ShareLinkController;
 use App\Http\Controllers\SongbookController;
+use App\Http\Controllers\SongbookExportController;
 use App\Http\Controllers\SongController;
 use App\Http\Controllers\SongImportController;
 use App\Http\Controllers\SongSheetController;
 use App\Http\Controllers\StatusController;
+use App\Http\Controllers\StaugImportController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -88,6 +91,19 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('users')->group(function ()
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('imports')->group(function () {
     Route::post('/videopsalm', [SongImportController::class, 'videopsalm']);
+    // Signed STAUG archive import (non-destructive merge).
+    Route::post('/staug', [StaugImportController::class, 'staug']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Bulk Exports (Admin)
+|--------------------------------------------------------------------------
+| Full-library STAUG export. Queued; emails the admin a 48h download link.
+*/
+
+Route::middleware(['auth:sanctum', 'admin'])->prefix('exports')->group(function () {
+    Route::post('/full', [ExportController::class, 'full']);
 });
 
 /*
@@ -101,6 +117,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('imports')->group(function 
 
 Route::middleware('auth:sanctum')->prefix('songbooks')->group(function () {
     Route::get('/', [SongbookController::class, 'index']);
+    Route::get('/{id}/export', SongbookExportController::class);
     Route::get('/{id}', [SongbookController::class, 'show']);
 
     Route::middleware('admin')->group(function () {

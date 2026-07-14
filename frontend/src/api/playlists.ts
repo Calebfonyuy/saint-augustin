@@ -51,7 +51,7 @@ export async function duplicatePlaylist(id: string, name?: string): Promise<Play
  * uses the apiClient for blob retrieval and saves via an anchor. */
 export async function downloadPlaylistExport(
   id: string,
-  format: 'pdf' | 'txt',
+  format: 'pdf' | 'txt' | 'staug',
 ): Promise<{ blob: Blob; filename: string }> {
   const response = await apiClient.get<Blob>(`/playlists/${id}/export`, {
     params: { format },
@@ -60,7 +60,8 @@ export async function downloadPlaylistExport(
 
   const dispo = (response.headers['content-disposition'] as string | undefined) ?? ''
   const match = /filename="?([^"]+)"?/.exec(dispo)
-  const filename = match?.[1] ?? `playlist.${format}`
+  const ext = format === 'staug' ? 'staug.zip' : format
+  const filename = match?.[1] ?? `playlist.${ext}`
 
   return { blob: response.data, filename }
 }
