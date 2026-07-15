@@ -52,13 +52,15 @@ interface ProjectionSlide {
   section: string | null  // e.g. "Verse 1", "Chorus"
   body: string            // plain text lyrics for this section
   kind?: 'song' | 'scripture'  // parent item kind (FR-PL-2); defaults to 'song'
-  reference?: string | null    // resolved label for scripture slides
+  reference?: string | null    // "Jean 3:16 · Segond" — heading on the first scripture slide
+  verses?: { number: number; text: string }[]  // scripture verses (FR-BI-8)
+  showReference?: boolean       // true on the first slide of a reading
 }
 ```
 
-The slide-building logic lives in `frontend/src/lib/projection/buildSlides.ts`. It splits ChordPro lyrics into sections and creates one `ProjectionSlide` per section.
+The slide-building logic lives in `frontend/src/lib/projection/buildSlides.ts`. It splits ChordPro lyrics into sections and creates one `ProjectionSlide` per song section.
 
-**Scripture readings (FR-PL-2).** A playlist can now interleave songs and scripture readings. A reading currently builds a single placeholder slide tagged `kind: 'scripture'` carrying its `reference` label; the DTO (`SlideDto`) accepts these fields as optional, so both `/sessions` and `/sessions/:id/load` take mixed decks without change. Verse-by-verse rendering (fetch, auto-fit, verse numbers) is added in Stage 7 — until then the projector shows the reference text.
+**Scripture readings (FR-PL-2 / FR-BI-8).** A playlist can interleave songs and scripture readings. `buildSlides` resolves each reading's verses via `GET /api/bible/resolve` (the pre-fetch — this also warms the server chapter cache) and `splitScriptureIntoSlides` groups them into auto-fit slides. `SlideRenderer.vue` renders scripture with small superscript verse numbers and the reference + translation label on the first slide only, shrinking the font (ResizeObserver auto-fit) to stay legible. The `SlideDto` carries optional `verses`/`showReference`; the gateway stores and broadcasts them unchanged (no server-side parsing). If a reading can't be resolved (offline, cold cache) it degrades to a single placeholder slide showing the reference.
 
 ### Control Token
 

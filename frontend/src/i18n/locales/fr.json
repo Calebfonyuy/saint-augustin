@@ -423,6 +423,8 @@
     "alreadyAdded": "« {name} » est déjà dans cette playlist.",
     "scripture": "Écriture",
     "scriptureReading": "Lecture biblique",
+    "addReading": "Ajouter une lecture",
+    "readingAdded": "« {ref} » ajouté.",
     "pickerPlaceholder": "Rechercher dans la bibliothèque…",
     "noSongsMatch": "Aucun chant ne correspond.",
     "emptyPart1": "Glissez des chants depuis la droite, ou cliquez sur le bouton",
@@ -602,6 +604,36 @@
       "resend": "Impossible de renvoyer l'invitation.",
       "cancelInvite": "Impossible d'annuler l'invitation.",
       "resetLink": "Impossible d'envoyer le lien de réinitialisation."
+    }
+  },
+  "addReading": {
+    "title": "Ajouter une lecture biblique",
+    "translation": "Traduction",
+    "modeFreeform": "Saisir la référence",
+    "modePicker": "Choisir le livre",
+    "freeformPlaceholder": "ex. Jean 3:16-4:2",
+    "preview": "Aperçu",
+    "resolving": "Résolution…",
+    "add": "Ajouter la lecture",
+    "range": "Intervalle",
+    "to": "à",
+    "unconfigured": "Aucune traduction biblique n'est activée. Un administrateur peut les activer dans Administration → Paramètres.",
+    "errors": {
+      "empty": "Saisissez d'abord une référence.",
+      "resolve": "Impossible de résoudre cette référence.",
+      "add": "Impossible d'ajouter la lecture."
+    }
+  },
+  "bibleSettings": {
+    "subtitle": "Traductions bibliques",
+    "title": "Traductions bibliques",
+    "intro": "Activez les traductions utilisées par votre équipe et choisissez une traduction par défaut. Le texte biblique est récupéré à la demande depuis une source du domaine public et n'est jamais stocké.",
+    "none": "Aucune traduction n'est disponible pour le moment.",
+    "default": "Par défaut",
+    "saved": "Paramètres bibliques enregistrés.",
+    "errors": {
+      "load": "Impossible de charger les paramètres bibliques.",
+      "save": "Impossible d'enregistrer les paramètres bibliques."
     }
   },
   "staug": {

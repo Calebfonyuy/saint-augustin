@@ -2,6 +2,7 @@
 // placeholder slides (FR-PL-2, Stage 5) without breaking the existing
 // song shape. Real scripture rendering lands in Stage 7; here we only
 // verify the DTO tolerates the new `kind`/`reference` fields.
+import 'reflect-metadata'; // required for @Type on SlideDto.verses (loaded by NestJS in the app)
 import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { SlideDto } from '../slide.dto';
@@ -39,5 +40,25 @@ describe('SlideDto', () => {
 
   it('rejects an unknown kind', () => {
     expect(errorsFor({ ...songSlide, kind: 'sermon' })).toContain('kind');
+  });
+
+  it('accepts a scripture slide with verses and showReference (FR-BI-8)', () => {
+    expect(
+      errorsFor({
+        ...songSlide,
+        kind: 'scripture',
+        showReference: true,
+        verses: [
+          { number: 16, text: 'For God so loved the world' },
+          { number: 17, text: 'For God did not send his Son' },
+        ],
+      }),
+    ).toEqual([]);
+  });
+
+  it('rejects a malformed verse (missing text)', () => {
+    expect(
+      errorsFor({ ...songSlide, kind: 'scripture', verses: [{ number: 16 }] }),
+    ).toContain('verses');
   });
 });

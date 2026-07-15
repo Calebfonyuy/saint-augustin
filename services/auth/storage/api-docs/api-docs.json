@@ -249,6 +249,174 @@
                 ]
             }
         },
+        "/bible/settings": {
+            "get": {
+                "tags": [
+                    "Bible"
+                ],
+                "summary": "Get the workspace Bible settings",
+                "description": "Returns the enabled translations and the default translation id. Any authenticated user.",
+                "operationId": "3326f77a7038ab8230e0b41ea415dfe2",
+                "responses": {
+                    "200": {
+                        "description": "Settings"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Bible"
+                ],
+                "summary": "Save the workspace Bible settings (admin)",
+                "description": "Persists the enabled translations + default and repopulates the book-structure cache. Requires the `admin` role.",
+                "operationId": "7ef12c081949ffe9b700bb3cd216edb1",
+                "responses": {
+                    "200": {
+                        "description": "Saved"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "502": {
+                        "description": "Bible API unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/bible/books": {
+            "get": {
+                "tags": [
+                    "Bible"
+                ],
+                "summary": "List a translation's books (from the structure cache)",
+                "description": "Returns the localized book names + chapter counts for the picker. `translation` defaults to the workspace default.",
+                "operationId": "c7792700596be6d3f48c8dff6c5d03a2",
+                "parameters": [
+                    {
+                        "name": "translation",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book list"
+                    },
+                    "422": {
+                        "description": "No translation"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/bible/resolve": {
+            "get": {
+                "tags": [
+                    "Bible"
+                ],
+                "summary": "Resolve a scripture reference to its verses",
+                "description": "Accepts either a freeform reference (`q`, e.g. \"Jean 3:16-4:2\") or discrete params (`book_code`, `start_chapter`, `start_verse`, and optional `end_chapter`/`end_verse`). `translation_id` defaults to the workspace default. Returns the localized label, translation label, and the verse list. Warms the Redis chapter cache (projection pre-fetch).",
+                "operationId": "8efe36f1e3ee7bca9ed329fc2ef99ebc",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "translation_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "book_code",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "start_chapter",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start_verse",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Resolved verses"
+                    },
+                    "422": {
+                        "description": "Unparseable/invalid reference or no translation"
+                    },
+                    "502": {
+                        "description": "Bible API unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/bible/translations/available": {
+            "get": {
+                "tags": [
+                    "Bible"
+                ],
+                "summary": "List available Bible translations (admin)",
+                "description": "Proxies HelloAO available_translations, filtered to the configured languages (incl. French). Requires the `admin` role.",
+                "operationId": "ccef61f8b69279cc8086bb99d3716250",
+                "responses": {
+                    "200": {
+                        "description": "Available translations"
+                    },
+                    "502": {
+                        "description": "Bible API unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/exports/full": {
             "post": {
                 "tags": [
@@ -5047,6 +5215,10 @@
         {
             "name": "Authentication",
             "description": "Login, logout, and token refresh endpoints."
+        },
+        {
+            "name": "Bible",
+            "description": "Bible translations, books, and reference resolution."
         },
         {
             "name": "Exports",

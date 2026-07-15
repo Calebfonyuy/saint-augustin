@@ -2,7 +2,26 @@
 // Slides are precomputed by the controller (frontend) from a playlist's
 // items + ChordPro lyrics and pushed up at session creation. The backend
 // itself does no parsing — its job is dispatch + state.
-import { IsArray, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+/** One verse on a scripture slide (FR-BI-8). */
+export class VerseDto {
+  @IsInt()
+  number!: number;
+
+  @IsString()
+  text!: string;
+}
 
 export class SlideDto {
   /** Stable id, unique within the session (e.g. `${itemId}-v1`). */
@@ -55,6 +74,22 @@ export class SlideDto {
    */
   @IsString()
   body!: string;
+
+  /**
+   * Verses to render on a scripture slide, with superscript numbers
+   * (FR-BI-8). Absent on song slides. The gateway stores and broadcasts
+   * these unchanged — no parsing happens server-side.
+   */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => VerseDto)
+  verses?: VerseDto[];
+
+  /** True on the first slide of a reading — the display shows the reference. */
+  @IsOptional()
+  @IsBoolean()
+  showReference?: boolean;
 }
 
 /** Wrapper used when validating arrays. */

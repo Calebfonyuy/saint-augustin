@@ -26,7 +26,7 @@
 // Font family: `fontFamily` accepts any CSS font-family string. Defaults
 // to the project's --font-display token (Crimson Pro) which is designed
 // for worship projection — high legibility at large sizes, warm serif feel.
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { ProjectionSlide } from '@/types'
 
 const props = withDefaults(
@@ -120,10 +120,64 @@ const innerStyle = computed(() => ({
 const transitionKey = computed(() =>
   props.blackout ? '__blackout__' : (props.slide?.id ?? '__empty__'),
 )
+
+/** Scripture slides carry structured verses (FR-BI-8) and render differently. */
+const isScripture = computed(
+  () => props.slide?.kind === 'scripture' && (props.slide?.verses?.length ?? 0) > 0,
+)
+
+// ── Auto-fit for scripture (NFR-USE-1) ────────────────────────────────
+// A reading slide can hold several verses; shrink the font until the text
+// fits its container rather than overflowing. One-pass ratio estimate, then
+// re-run on slide change and container resize.
+const containerRef = ref<HTMLElement | null>(null)
+const scriptureBodyRef = ref<HTMLElement | null>(null)
+const fitScale = ref(1)
+
+const scriptureFontSize = computed(
+  () => `${baseSize.value * props.fontScale * fitScale.value}px`,
+)
+
+function refit(): void {
+  if (!isScripture.value) {
+    fitScale.value = 1
+    return
+  }
+  fitScale.value = 1
+  void nextTick(() => {
+    const container = containerRef.value
+    const body = scriptureBodyRef.value
+    if (!container || !body) return
+    // Leave headroom for the reference heading / footer / padding.
+    const available = container.clientHeight * 0.82
+    const needed = body.scrollHeight
+    if (needed > available && needed > 0) {
+      fitScale.value = Math.max(0.5, (available / needed) * 0.98)
+    }
+  })
+}
+
+let observer: ResizeObserver | null = null
+
+onMounted(() => {
+  if (typeof ResizeObserver !== 'undefined' && containerRef.value) {
+    observer = new ResizeObserver(() => refit())
+    observer.observe(containerRef.value)
+  }
+  refit()
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  observer = null
+})
+
+watch(() => [props.slide?.id, props.fontScale, props.blackout], refit)
 </script>
 
 <template>
   <div
+    ref="containerRef"
     class="slide-renderer"
     :class="[`slide-${variant}`]"
     :style="containerStyle"
@@ -131,17 +185,35 @@ const transitionKey = computed(() =>
     <Transition name="slide-fade">
       <div :key="transitionKey" class="slide-inner" :style="innerStyle">
         <template v-if="!blackout && slide">
-          <div v-if="slide.section" class="slide-section">
-            {{ slide.section }}
-          </div>
-          <div class="slide-body" :style="{ fontSize: computedFontSize }">
-            <div v-for="(line, i) in lines" :key="i" class="slide-line">
-              {{ line || '\u00a0' }}
+          <!-- Scripture reading (FR-BI-8): reference heading on the first
+               slide, verses with small superscript numbers, auto-fit. -->
+          <template v-if="isScripture">
+            <div v-if="slide.showReference && slide.reference" class="slide-reference">
+              {{ slide.reference }}
             </div>
-          </div>
-          <div v-if="variant !== 'thumb'" class="slide-footer">
-            {{ slide.songTitle }}
-          </div>
+            <div ref="scriptureBodyRef" class="slide-scripture" :style="{ fontSize: scriptureFontSize }">
+              <span v-for="v in slide.verses" :key="v.number" class="slide-verse">
+                <sup class="slide-verse-num">{{ v.number }}</sup>{{ v.text }}
+              </span>
+            </div>
+            <div v-if="variant !== 'thumb'" class="slide-footer">
+              {{ slide.songTitle }}
+            </div>
+          </template>
+
+          <template v-else>
+            <div v-if="slide.section" class="slide-section">
+              {{ slide.section }}
+            </div>
+            <div class="slide-body" :style="{ fontSize: computedFontSize }">
+              <div v-for="(line, i) in lines" :key="i" class="slide-line">
+                {{ line || '\u00a0' }}
+              </div>
+            </div>
+            <div v-if="variant !== 'thumb'" class="slide-footer">
+              {{ slide.songTitle }}
+            </div>
+          </template>
         </template>
         <template v-else-if="blackout">
           <!-- intentionally blank for the projector; preview shows a hint -->
@@ -249,5 +321,38 @@ const transitionKey = computed(() =>
   opacity: 0.5;
   text-transform: uppercase;
   letter-spacing: 0.18em;
+}
+
+/* Scripture reading (FR-BI-8). */
+.slide-reference {
+  font-weight: 600;
+  opacity: 0.85;
+  text-align: center;
+  margin-bottom: 0.4em;
+  font-size: 20px;
+}
+.slide-display .slide-reference {
+  font-size: 30px;
+  margin-bottom: 3vh;
+}
+.slide-thumb .slide-reference {
+  display: none;
+}
+.slide-scripture {
+  white-space: normal;
+  max-width: 100%;
+  word-break: break-word;
+  overflow: hidden;
+}
+.slide-verse {
+  /* verses flow as continuous prose within the slide */
+}
+.slide-verse-num {
+  font-size: 0.5em;
+  line-height: 0;
+  opacity: 0.5;
+  margin-right: 0.15em;
+  vertical-align: super;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
 }
 </style>

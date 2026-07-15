@@ -8,6 +8,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import draggable from 'vuedraggable'
 import AppShell from '@/components/AppShell.vue'
+import AddReadingDialog from '@/components/AddReadingDialog.vue'
 import GoLiveDialog from '@/components/GoLiveDialog.vue'
 import Icon from '@/components/Icon.vue'
 import KeyBadge from '@/components/KeyBadge.vue'
@@ -34,6 +35,7 @@ const error = ref<string | null>(null)
 const success = ref<string | null>(null)
 const shareOpen = ref(false)
 const goLiveOpen = ref(false)
+const addReadingOpen = ref(false)
 const exportMenuOpen = ref(false)
 
 // Editable header state — kept local until blur/save so an in-flight keystroke
@@ -216,6 +218,11 @@ function onGoLive(): void {
 async function onGoLiveLaunched(sessionId: string): Promise<void> {
   goLiveOpen.value = false
   await router.push({ name: 'projection-control', params: { id: sessionId } })
+}
+
+function onReadingAdded(payload: { referenceLabel: string }): void {
+  addReadingOpen.value = false
+  success.value = t('playlistBuilder.readingAdded', { ref: payload.referenceLabel })
 }
 
 async function onExport(format: 'pdf' | 'txt' | 'staug'): Promise<void> {
@@ -498,8 +505,19 @@ async function onExport(format: 'pdf' | 'txt' | 'staug'): Promise<void> {
         <!-- RIGHT: song picker -->
         <aside v-if="canEdit" class="flex flex-col min-h-0 border-l border-border">
           <div class="px-4 pt-4 pb-2 border-b border-border">
-            <div class="mono uppercase tracking-[0.14em] text-[10px] text-text-faint mb-2">
-              {{ t('playlistBuilder.addSongs') }}
+            <div class="flex items-center justify-between mb-2">
+              <div class="mono uppercase tracking-[0.14em] text-[10px] text-text-faint">
+                {{ t('playlistBuilder.addSongs') }}
+              </div>
+              <button
+                type="button"
+                class="btn"
+                style="padding: 4px 8px; font-size: 11px"
+                data-testid="add-reading-btn"
+                @click="addReadingOpen = true"
+              >
+                <Icon name="plus" /> {{ t('playlistBuilder.addReading') }}
+              </button>
             </div>
             <div class="relative">
               <span class="absolute left-[10px] top-[10px] text-text-faint">
@@ -564,6 +582,14 @@ async function onExport(format: 'pdf' | 'txt' | 'staug'): Promise<void> {
         :open="goLiveOpen"
         @close="goLiveOpen = false"
         @launched="onGoLiveLaunched"
+      />
+
+      <AddReadingDialog
+        v-if="addReadingOpen && playlist"
+        :playlist-id="id"
+        :open="addReadingOpen"
+        @close="addReadingOpen = false"
+        @added="onReadingAdded"
       />
     </template>
 

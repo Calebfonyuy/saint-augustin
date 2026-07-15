@@ -74,6 +74,7 @@ loaded yet.
 | `songSheets` | `stores/songSheets.ts` | Sheet upload, list, and presigned URL management |
 | `playlists` | `stores/playlists.ts` | Playlist CRUD, item management, share links, export |
 | `tags` | `stores/tags.ts` | Cached tag suggestions (`GET /api/tags`) shared by tag-entry forms |
+| `bible` | `stores/bible.ts` | Bible settings (enabled translations + default) + per-translation book cache |
 | `projection` | `stores/projection.ts` | Projection session lifecycle, WebSocket state sync |
 
 The `auth` store persists the Bearer token to `localStorage` so sessions survive page reloads. All other stores are in-memory only.
@@ -94,6 +95,7 @@ Resource modules:
 | `api/songSheets.ts` | `/api/songs/:id/sheets`, `/api/sheets/:id` |
 | `api/playlists.ts` | `/api/playlists` |
 | `api/tags.ts` | `/api/tags` |
+| `api/bible.ts` | `/api/bible/*` |
 | `api/shareLinks.ts` | Share link sub-resources |
 | `api/invitations.ts` | `/api/auth/invitations` |
 | `api/password.ts` | `/api/auth/password/*` |
@@ -212,6 +214,12 @@ Admin-only import/export (`/admin/import`). The VideoPsalm two-stage flow (pick 
 
 Playlists also gain a **STAUG archive** item in the builder's export dropdown (alongside PDF / plain text), downloading a signed `.staug.zip`.
 
+### `AdminBibleView`
+
+Admin-only Bible settings (`/admin/bible`, the previously-stubbed Settings tab). Lists the translations the HelloAO API offers in the configured languages (grouped by language, incl. French), with checkboxes to enable a set and a radio to pick the default; saving (`PUT /api/bible/settings`) repopulates the server-side book cache. Backed by `stores/bible.ts` + `api/bible.ts`.
+
+Adding a **reading** to a playlist happens in the builder's add pane: an "Add reading" button opens `AddReadingDialog`, which offers a freeform reference field (`Jean 3:16-4:2`) and a graphical `ScripturePicker` (book → chapter → verse), previews the resolved verses, and adds a `scripture` playlist item (reusing the Stage-4/5 add-item path). Projection renders these readings with superscript verse numbers and a first-slide reference label (see `SlideRenderer` / `buildSlides`).
+
 ---
 
 ## Components
@@ -227,6 +235,8 @@ Playlists also gain a **STAUG archive** item in the builder's export dropdown (a
 | `AddToPlaylistDialog` | Add-to-playlist picker opened from the song library: lists the caller's playlists (all, for an admin), adds the song (re-adds are a no-op toast), and offers inline new-playlist creation via `CreatePlaylistModal` |
 | `GoLiveDialog` | Launch modal for projecting a playlist or single song (temporary / existing / persistent session) |
 | `admin/StaugPanel` | STAUG interchange on the admin import screen: import a signed archive (preview → commit) and queue a full-library export |
+| `ScripturePicker` | Book → chapter → verse reference picker with an optional range (FR-BI-4) |
+| `AddReadingDialog` | Add a scripture reading to a playlist — freeform or picker entry, resolved-verse preview, then a `scripture` item |
 | `KeyBadge` | Pill showing a musical key (colour-coded by accidental type) |
 | `Metronome` | Visual + audio metronome with BPM input and tap-tempo |
 | `PreviewPlayer` | Minimal audio player for preview URLs |

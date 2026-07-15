@@ -124,6 +124,20 @@ STAUG is the signed ZIP archive format for moving content between instances — 
 
 The implementation lives in `app/Services/Staug/` (`StaugSigner`, `StaugArchiveWriter`, `StaugArchiveReader`, `StaugImporter`). The manifest is HMAC-signed with `config('staug.signing_key')` (a new `config/staug.php` maps `STAUG_SIGNING_KEY` — provisioned in every env layer since Stage 0). Import verifies the signature and every per-song `sha256` **before** touching the database, then merges non-destructively (match on id+title; existing songs are never overwritten; UUIDs are preserved on clean creates). The full export runs as `App\Jobs\FullExportJob` on the Redis queue worker, writes to the MinIO `exports/` prefix (2-day lifecycle expiry), and emails the admin a 48h presigned link via `StaugExportReadyNotification`. One full export runs at a time, guarded by an atomic `Cache::add` marker.
 
+### Bible (`/api/bible`)
+
+The Bible module (Stage 7) — full spec in [bible.md](bible.md).
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/bible/translations/available` | Bearer (admin) | HelloAO catalogue, filtered to `config('bible.languages')` |
+| GET | `/api/bible/settings` | Bearer | Enabled translations + default |
+| PUT | `/api/bible/settings` | Bearer (admin) | Save settings; repopulate the `bible_books` structure cache |
+| GET | `/api/bible/books?translation=…` | Bearer | A translation's books (reference picker) |
+| GET | `/api/bible/resolve` | Bearer | Resolve a reference (`q=…` freeform or discrete params) → verses |
+
+Implementation in `app/Services/Bible/` (`HelloAoClient`, `BookMap`, `ReferenceParser`, `ScriptureResolver`). Scripture text is fetched on demand from the HelloAO Free Use Bible API and cached in **Redis** (`config('bible.api_base')` ← `BIBLE_API_BASE`, added to every env layer); it is **never persisted**. Only `bible_settings` (a single row) and `bible_books` (localized names + chapter counts) live in Postgres. `resolve` accepts French/English names and cross-chapter ranges and doubles as the projection pre-fetch (warming the chapter cache).
+
 ---
 
 ## Key Design Decisions

@@ -11,6 +11,8 @@
  */
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BibleController;
+use App\Http\Controllers\BibleSettingsController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\PasswordResetController;
@@ -104,6 +106,26 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('imports')->group(function 
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('exports')->group(function () {
     Route::post('/full', [ExportController::class, 'full']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Bible Routes (Stage 7 — FR-BI)
+|--------------------------------------------------------------------------
+| Reads (settings/books/resolve) are open to any authenticated user;
+| translation management is admin-only. Scripture text is fetched from the
+| HelloAO API and Redis-cached — never persisted.
+*/
+
+Route::middleware('auth:sanctum')->prefix('bible')->group(function () {
+    Route::get('/settings', [BibleController::class, 'settings']);
+    Route::get('/books', [BibleController::class, 'books']);
+    Route::get('/resolve', [BibleController::class, 'resolve']);
+
+    Route::middleware('admin')->group(function () {
+        Route::get('/translations/available', [BibleSettingsController::class, 'available']);
+        Route::put('/settings', [BibleSettingsController::class, 'update']);
+    });
 });
 
 /*

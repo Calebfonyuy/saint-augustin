@@ -47,6 +47,11 @@ const failingFetch = vi.fn(
   },
 )
 
+/** A scripture resolver that always fails — exercises the offline fallback. */
+const failingScripture = vi.fn(async (): Promise<never> => {
+  throw new Error('scripture resolution unavailable')
+})
+
 describe('buildSlidesForPlaylist', () => {
   it('flattens items into slides ordered by playlist position', async () => {
     const pl = playlist([
@@ -308,7 +313,7 @@ describe('buildSlidesForPlaylist', () => {
     expect(indexes).toEqual([0, 1])
   })
 
-  it('renders a scripture item as a single tagged placeholder slide', async () => {
+  it('falls back to a single placeholder slide when resolution fails (offline)', async () => {
     const scriptureItem = item({
       id: 'read-1',
       item_type: 'scripture',
@@ -326,8 +331,10 @@ describe('buildSlidesForPlaylist', () => {
     })
     const pl = playlist([scriptureItem])
 
-    // failingFetch guarantees no song fetch is attempted for a reading.
-    const slides = await buildSlidesForPlaylist(pl, { fetchSong: failingFetch })
+    const slides = await buildSlidesForPlaylist(pl, {
+      fetchSong: failingFetch,
+      fetchScripture: failingScripture,
+    })
 
     expect(slides).toHaveLength(1)
     expect(slides[0]).toMatchObject({
@@ -337,10 +344,58 @@ describe('buildSlidesForPlaylist', () => {
       reference: 'JHN 3:16-4:2',
       songTitle: 'JHN 3:16-4:2',
       body: 'JHN 3:16-4:2',
+      showReference: true,
     })
   })
 
+  it('resolves scripture verses via fetchScripture (pre-fetch) and renders them', async () => {
+    const scriptureItem = item({
+      id: 'read-1',
+      position: 0,
+      item_type: 'scripture',
+      song_id: null,
+      song: null,
+      scripture: {
+        translation_id: 'LSG',
+        book_code: 'JHN',
+        start_chapter: 3,
+        start_verse: 16,
+        end_chapter: 3,
+        end_verse: 17,
+        reference: 'Jean 3:16-17',
+      },
+    })
+    const fetchScripture = vi.fn(async () => ({
+      reference_label: 'Jean 3:16-17',
+      translation_label: 'Segond',
+      translation_id: 'LSG',
+      verses: [
+        { chapter: 3, number: 16, text: 'a' },
+        { chapter: 3, number: 17, text: 'b' },
+      ],
+      reference: { book_code: 'JHN', start_chapter: 3, start_verse: 16, end_chapter: 3, end_verse: 17 },
+    }))
+
+    const slides = await buildSlidesForPlaylist(playlist([scriptureItem]), {
+      fetchSong: failingFetch,
+      fetchScripture,
+    })
+
+    expect(fetchScripture).toHaveBeenCalledTimes(1)
+    expect(slides[0].kind).toBe('scripture')
+    expect(slides[0].verses).toHaveLength(2)
+    expect(slides[0].reference).toBe('Jean 3:16-17 · Segond')
+    expect(slides[0].showReference).toBe(true)
+  })
+
   it('interleaves song and scripture slides in playlist order', async () => {
+    const fetchScripture = vi.fn(async () => ({
+      reference_label: 'Psaume 23',
+      translation_label: 'Segond',
+      translation_id: 'LSG',
+      verses: [{ chapter: 23, number: 1, text: "L'Éternel est mon berger" }],
+      reference: { book_code: 'PSA', start_chapter: 23, start_verse: 1, end_chapter: 23, end_verse: 1 },
+    }))
     const pl = playlist([
       item({ id: 'song-a', position: 0 }),
       item({
@@ -350,21 +405,19 @@ describe('buildSlidesForPlaylist', () => {
         song_id: null,
         song: null,
         scripture: {
-          translation_id: null,
+          translation_id: 'LSG',
           book_code: 'PSA',
           start_chapter: 23,
           start_verse: 1,
           end_chapter: null,
           end_verse: null,
-          reference: 'PSA 23:1',
+          reference: 'Psaume 23',
         },
       }),
     ])
 
-    const slides = await buildSlidesForPlaylist(pl, { fetchSong: failingFetch })
-    const kindsByItem = [0, 1].map(
-      (idx) => slides.find((s) => s.itemIndex === idx)?.kind,
-    )
+    const slides = await buildSlidesForPlaylist(pl, { fetchSong: failingFetch, fetchScripture })
+    const kindsByItem = [0, 1].map((idx) => slides.find((s) => s.itemIndex === idx)?.kind)
     expect(kindsByItem).toEqual(['song', 'scripture'])
   })
 })

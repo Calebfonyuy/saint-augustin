@@ -39,6 +39,9 @@ data:
   MINIO_REGION: "us-east-1"
   SONG_SHEET_URL_TTL: "15"
 
+  # ── Bible module (HelloAO Free Use Bible API) ─────────────────────
+  BIBLE_API_BASE: "https://bible.helloao.org/api"
+
   # ── Upload caps (MB) ──────────────────────────────────────────────
   UPLOAD_IMPORT_MAX_MB: "100"
   UPLOAD_SHEET_MAX_MB: "10"

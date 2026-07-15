@@ -120,6 +120,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-changeme_jwt_secret_at_least_32_chars}
       # STAUG data-interchange archive signing (HMAC)
       STAUG_SIGNING_KEY: ${STAUG_SIGNING_KEY:-changeme_staug_signing_key_at_least_32_chars}
+      # Bible module — HelloAO Free Use Bible API (public domain, no key)
+      BIBLE_API_BASE: ${BIBLE_API_BASE:-https://bible.helloao.org/api}
       # MinIO / Object Storage (Phase 2 — song sheets)
       FILESYSTEM_DISK: minio
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://localhost:9000}

@@ -103,6 +103,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/admin/bible',
+      name: 'admin-bible',
+      component: () => import('@/views/AdminBibleView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/playlists',
       name: 'playlists',
       component: () => import('@/views/PlaylistsListView.vue'),

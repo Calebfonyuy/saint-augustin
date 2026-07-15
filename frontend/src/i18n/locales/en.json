@@ -423,6 +423,8 @@
     "alreadyAdded": "\"{name}\" is already in this playlist.",
     "scripture": "Scripture",
     "scriptureReading": "Scripture reading",
+    "addReading": "Add reading",
+    "readingAdded": "Added \"{ref}\".",
     "pickerPlaceholder": "Search the library…",
     "noSongsMatch": "No songs match.",
     "emptyPart1": "Drag songs in from the right, or click the",
@@ -602,6 +604,36 @@
       "resend": "Could not resend invitation.",
       "cancelInvite": "Could not cancel invitation.",
       "resetLink": "Could not send reset link."
+    }
+  },
+  "addReading": {
+    "title": "Add a scripture reading",
+    "translation": "Translation",
+    "modeFreeform": "Type reference",
+    "modePicker": "Pick book",
+    "freeformPlaceholder": "e.g. Jean 3:16-4:2",
+    "preview": "Preview",
+    "resolving": "Resolving…",
+    "add": "Add reading",
+    "range": "Range",
+    "to": "to",
+    "unconfigured": "No Bible translations are enabled yet. An admin can enable them under Administration → Settings.",
+    "errors": {
+      "empty": "Enter a reference first.",
+      "resolve": "Could not resolve that reference.",
+      "add": "Could not add the reading."
+    }
+  },
+  "bibleSettings": {
+    "subtitle": "Bible translations",
+    "title": "Bible translations",
+    "intro": "Enable the translations your team uses and choose a default. Scripture text is fetched on demand from a public-domain source and never stored.",
+    "none": "No translations are available right now.",
+    "default": "Default",
+    "saved": "Bible settings saved.",
+    "errors": {
+      "load": "Could not load Bible settings.",
+      "save": "Could not save Bible settings."
     }
   },
   "staug": {

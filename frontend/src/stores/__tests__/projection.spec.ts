@@ -254,12 +254,10 @@ describe('useProjectionStore', () => {
       updated_at: '',
     }
     const promise = store.createFromPlaylist(playlist)
-    // Drain the connect handshake. createFromPlaylist awaits the slide
-    // build (microtask), then the api call (microtask), then opens the
-    // socket — flush enough microtasks for all three to settle.
-    await Promise.resolve()
-    await Promise.resolve()
-    await Promise.resolve()
+    // createFromPlaylist awaits the slide build (song + scripture resolution)
+    // and the api call before opening the socket — flush microtasks until the
+    // socket exists rather than counting ticks.
+    for (let i = 0; i < 20 && !lastSocket.current; i++) await Promise.resolve()
     const sock = lastSocket.current!
     sock.fire('connect')
     sock.ackLast({ ok: true, role: 'controller', state: makeState({ id: 'sess-99' }) })

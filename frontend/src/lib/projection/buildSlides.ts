@@ -20,10 +20,18 @@
 // transposition doesn't change the visible text — but it keeps the
 // pipeline consistent with the Musician View and ensures the correct
 // key metadata is available if the slide model is ever extended.
+import { resolveScripture } from '@/api/bible'
 import { getSong } from '@/api/songs'
 import { transposeChordPro } from '@/lib/chordpro'
-import type { Playlist, PlaylistItem, Song } from '@/types'
-import { splitSongIntoSlides, type Slide } from './slides'
+import type {
+  Playlist,
+  PlaylistItem,
+  PlaylistItemScripture,
+  ResolvedScripture,
+  ScriptureQuery,
+  Song,
+} from '@/types'
+import { splitScriptureIntoSlides, splitSongIntoSlides, type Slide } from './slides'
 
 /** Fields the slide pipeline actually reads off a song. */
 interface SongSource {
@@ -35,6 +43,8 @@ interface SongSource {
 export interface BuildSlidesOptions {
   /** Override for the song fetcher — used by tests to stub the API. */
   fetchSong?: (id: string) => Promise<Song>
+  /** Override for the scripture resolver — used by tests to stub the API. */
+  fetchScripture?: (query: ScriptureQuery) => Promise<ResolvedScripture>
 }
 
 export async function buildSlidesForPlaylist(
@@ -42,33 +52,52 @@ export async function buildSlidesForPlaylist(
   opts: BuildSlidesOptions = {},
 ): Promise<Slide[]> {
   const fetchSong = opts.fetchSong ?? getSong
+  const fetchScripture = opts.fetchScripture ?? resolveScripture
   const items = [...playlist.items].sort((a, b) => a.position - b.position)
 
   // Resolve full song data for every distinct song_id in the playlist.
   // Cache by song_id so we never fetch the same song twice in one build.
   const sources = await resolveSongSources(items, fetchSong)
 
+  // Resolve verses for every distinct scripture reference up front — this is
+  // the projection pre-fetch (FR-BI-6): the verses (and the server-side Redis
+  // chapter cache) are in hand before the session goes live.
+  const readings = await resolveScriptureSources(items, fetchScripture)
+
   const out: Slide[] = []
   for (let i = 0; i < items.length; i++) {
     const it = items[i]
 
-    // Scripture readings render as a single placeholder slide for now — the
-    // real verse-by-verse rendering (fetch + auto-fit) arrives in Stage 7.
-    // The slide is tagged `kind: 'scripture'` so the display can branch, and
-    // carries the reference label as its body so the projector shows *what*
-    // is being read even before rich rendering exists.
-    if (it.item_type === 'scripture') {
-      const reference = it.scripture?.reference ?? 'Scripture'
-      out.push({
-        id: `${it.id}-0`,
-        itemIndex: i,
-        slideIndex: 0,
-        songTitle: reference,
-        section: null,
-        body: reference,
-        kind: 'scripture',
-        reference,
-      })
+    // Scripture readings: render the resolved verses across auto-fit slides
+    // with the reference label on the first slide (FR-BI-8). If resolution
+    // failed (offline with a cold cache), fall back to a single placeholder
+    // slide so the service order still shows the reference.
+    if (it.item_type === 'scripture' && it.scripture) {
+      const resolved = readings.get(scriptureKey(it.scripture)) ?? null
+      if (resolved) {
+        out.push(
+          ...splitScriptureIntoSlides({
+            itemIndex: i,
+            idPrefix: it.id,
+            label: `${resolved.reference_label} · ${resolved.translation_label}`,
+            title: resolved.reference_label,
+            verses: resolved.verses,
+          }),
+        )
+      } else {
+        const reference = it.scripture.reference ?? 'Scripture'
+        out.push({
+          id: `${it.id}-0`,
+          itemIndex: i,
+          slideIndex: 0,
+          songTitle: reference,
+          section: null,
+          body: reference,
+          kind: 'scripture',
+          reference,
+          showReference: true,
+        })
+      }
       continue
     }
 
@@ -155,4 +184,60 @@ async function resolveSongSources(
     })
   }
   return sources
+}
+
+/** Stable key for a scripture reference, for de-duping resolution. */
+function scriptureKey(s: PlaylistItemScripture): string {
+  return [s.translation_id, s.book_code, s.start_chapter, s.start_verse, s.end_chapter, s.end_verse].join(':')
+}
+
+/**
+ * Resolve verses for every distinct scripture reference in the playlist, once
+ * each, in parallel. A failed resolution maps to null (the caller renders a
+ * placeholder). This is the pre-fetch: it also warms the server chapter cache.
+ */
+async function resolveScriptureSources(
+  items: PlaylistItem[],
+  fetchScripture: (query: ScriptureQuery) => Promise<ResolvedScripture>,
+): Promise<Map<string, ResolvedScripture | null>> {
+  const readings = new Map<string, ResolvedScripture | null>()
+  const toFetch: Array<{ key: string; query: ScriptureQuery }> = []
+
+  for (const it of items) {
+    if (it.item_type !== 'scripture' || !it.scripture) continue
+    const s = it.scripture
+    if (!s.book_code || s.start_chapter == null || s.start_verse == null) continue
+
+    const key = scriptureKey(s)
+    if (readings.has(key)) continue
+    readings.set(key, null) // reserve
+
+    toFetch.push({
+      key,
+      query: {
+        translation_id: s.translation_id,
+        book_code: s.book_code,
+        start_chapter: s.start_chapter,
+        start_verse: s.start_verse,
+        end_chapter: s.end_chapter,
+        end_verse: s.end_verse,
+      },
+    })
+  }
+
+  if (toFetch.length === 0) return readings
+
+  const results = await Promise.all(
+    toFetch.map(async ({ key, query }) => {
+      try {
+        return { key, resolved: await fetchScripture(query) }
+      } catch {
+        return { key, resolved: null }
+      }
+    }),
+  )
+  for (const { key, resolved } of results) {
+    readings.set(key, resolved)
+  }
+  return readings
 }

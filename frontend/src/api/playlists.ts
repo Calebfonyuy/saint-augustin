@@ -68,12 +68,29 @@ export async function downloadPlaylistExport(
 
 // ── Playlist items ───────────────────────────────────────────────────
 
-export interface AddItemInput {
+export interface SongItemInput {
+  item_type?: 'song'
   song_id: string
   position?: number
   target_key?: string | null
   notes?: string | null
 }
+
+/** A scripture reading item (Stage 7). The backend accepts this shape on
+ *  POST /playlists/{id}/items (Stage 5). */
+export interface ScriptureItemInput {
+  item_type: 'scripture'
+  translation_id?: string | null
+  book_code: string
+  start_chapter: number
+  start_verse: number
+  end_chapter?: number | null
+  end_verse?: number | null
+  position?: number
+  notes?: string | null
+}
+
+export type AddItemInput = SongItemInput | ScriptureItemInput
 
 /** Result of adding a song. `created` is false when the song was already in
  *  the playlist and the server returned the existing item as a no-op (200). */
