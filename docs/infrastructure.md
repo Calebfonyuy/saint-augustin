@@ -94,6 +94,70 @@ make migrate seed
 
 ---
 
+## Production Deployment
+
+The Compose stack above is for **local development** (build contexts, permissive
+defaults). Two production deployment paths ship in `deployment/` — see
+[`docs/SETUP.md`](SETUP.md) for the step-by-step of each and
+[`deployment/README.md`](../deployment/README.md) for how to choose.
+
+| Path | Directory | When |
+|------|-----------|------|
+| Kubernetes (recommended) | [`deployment/kubernetes/`](../deployment/kubernetes/) | Cluster, multi-replica, rolling updates |
+| Production Docker Compose | [`deployment/compose/`](../deployment/compose/) | Single host, no cluster required |
+| Apache-VM (single VPS) | [`deployment/apache-VM/`](../deployment/apache-VM/) | One VM behind Apache (uses the root dev compose + a loopback override) |
+
+Both first-party paths deploy the same three application images
+(`calebfonyuy/staug-{api,projection,frontend}`, tagged with `APP_VERSION`) plus
+PostgreSQL, Redis, and MinIO, and both run the **queue worker** and apply the
+`exports/` 48h MinIO lifecycle rule.
+
+### Kubernetes (`deployment/kubernetes/`)
+
+One numbered manifest per workload, applied in order (`kubectl apply -f
+deployment/kubernetes/`). There is **no Helm chart** and **no Ingress** —
+services are exposed via NodePort:
+
+| Manifest | Workload | NodePort |
+|----------|----------|----------|
+| `00_namespace.yaml` | Namespace `staug` | — |
+| `01_t_secrets.example.yaml` | Secret `staug-secrets` (template → copy to `secrets.yaml`, gitignored) | — |
+| `02_configmap.yaml` | ConfigMap `staug-config` (non-secret env) | — |
+| `03_postgres.yaml` | PostgreSQL StatefulSet + PV/PVC | 31006 |
+| `04_redis.yaml` | Redis Deployment + PV/PVC | 31005 |
+| `05_minio.yaml` | MinIO Deployment + PV/PVC + **`minio-init` Job** (bucket + `exports/` lifecycle) | 31003 (S3), 31004 (console) |
+| `06_api_service.yaml` | Auth API Deployment + **`auth-migrate` Job** | 31001 |
+| `06b_queue_worker.yaml` | `auth-queue-worker` Deployment (`queue:work`) | — |
+| `07_projection_service.yaml` | Projection Deployment | 31002 |
+| `08_frontend_service.yaml` | Frontend Deployment | 31000 |
+
+- **Config vs. secrets split.** Non-secret env lives in the `staug-config`
+  ConfigMap; passwords, `APP_KEY`, `JWT_SECRET`, `STAUG_SIGNING_KEY`, and SMTP
+  credentials live in the `staug-secrets` Secret. Every Deployment/Job pulls
+  both via `envFrom`.
+- **Storage.** PostgreSQL and MinIO use `storageClassName: manual` with
+  node-local `hostPath` PersistentVolumes under `/home/data/staug/*` (bound to
+  their claims via `claimRef`). For a multi-node cluster, uncomment the
+  `nodeAffinity` block so pods schedule to the node that holds the data.
+- **Migrations** run as the one-shot `auth-migrate` Job (`migrate --force` +
+  `db:seed --force`) so only one pod ever migrates, independent of API pod
+  restarts. The **`minio-init` Job** creates the bucket and installs the
+  `exports/` 48h lifecycle rule.
+- **Images** are pinned (`calebfonyuy/staug-*:0.2`, infra images to concrete
+  tags). If you host the app images in a private registry, wire an
+  `imagePullSecrets` entry (a commented stub is in `06_api_service.yaml`).
+
+### Production Docker Compose (`deployment/compose/`)
+
+`docker-compose.prod.yml` is a single-host production stack, **distinct from the
+root dev compose**: pinned image tags (no build contexts), fail-closed required
+secrets (`${VAR:?}`), a one-shot `migrate` service gating the API, health checks
+and `restart: unless-stopped` on every service, and named volumes. Copy
+`.env.prod.example` → `.env.prod`, fill it in, then `docker compose -f
+deployment/compose/docker-compose.prod.yml --env-file .env.prod up -d`.
+
+---
+
 ## CI / CD
 
 GitHub Actions workflows live in `.github/workflows/`. The pipeline runs on every push and pull request:

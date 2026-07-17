@@ -35,7 +35,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: migrate
-          image: calebfonyuy/staug-api:0.1
+          image: calebfonyuy/staug-api:0.2
           command: ["/bin/sh", "-c"] 
           args:
             - |
@@ -73,9 +73,16 @@ spec:
       labels:
         app: auth-service
     spec:
+      # The calebfonyuy/staug-* images are public today. If you push them to
+      # a private registry, create a docker-registry Secret and reference it
+      # here (and on the queue-worker / projection / frontend Deployments):
+      #   kubectl -n staug create secret docker-registry regcred \
+      #     --docker-server=... --docker-username=... --docker-password=...
+      # imagePullSecrets:
+      #   - name: regcred
       containers:
         - name: auth
-          image: calebfonyuy/staug-api:0.1
+          image: calebfonyuy/staug-api:0.2
           ports:
             - containerPort: 80
           envFrom:
@@ -94,18 +101,21 @@ spec:
                 secretKeyRef:
                   name: staug-secrets
                   key: POSTGRES_PASSWORD
-          # readinessProbe:
-          #   httpGet:
-          #     path: /health
-          #     port: 80
-          #   periodSeconds: 10
-          #   failureThreshold: 6
-          # livenessProbe:
-          #   httpGet:
-          #     path: /health
-          #     port: 80
-          #   periodSeconds: 30
-          #   failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            # Give the container time to boot Apache/PHP before the liveness
+            # clock starts, so a slow cold start is not mistaken for a hang.
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
           resources:
             requests:
               cpu: "200m"

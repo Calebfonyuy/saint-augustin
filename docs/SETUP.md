@@ -213,6 +213,64 @@ make fresh                  # migrate:fresh --seed
 docker compose down         # or: make down
 ```
 
+## Production Deployment
+
+The steps above stand up the **development** stack (root `docker-compose.yml`,
+build contexts, dev defaults). For production, pick one of the two first-party
+paths under `deployment/` (see [`deployment/README.md`](../deployment/README.md)
+and [`infrastructure.md`](infrastructure.md)). Both deploy the same three app
+images plus PostgreSQL/Redis/MinIO, run the queue worker, and apply the
+`exports/` 48h MinIO lifecycle rule.
+
+### Build & push the images (both paths)
+
+Production pulls images by tag; it never builds from source. Build and push
+them first, tagged with the `APP_VERSION` you will deploy:
+
+```bash
+export APP_VERSION=0.2
+docker compose build                       # builds api / projection / frontend
+docker push calebfonyuy/staug-api:$APP_VERSION
+docker push calebfonyuy/staug-projection:$APP_VERSION
+docker push calebfonyuy/staug-frontend:$APP_VERSION
+```
+
+### Option A — Kubernetes (`deployment/kubernetes/`)
+
+```bash
+cp deployment/kubernetes/01_t_secrets.example.yaml deployment/kubernetes/secrets.yaml
+$EDITOR deployment/kubernetes/secrets.yaml          # fill APP_KEY, JWT_SECRET,
+                                                    # STAUG_SIGNING_KEY, DB/MinIO/SMTP
+# Review non-secret values (URLs, NodePorts) in 02_configmap.yaml, then:
+kubectl apply -f deployment/kubernetes/00_namespace.yaml
+kubectl apply -f deployment/kubernetes/secrets.yaml
+kubectl apply -f deployment/kubernetes/          # config, infra, jobs, deployments
+kubectl -n staug get pods
+```
+
+The `auth-migrate` and `minio-init` Jobs run once; the app is reachable on the
+NodePorts documented in `infrastructure.md` (frontend `31000`, API `31001`,
+projection `31002`).
+
+### Option B — Production Docker Compose (`deployment/compose/`)
+
+The promotion from the dev compose is: build+tag `APP_VERSION` (above), then
+run the production compose with a filled `.env.prod`:
+
+```bash
+cd deployment/compose
+cp .env.prod.example .env.prod
+$EDITOR .env.prod                                   # set every REQUIRED value
+docker compose -f docker-compose.prod.yml --env-file .env.prod config    # validate
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d      # deploy
+```
+
+Unlike the dev compose, secrets are **fail-closed** (the stack refuses to start
+if a required value is unset) and a one-shot `migrate` service runs
+`migrate --force`/`db:seed --force` before the API and worker start. See
+[`deployment/compose/README.md`](../deployment/compose/README.md) for day-2
+operations and caveats.
+
 ## Troubleshooting
 
 **Port already in use:**

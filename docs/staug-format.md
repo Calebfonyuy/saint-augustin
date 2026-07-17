@@ -80,7 +80,7 @@ Sheet binaries are referenced, not bundled. On import, a `SongSheet` row is recr
 
 ### Object lifecycle (FR-DF-3)
 
-The `exports/` prefix has a **2-day expiry** lifecycle rule so objects die with their links. In dev this is applied by the `minio-init` container (`mc ilm rule add ... --expire-days 2 --prefix exports/`). In Kubernetes the equivalent rule is applied as part of the Stage 8 cluster rework (or a one-off `mc`/console step against the cluster's MinIO).
+The `exports/` prefix has a **2-day expiry** lifecycle rule so objects die with their links. It is applied by the same `mc ilm rule add ... --expire-days 2 --prefix exports/` command in every deployment path: the dev `minio-init` container (`docker-compose.yml`), the production Compose stack's `minio-init` service (`deployment/compose/docker-compose.prod.yml`), and the Kubernetes `minio-init` Job (`deployment/kubernetes/05_minio.yaml`).
 
 ## Endpoints
 

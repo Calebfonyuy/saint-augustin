@@ -430,3 +430,83 @@ describe('SessionsService — takeover', () => {
     );
   });
 });
+
+// Retention TTLs (FR-SE-1/2) — the Stage-3 fix. These assert the *actual*
+// Redis expiry applied per kind/status, not just the state-machine result:
+// an unscheduled (PERSISTENT) session must persist indefinitely, while a
+// TEMPORARY one self-cleans after ~4h. Guards against a regression to the
+// original bug where unscheduled sessions were given the 4h TTL and vanished.
+describe('SessionsService — retention TTLs', () => {
+  const KEY_STATE = (id: string) => `sa:proj:session:${id}`;
+  const KEY_TOKEN = (id: string) => `sa:proj:control-token:${id}`;
+  const FOUR_HOURS = 4 * 60 * 60; // DEFAULT_TTL
+  const THIRTY_DAYS = 30 * 24 * 60 * 60; // ENDED_TTL
+
+  it('TEMPORARY session state + control token expire after ~4h', async () => {
+    const { svc, redis } = makeService();
+    const { state } = await svc.create(temporaryDto([slide()]), OWNER);
+    const client = redis.getClient();
+    const stateTtl = await client.ttl(KEY_STATE(state.id));
+    const tokenTtl = await client.ttl(KEY_TOKEN(state.id));
+    expect(stateTtl).toBeGreaterThan(FOUR_HOURS - 10);
+    expect(stateTtl).toBeLessThanOrEqual(FOUR_HOURS);
+    expect(tokenTtl).toBeGreaterThan(FOUR_HOURS - 10);
+    expect(tokenTtl).toBeLessThanOrEqual(FOUR_HOURS);
+  });
+
+  it('PERSISTENT session is stored with NO expiry while NOT_STARTED', async () => {
+    const { svc, redis } = makeService();
+    const { state } = await svc.create(persistentDto(), OWNER);
+    // -1 = key exists but has no TTL (ioredis semantics).
+    expect(await redis.getClient().ttl(KEY_STATE(state.id))).toBe(-1);
+  });
+
+  it('an unscheduled session (no kind) defaults to PERSISTENT and never expires', async () => {
+    const { svc, redis } = makeService();
+    const { state } = await svc.create({ playlistName: 'Ad-hoc' }, OWNER);
+    expect(state.kind).toBe('PERSISTENT');
+    expect(await redis.getClient().ttl(KEY_STATE(state.id))).toBe(-1);
+  });
+
+  it('PERSISTENT session keeps NO expiry once LIVE (state + token)', async () => {
+    const { svc, redis } = makeService();
+    const created = await svc.create(persistentDto(), OWNER);
+    await svc.loadSlides(created.state.id, OWNER, {
+      playlistName: 'Sunday',
+      slides: [slide()],
+    });
+    await svc.start(created.state.id, OWNER);
+    const client = redis.getClient();
+    expect(await client.ttl(KEY_STATE(created.state.id))).toBe(-1);
+    expect(await client.ttl(KEY_TOKEN(created.state.id))).toBe(-1);
+  });
+
+  it('persist() drops a stale TTL left on a PERSISTENT key', async () => {
+    const { svc, redis } = makeService();
+    const created = await svc.create(persistentDto(), OWNER);
+    const client = redis.getClient();
+    // Simulate a leftover TTL from a prior life of the key…
+    await client.expire(KEY_STATE(created.state.id), FOUR_HOURS);
+    expect(await client.ttl(KEY_STATE(created.state.id))).toBeGreaterThan(0);
+    // …a mutation re-persists the state, which must clear that TTL.
+    await svc.loadSlides(created.state.id, OWNER, {
+      playlistName: 'Sunday',
+      slides: [slide()],
+    });
+    expect(await client.ttl(KEY_STATE(created.state.id))).toBe(-1);
+  });
+
+  it('ENDED session gets a 30-day TTL so its share link still resolves', async () => {
+    const { svc, redis } = makeService();
+    const created = await svc.create(persistentDto(), OWNER);
+    await svc.loadSlides(created.state.id, OWNER, {
+      playlistName: 'Sunday',
+      slides: [slide()],
+    });
+    await svc.start(created.state.id, OWNER);
+    await svc.end(created.state.id, OWNER);
+    const stateTtl = await redis.getClient().ttl(KEY_STATE(created.state.id));
+    expect(stateTtl).toBeGreaterThan(THIRTY_DAYS - 10);
+    expect(stateTtl).toBeLessThanOrEqual(THIRTY_DAYS);
+  });
+});

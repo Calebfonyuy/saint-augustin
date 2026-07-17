@@ -12,7 +12,7 @@ Three deployables, one shared database (see [ADR-0001](docs/adr/0001-unified-api
 - **Projection service** (`services/projection`) — **NestJS 10** — WebSocket real-time slide synchronization; also the system of record for sessions (Redis, not SQL)
 - **Frontend** (`frontend`) — **Vue 3 + Vite + TypeScript** SPA with Tailwind CSS
 - **PostgreSQL 16** (single shared database) + **Redis 7** (cache/broker/session state) + **MinIO** (S3 object storage)
-- **Kubernetes** in production (Docker Compose for local dev)
+- **Kubernetes** (recommended) or a standalone **production Docker Compose** stack in production; the root Docker Compose is for local dev (see [`deployment/`](deployment/) and [ADR-0002](docs/adr/0002-production-deployment-topology.md))
 
 Full specifications: SaintAugustin SRS v0.2 (Drive) extends and amends the v1.2 baseline; see `docs/` for the as-built architecture.
 
@@ -124,8 +124,8 @@ saint-augustin/
 │       ├── App.vue                    # App shell
 │       ├── stores/                    # Pinia stores
 │       └── views/                     # One component per route
-├── deployment/                        # Kubernetes manifests + Apache-VM deployment guide
-├── charts/                            # Helm chart (mirrors deployment/kubernetes/)
+├── deployment/                        # Prod deploy: kubernetes/ · compose/ · apache-VM/
+├── charts/                            # Placeholder — Helm chart deferred (see ADR-0002)
 └── .github/workflows/ci.yml           # Lint + test + Docker build
 ```
 
