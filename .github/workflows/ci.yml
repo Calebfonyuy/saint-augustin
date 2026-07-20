@@ -98,6 +98,11 @@ jobs:
           tools: composer:v2
 
       - run: composer install --no-scripts --prefer-dist --no-interaction
+      - run: mkdir -p storage/framework/cache/data
+      - run: mkdir -p storage/framework/sessions
+      - run: mkdir -p storage/framework/views
+      - run: mkdir -p storage/logs
+      - run: mkdir -p bootstrap/cache
       - run: php artisan key:generate
       - run: vendor/bin/phpstan analyse
       - run: vendor/bin/pest
