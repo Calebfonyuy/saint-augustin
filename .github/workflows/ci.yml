@@ -103,6 +103,7 @@ jobs:
       - run: mkdir -p storage/framework/views
       - run: mkdir -p storage/logs
       - run: mkdir -p bootstrap/cache
+      - run: cp .env.example .env
       - run: php artisan key:generate
       - run: vendor/bin/phpstan analyse
       - run: vendor/bin/pest
