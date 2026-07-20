@@ -83,10 +83,11 @@ services:
     entrypoint: >
       /bin/sh -c "
         set -e;
-        mc alias set local http://sa-minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
+        mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
         mc mb --ignore-existing local/saintaugustin;
         mc anonymous set download local/saintaugustin/public;
-        echo '>>> Bucket saintaugustin created.';
+        mc ilm rule add local/saintaugustin --expire-days 2 --prefix 'exports/' || mc ilm add --expiry-days 2 --prefix 'exports/' local/saintaugustin || true;
+        echo '>>> Bucket saintaugustin created (exports/ auto-expire after 2 days).';
       "
 
   # ===========================================================================
@@ -100,8 +101,8 @@ services:
       dockerfile: Dockerfile
     container_name: staug-api
     restart: unless-stopped
-    working_dir: /var/www
-    environment:
+    working_dir: /var/www/html
+    environment: &auth-service-env
       APP_ENV: local
       APP_DEBUG: "true"
       APP_KEY: ${APP_KEY:-base64:GENERATE_ME_WITH_php_artisan_key_generate}
@@ -117,6 +118,10 @@ services:
       CACHE_DRIVER: redis
       QUEUE_CONNECTION: redis
       JWT_SECRET: ${JWT_SECRET:-changeme_jwt_secret_at_least_32_chars}
+      # STAUG data-interchange archive signing (HMAC)
+      STAUG_SIGNING_KEY: ${STAUG_SIGNING_KEY:-changeme_staug_signing_key_at_least_32_chars}
+      # Bible module — HelloAO Free Use Bible API (public domain, no key)
+      BIBLE_API_BASE: ${BIBLE_API_BASE:-https://bible.helloao.org/api}
       # MinIO / Object Storage (Phase 2 — song sheets)
       FILESYSTEM_DISK: minio
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://localhost:9000}
@@ -127,6 +132,7 @@ services:
       SONG_SHEET_URL_TTL: ${SONG_SHEET_URL_TTL:-15}
       # Frontend URL (for CORS and email links)
       APP_FRONTEND_URL: ${APP_FRONTEND_URL:-http://localhost:5173}
+      APP_PROJECTION_URL: ${VITE_PROJECTION_BASE_URL:-http://localhost:3000}
       # Email settings
       MAIL_MAILER: ${MAIL_MAILER:-smtp}
       MAIL_HOST: ${MAIL_HOST:-sandbox.smtp.mailtrap.io}
@@ -150,6 +156,26 @@ services:
     #   interval: 10s
     #   timeout: 5s
     #   retries: 3
+
+  # Background job processor — required for queued jobs (e.g. the STAUG
+  # full-DB export job) instead of running them synchronously in-request.
+  queue-worker:
+    image: calebfonyuy/staug-api:${APP_VERSION:-latest}
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    container_name: staug-queue-worker
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: ["php", "artisan", "queue:work", "redis", "--tries=3", "--backoff=5", "--sleep=3"]
+    environment: *auth-service-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
 
   projection-service:
     image: calebfonyuy/staug-projection:${APP_VERSION:-latest}

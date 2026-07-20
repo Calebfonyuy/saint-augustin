@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Song;
 use App\Models\SongSheet;
-use Illuminate\Contracts\Filesystem\Cloud;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -269,12 +268,17 @@ class SongSheetController
     private function formatSheet(SongSheet $sheet): array
     {
         $disk = Storage::disk($sheet->storage_disk);
-        $ttlMinutes = (int) config('filesystems.song_sheet_url_ttl', env('SONG_SHEET_URL_TTL', 15));
+        $ttlMinutes = (int) config('filesystems.song_sheet_url_ttl', 15);
 
-        // Only S3-style cloud disks support temporaryUrl. The `local` disk
-        // (used in feature tests via Storage::fake()) returns a regular
-        // public URL via ->url(), which is fine for assertions.
-        $url = $disk instanceof Cloud
+        // Only S3-style cloud disks support temporaryUrl. Driven off the
+        // configured driver (not `instanceof Cloud`) because Laravel's
+        // FilesystemAdapter implements Cloud unconditionally regardless of
+        // the underlying driver, so the interface check can't distinguish
+        // the `local` disk (used in feature tests via Storage::fake()),
+        // which returns a regular public URL via ->url() instead.
+        $isCloudDisk = config("filesystems.disks.{$sheet->storage_disk}.driver") === 's3';
+
+        $url = $isCloudDisk
             ? $disk->temporaryUrl($sheet->storage_path, now()->addMinutes($ttlMinutes))
             : $disk->url($sheet->storage_path);
 
@@ -287,7 +291,7 @@ class SongSheetController
             'size_bytes'        => $sheet->size_bytes,
             'uploaded_by'       => $sheet->uploaded_by,
             'url'               => $url,
-            'url_expires_at'    => $disk instanceof Cloud
+            'url_expires_at'    => $isCloudDisk
                 ? now()->addMinutes($ttlMinutes)->toIso8601String()
                 : null,
             'created_at'        => $sheet->created_at?->toIso8601String(),

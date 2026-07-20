@@ -8,6 +8,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import draggable from 'vuedraggable'
 import AppShell from '@/components/AppShell.vue'
+import AddReadingDialog from '@/components/AddReadingDialog.vue'
 import GoLiveDialog from '@/components/GoLiveDialog.vue'
 import Icon from '@/components/Icon.vue'
 import KeyBadge from '@/components/KeyBadge.vue'
@@ -34,6 +35,7 @@ const error = ref<string | null>(null)
 const success = ref<string | null>(null)
 const shareOpen = ref(false)
 const goLiveOpen = ref(false)
+const addReadingOpen = ref(false)
 const exportMenuOpen = ref(false)
 
 // Editable header state — kept local until blur/save so an in-flight keystroke
@@ -126,7 +128,10 @@ async function saveHeader(): Promise<void> {
 
 async function onAddSong(songId: string): Promise<void> {
   try {
-    await playlists.addItem(id.value, { song_id: songId })
+    const { created, item } = await playlists.addItem(id.value, { song_id: songId })
+    if (!created) {
+      success.value = t('playlistBuilder.alreadyAdded', { name: item.song?.title ?? '' })
+    }
   } catch (err) {
     error.value = extractErrorMessage(err, t('playlistBuilder.errors.addSong'))
   }
@@ -141,12 +146,14 @@ async function onRemoveItem(itemId: string): Promise<void> {
 }
 
 async function onItemFieldBlur(item: PlaylistItem): Promise<void> {
-  // Persist target_key/notes on blur — avoids spamming the API on every keystroke.
+  // Persist edits on blur — avoids spamming the API on every keystroke.
+  // Scripture items have no target_key, so only notes are editable here.
+  const payload =
+    item.item_type === 'scripture'
+      ? { notes: item.notes?.trim() || null }
+      : { target_key: item.target_key?.trim() || null, notes: item.notes?.trim() || null }
   try {
-    await playlists.updateItem(id.value, item.id, {
-      target_key: item.target_key?.trim() || null,
-      notes: item.notes?.trim() || null,
-    })
+    await playlists.updateItem(id.value, item.id, payload)
   } catch (err) {
     error.value = extractErrorMessage(err, t('playlistBuilder.errors.updateItem'))
   }
@@ -213,7 +220,12 @@ async function onGoLiveLaunched(sessionId: string): Promise<void> {
   await router.push({ name: 'projection-control', params: { id: sessionId } })
 }
 
-async function onExport(format: 'pdf' | 'txt'): Promise<void> {
+function onReadingAdded(payload: { referenceLabel: string }): void {
+  addReadingOpen.value = false
+  success.value = t('playlistBuilder.readingAdded', { ref: payload.referenceLabel })
+}
+
+async function onExport(format: 'pdf' | 'txt' | 'staug'): Promise<void> {
   exportMenuOpen.value = false
   try {
     const { blob, filename } = await downloadPlaylistExport(id.value, format)
@@ -330,6 +342,14 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
             >
               {{ t('playlistBuilder.exportText') }}
             </button>
+            <button
+              type="button"
+              class="block w-full text-left px-3 py-2 text-[13px] hover:bg-bg-sunken"
+              data-testid="export-staug"
+              @click="onExport('staug')"
+            >
+              {{ t('playlistBuilder.exportStaug') }}
+            </button>
           </div>
         </div>
         <button
@@ -385,7 +405,41 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
                 >
                   {{ index + 1 }}
                 </span>
-                <div class="flex-1 min-w-0">
+                <!-- Scripture reading item (FR-PL-2) -->
+                <div v-if="element.item_type === 'scripture'" class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-[14px] font-semibold truncate">
+                      {{ element.scripture?.reference ?? t('playlistBuilder.scripture') }}
+                    </span>
+                    <span class="chip" data-testid="item-scripture-badge">
+                      {{ t('playlistBuilder.scripture') }}
+                    </span>
+                    <span v-if="element.scripture?.translation_id" class="text-[11px] text-text-faint mono">
+                      {{ element.scripture.translation_id }}
+                    </span>
+                  </div>
+                  <div class="text-[11.5px] text-text-faint mt-[2px] truncate">
+                    {{ t('playlistBuilder.scriptureReading') }}
+                  </div>
+                  <input
+                    v-if="canEdit"
+                    v-model="element.notes"
+                    class="input mt-2"
+                    style="padding: 5px 8px; font-size: 12px"
+                    :placeholder="t('playlistBuilder.notesPlaceholder')"
+                    data-testid="item-notes"
+                    @blur="onItemFieldBlur(element)"
+                  />
+                  <div
+                    v-else-if="element.notes"
+                    class="text-[12px] text-text-faint mt-1 italic"
+                  >
+                    {{ element.notes }}
+                  </div>
+                </div>
+
+                <!-- Song item -->
+                <div v-else class="flex-1 min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-[14px] font-semibold truncate">
                       {{ element.song?.title ?? t('shared.untitled') }}
@@ -451,8 +505,19 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
         <!-- RIGHT: song picker -->
         <aside v-if="canEdit" class="flex flex-col min-h-0 border-l border-border">
           <div class="px-4 pt-4 pb-2 border-b border-border">
-            <div class="mono uppercase tracking-[0.14em] text-[10px] text-text-faint mb-2">
-              {{ t('playlistBuilder.addSongs') }}
+            <div class="flex items-center justify-between mb-2">
+              <div class="mono uppercase tracking-[0.14em] text-[10px] text-text-faint">
+                {{ t('playlistBuilder.addSongs') }}
+              </div>
+              <button
+                type="button"
+                class="btn"
+                style="padding: 4px 8px; font-size: 11px"
+                data-testid="add-reading-btn"
+                @click="addReadingOpen = true"
+              >
+                <Icon name="plus" /> {{ t('playlistBuilder.addReading') }}
+              </button>
             </div>
             <div class="relative">
               <span class="absolute left-[10px] top-[10px] text-text-faint">
@@ -517,6 +582,14 @@ async function onExport(format: 'pdf' | 'txt'): Promise<void> {
         :open="goLiveOpen"
         @close="goLiveOpen = false"
         @launched="onGoLiveLaunched"
+      />
+
+      <AddReadingDialog
+        v-if="addReadingOpen && playlist"
+        :playlist-id="id"
+        :open="addReadingOpen"
+        @close="addReadingOpen = false"
+        @added="onReadingAdded"
       />
     </template>
 

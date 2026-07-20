@@ -7,6 +7,7 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 COPY composer.json composer.lock ./
+
 RUN composer install \
         --no-dev \
         --no-scripts \
@@ -24,8 +25,8 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 # pdo_pgsql -> PostgreSQL 16 (sa_auth)
 # redis (pecl) -> Sanctum sessions / cache
 # intl, mbstring, bcmath, zip, opcache, pcntl -> Laravel defaults + queue workers
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        git \
+RUN apt-get update
+RUN apt-get install -y \
         unzip \
         curl \
         ca-certificates \
@@ -71,6 +72,12 @@ COPY --from=vendor /usr/bin/composer /usr/bin/composer
 COPY . .
 COPY ./apache2.conf /etc/apache2/apache2.conf
 COPY ./php.ini /usr/local/etc/php/php.ini
+
+RUN mkdir -p storage/framework/cache/data \
+    && mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/views \
+    && mkdir -p storage/logs \
+    && mkdir -p bootstrap/cache
 
 RUN composer dump-autoload --optimize --classmap-authoritative --no-dev \
     && php artisan package:discover --ansi \

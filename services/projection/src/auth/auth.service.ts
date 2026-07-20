@@ -56,7 +56,7 @@ export class AuthService {
         return JSON.parse(cached) as AuthUser;
       }
     } catch (err) {
-      this.logger.warn(`Auth cache lookup failed: ${(err as Error).message}`);
+      this.logger.warn(`Auth cache lookup failed for ${this.meUrl}: ${(err as Error).message}`);
     }
 
     let user: AuthUser | null = null;
@@ -73,7 +73,8 @@ export class AuthService {
       if (!body?.user?.id) return null;
       user = body.user;
     } catch (err) {
-      this.logger.error(`Auth service unreachable: ${(err as Error).message}`);
+      console.log(err);
+      this.logger.error(`Auth service ${this.meUrl} unreachable: ${(err as Error).message}`);
       return null;
     }
 

@@ -31,4 +31,6 @@ use OpenApi\Attributes as OA;
     bearerFormat: 'JWT',
     description: 'Bearer token obtained from POST /api/auth/login',
 )]
-class ApiInfo {}
+class ApiInfo
+{
+}

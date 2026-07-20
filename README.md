@@ -6,15 +6,15 @@ A web-based worship presentation and song management platform. Replaces desktop-
 
 ## Architecture
 
-Microservice architecture with a hybrid backend:
+Three deployables, one shared database (see [ADR-0001](docs/adr/0001-unified-api-as-content-service.md) — the v1.2-planned per-domain microservice split is deferred):
 
-- **5× Laravel 12** services (Auth, Song, Playlist, File, Import) — CRUD-heavy REST APIs
-- **1× NestJS 10** service (Projection) — WebSocket real-time slide synchronization
-- **Vue 3 + Vite + TypeScript** SPA frontend with Tailwind CSS
-- **PostgreSQL 16** (database-per-service) + **Redis 7** (cache/broker) + **MinIO** (S3 object storage)
-- **Nginx** API gateway → **Kubernetes** in production (Docker Compose for local dev)
+- **API** (`services/auth`) — **Laravel 12** unified backend: auth, users, invitations, songs, songbooks, song sheets, playlists, playlist items, share links, imports/exports
+- **Projection service** (`services/projection`) — **NestJS 10** — WebSocket real-time slide synchronization; also the system of record for sessions (Redis, not SQL)
+- **Frontend** (`frontend`) — **Vue 3 + Vite + TypeScript** SPA with Tailwind CSS
+- **PostgreSQL 16** (single shared database) + **Redis 7** (cache/broker/session state) + **MinIO** (S3 object storage)
+- **Kubernetes** (recommended) or a standalone **production Docker Compose** stack in production; the root Docker Compose is for local dev (see [`deployment/`](deployment/) and [ADR-0002](docs/adr/0002-production-deployment-topology.md))
 
-Full specifications: `SaintAugustin_SRS_v1.2.docx`, `SaintAugustin_TechStack_v1.0.docx`, `SaintAugustin_DevPhases_v1.0.docx`
+Full specifications: SaintAugustin SRS v0.2 (Drive) extends and amends the v1.2 baseline; see `docs/` for the as-built architecture.
 
 ## Prerequisites
 
@@ -67,10 +67,9 @@ sleep 10
 docker compose exec auth-service php artisan migrate --seed
 
 # 7. Verify
-curl http://localhost:8080/health          # Auth Service health
-curl http://localhost:8080/api/auth/status  # Auth API status
-open http://localhost:5173                  # Frontend (direct)
-open http://localhost:8080                  # Frontend (via gateway)
+curl http://localhost:8000/health          # Auth Service health
+curl http://localhost:8000/api/auth/status  # Auth API status
+open http://localhost:5173                  # Frontend
 ```
 
 Or use the Makefile shortcut:
@@ -83,16 +82,18 @@ make migrate seed
 
 ## Services & Ports
 
+There is no API gateway container — the frontend calls the Auth Service and Projection Service directly (see `docs/infrastructure.md`).
+
 | Service | Container | Port | URL |
 |---------|-----------|------|-----|
-| **Gateway** (Nginx) | sa-gateway | 8080 | http://localhost:8080 |
-| **Frontend** (Vite) | sa-frontend | 5173 | http://localhost:5173 |
-| **Auth Service** | sa-auth | 8000 (internal) | via gateway: `/api/auth/*` |
-| **Projection Service** | sa-projection | 3000 (internal) | via gateway: `/ws/projection/*` |
-| **PostgreSQL** | sa-postgres | 5432 | `psql -h localhost -U saintaugustin` |
-| **Redis** | sa-redis | 6379 | `redis-cli -h localhost` |
-| **MinIO** (S3) | sa-minio | 9000 | http://localhost:9000 |
-| **MinIO Console** | sa-minio | 9001 | http://localhost:9001 |
+| **Frontend** (Vite) | staug-frontend | 5173 | http://localhost:5173 |
+| **Auth Service** | staug-api | 8000 | http://localhost:8000/api/... |
+| **Projection Service** | staug-projection | 3000 | http://localhost:3000 |
+| **Queue Worker** | staug-queue-worker | — | background job processor, no HTTP port |
+| **PostgreSQL** | staug-postgres | 5432 | `psql -h localhost -U saintaugustin` |
+| **Redis** | staug-redis | 6379 | `redis-cli -h localhost` |
+| **MinIO** (S3) | staug-minio | 9000 | http://localhost:9000 |
+| **MinIO Console** | staug-minio | 9001 | http://localhost:9001 |
 
 ## Project Structure
 
@@ -108,26 +109,23 @@ saint-augustin/
 ├── scripts/
 │   └── setup-debian.sh                # Debian dev server provisioning
 ├── services/
-│   ├── auth/                          # Laravel 12 – Auth Service
+│   ├── auth/                          # Laravel 12 – unified API (see ADR-0001)
 │   │   ├── app/Models/User.php        # UUID, roles as JSON array
-│   │   ├── config/                    # DB, Redis, Sanctum, Octane, hashing
-│   │   ├── database/migrations/       # Users + Sanctum tokens
-│   │   ├── routes/api.php             # /api/auth/* endpoints
-│   │   └── tests/                     # Pest: health + user model tests
-│   ├── projection/                    # NestJS 10 – Projection Service
-│   │   └── src/
-│   │       ├── projection.gateway.ts  # WebSocket echo + rooms (Phase 0 spike)
-│   │       └── health.controller.ts   # GET /health
-│   ├── song/                          # Phase 1
-│   ├── playlist/                      # Phase 3
-│   ├── file/                          # Phase 2
-│   └── import/                        # Phase 5
+│   │   ├── config/                    # DB, Redis, Sanctum, hashing
+│   │   ├── database/migrations/       # Users, songs, playlists, share links, etc.
+│   │   ├── routes/api.php             # /api/* endpoints
+│   │   └── tests/                     # Pest test suite
+│   └── projection/                    # NestJS 10 – Projection Service
+│       └── src/
+│           ├── sessions/              # Live/scheduled sessions, control tokens (Redis)
+│           └── projection.gateway.ts  # WebSocket slide sync
 ├── frontend/                          # Vue 3 + Vite + TypeScript
 │   └── src/
-│       ├── App.vue                    # Shell with header
-│       ├── stores/auth.ts             # Pinia auth store skeleton
-│       └── views/HomeView.vue         # Service health dashboard
-├── charts/                            # Helm charts (Phase 6)
+│       ├── App.vue                    # App shell
+│       ├── stores/                    # Pinia stores
+│       └── views/                     # One component per route
+├── deployment/                        # Prod deploy: kubernetes/ · compose/ · apache-VM/
+├── charts/                            # Placeholder — Helm chart deferred (see ADR-0002)
 └── .github/workflows/ci.yml           # Lint + test + Docker build
 ```
 
@@ -164,8 +162,8 @@ make db-shell          # Open psql console
 ### Hot Reload
 
 - **Frontend**: Vite HMR — edit `.vue`/`.ts` files and see changes instantly
-- **Auth Service**: Laravel Octane `--watch` — restarts workers on file change
-- **Projection Service**: NestJS `--watch` — recompiles on `.ts` file change
+- **Auth Service**: no bind mount / watch process in `docker-compose.yml` — source is baked into the image at build time, so `docker compose build auth-service && docker compose up -d auth-service` after editing PHP
+- **Projection Service**: no bind mount / watch process in `docker-compose.yml` either — built once at image build time (`npm run build`), so rebuild+restart after editing `.ts` files
 
 ### Database Access
 
@@ -196,15 +194,18 @@ After running `make seed`:
 
 ## Development Phases
 
+v0.1 phases (see `docs/overview.md` for detail):
+
 | Phase | Name | Status |
 |-------|------|--------|
-| **0** | Project Scaffolding | ✅ Current |
-| **1** | Foundation (Auth + Song CRUD + UI) | ⬜ Next |
-| **2** | Musician Experience (Chords, transposition) | ⬜ |
-| **3** | Playlists & Collaboration | ⬜ |
-| **4** | Projection Engine (WebSocket live) | ⬜ |
-| **5** | Import & Migration (VideoPsalm) | ⬜ |
-| **6** | Polish & Deploy (i18n, Kubernetes) | ⬜ |
+| **0** | Scaffolding, Docker Compose, CI pipeline | ✅ Done |
+| **1** | Auth, Songs, Songbooks, frontend shell | ✅ Done |
+| **2** | Musician view, ChordPro parser, song sheets (MinIO) | ✅ Done |
+| **3** | Playlists, Playlist Builder, share links, PDF export | ✅ Done |
+| **4** | Live projection (WebSocket sessions, slide renderer) | 🔄 In progress |
+| **5+** | Import service, mobile optimisation, offline mode | ⬜ Planned |
+
+v0.2 (defect fixes, Bible workstream, STAUG data-interchange) is tracked separately — see `SaintAugustin_Implementation_v0.2.md` (Drive) and this repo's `v0.2/stage-N-*` branches.
 
 ## Key References
 

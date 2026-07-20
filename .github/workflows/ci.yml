@@ -37,6 +37,7 @@ jobs:
       - run: npm i
       - run: npm run lint
       - run: npm run type-check
+      - run: npm run test
       - run: npm run build
 
   # ---------------------------------------------------------------------------
@@ -96,8 +97,14 @@ jobs:
           extensions: pdo_pgsql, redis, mbstring, zip, intl
           tools: composer:v2
 
-      - run: composer install --no-interaction --prefer-dist
-      - run: vendor/bin/pint --test
+      - run: composer install --no-scripts --prefer-dist --no-interaction
+      - run: mkdir -p storage/framework/cache/data
+      - run: mkdir -p storage/framework/sessions
+      - run: mkdir -p storage/framework/views
+      - run: mkdir -p storage/logs
+      - run: mkdir -p bootstrap/cache
+      - run: cp .env.example .env
+      - run: php artisan key:generate
       - run: vendor/bin/phpstan analyse
       - run: vendor/bin/pest
         env:

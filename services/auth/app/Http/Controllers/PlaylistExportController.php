@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\SanitizesFilename;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
+use App\Services\Staug\StaugArchiveWriter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -24,6 +26,12 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 )]
 class PlaylistExportController
 {
+    use SanitizesFilename;
+
+    public function __construct(private readonly StaugArchiveWriter $staugWriter)
+    {
+    }
+
     #[OA\Get(
         path: '/playlists/{id}/export',
         summary: 'Export a playlist',
@@ -37,7 +45,7 @@ class PlaylistExportController
                 in: 'query',
                 required: false,
                 description: 'Export format. Defaults to `pdf`.',
-                schema: new OA\Schema(type: 'string', enum: ['pdf', 'txt'], default: 'pdf'),
+                schema: new OA\Schema(type: 'string', enum: ['pdf', 'txt', 'staug'], default: 'pdf'),
             ),
         ],
         responses: [
@@ -78,12 +86,22 @@ class PlaylistExportController
         $format = strtolower($request->query('format', 'pdf'));
 
         return match ($format) {
-            'pdf' => $this->renderPdf($playlist),
-            'txt' => $this->renderText($playlist),
+            'pdf'   => $this->renderPdf($playlist),
+            'txt'   => $this->renderText($playlist),
+            'staug' => $this->renderStaug($playlist),
             default => response()->json([
-                'message' => 'Unsupported format. Use pdf or txt.',
+                'message' => 'Unsupported format. Use pdf, txt, or staug.',
             ], 422),
         };
+    }
+
+    private function renderStaug(Playlist $playlist): HttpResponse
+    {
+        $path = $this->staugWriter->writePlaylist($playlist);
+        $filename = $this->safeFilename($playlist->name).'.staug.zip';
+
+        return response()->download($path, $filename, ['Content-Type' => 'application/zip'])
+            ->deleteFileAfterSend();
     }
 
     private function renderPdf(Playlist $playlist): HttpResponse
@@ -132,27 +150,24 @@ class PlaylistExportController
 
     private function formatTextLine(int $n, PlaylistItem $item): string
     {
-        $song = $item->song;
-        $title = $song?->title ?? '(deleted song)';
-        $author = $song?->author ? ' — '.$song->author : '';
+        // Scripture readings carry no song — render the reference instead.
+        if ($item->isScripture()) {
+            $ref = $item->scriptureReference() ?? 'Scripture';
+            $translation = $item->translation_id ? ' ('.$item->translation_id.')' : '';
 
-        $key = $item->target_key
-            ?? $song?->original_key
-            ?? '?';
+            return sprintf('%2d. %s%s   [reading]', $n, $ref, $translation);
+        }
+
+        // Song items: song_id is required for a song item and song() resolves
+        // withTrashed(), so the related song always resolves under this app's
+        // soft-delete-only architecture (songs are never hard-deleted).
+        $song = $item->song;
+        $title = $song->title;
+        $author = $song->author ? ' — '.$song->author : '';
+
+        $key = $item->target_key ?? $song->original_key ?? '?';
 
         return sprintf('%2d. %s%s   [%s]', $n, $title, $author, $key);
     }
 
-    /**
-     * Strip path-unsafe characters from a playlist name for use in a
-     * Content-Disposition filename. Falls back to "playlist" if the
-     * sanitized result is empty.
-     */
-    private function safeFilename(string $name): string
-    {
-        $clean = preg_replace('/[^A-Za-z0-9 _\-]/', '', $name) ?? '';
-        $clean = trim(preg_replace('/\s+/', '-', $clean) ?? '');
-
-        return $clean !== '' ? $clean : 'playlist';
-    }
 }

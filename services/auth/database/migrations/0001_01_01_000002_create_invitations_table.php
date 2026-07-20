@@ -11,8 +11,7 @@ use Illuminate\Support\Facades\Schema;
  * One pending invitation per email address (unique constraint on email).
  * Token is a 64-character secure random string used in the invite link.
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('invitations', function (Blueprint $table) {

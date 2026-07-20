@@ -15,7 +15,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import ProjectionControlView from '@/views/ProjectionControlView.vue'
 import { useProjectionStore } from '@/stores/projection'
-import type { ProjectionSessionState } from '@/types'
+import { useAuthStore } from '@/stores/auth'
+import type { ProjectionSessionState, User } from '@/types'
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -58,7 +59,21 @@ function makeRouter() {
   })
 }
 
-async function mountView(stateOverrides: Partial<ProjectionSessionState> = {}, role: 'controller' | 'display' | null = 'controller') {
+function makeUser(over: Partial<User> = {}): User {
+  return {
+    id: 'user-1',
+    email: 'leader@church.local',
+    display_name: 'Leader',
+    roles: ['musician'],
+    ...over,
+  }
+}
+
+async function mountView(
+  stateOverrides: Partial<ProjectionSessionState> = {},
+  role: 'controller' | 'display' | null = 'controller',
+  opts: { authUser?: User | null; reclaimed?: boolean } = {},
+) {
   const router = makeRouter()
   await router.push('/projection/control/sess-1')
   await router.isReady()
@@ -73,14 +88,21 @@ async function mountView(stateOverrides: Partial<ProjectionSessionState> = {}, r
   projection.sessionId = 'sess-1'
   projection.controlToken = 'ctrl-tok'
   projection.state = makeState(stateOverrides)
+  projection.takenOver = false
+
+  const auth = useAuthStore()
+  auth.user = opts.authUser === undefined ? makeUser() : opts.authUser
 
   // connect() is stubbed; return a valid JoinResult so `result.ok` never throws.
-  // This also handles the display-role path where alreadyConnected is false.
   vi.mocked(projection.connect).mockResolvedValue({
     ok: true,
     role: role ?? 'display',
     state: makeState(stateOverrides),
   })
+  // tryReclaim() is stubbed too (stubActions:true covers every action) — give
+  // it a default so the non-controller mount path (which calls it before
+  // falling back to connect()) doesn't destructure `undefined`.
+  vi.mocked(projection.tryReclaim).mockResolvedValue({ reclaimed: opts.reclaimed ?? false })
 
   const w = mount(ProjectionControlView, {
     global: {
@@ -330,5 +352,114 @@ describe('ProjectionControlView', () => {
     await w.find('[data-testid="projection-end"]').trigger('click')
     await flushPromises()
     expect(projection.destroy).not.toHaveBeenCalled()
+  })
+
+  // ── Reclaim on mount ────────────────────────────────────────────────────────
+
+  it('shows the reclaimed banner when tryReclaim succeeds on mount', async () => {
+    const { w } = await mountView({}, 'display', { reclaimed: true })
+    expect(w.find('[data-testid="ctrl-reclaimed-banner"]').exists()).toBe(true)
+    // The view-only banner is suppressed while the reclaimed banner shows.
+    expect(w.find('[data-testid="ctrl-viewonly-banner"]').exists()).toBe(false)
+  })
+
+  it('falls back to the view-only banner when tryReclaim does not reclaim', async () => {
+    const { w } = await mountView({}, 'display', { reclaimed: false })
+    expect(w.find('[data-testid="ctrl-reclaimed-banner"]').exists()).toBe(false)
+    expect(w.find('[data-testid="ctrl-viewonly-banner"]').exists()).toBe(true)
+  })
+
+  it('does not call tryReclaim when already connected as controller', async () => {
+    const { projection } = await mountView()
+    expect(projection.tryReclaim).not.toHaveBeenCalled()
+  })
+
+  // ── Takeover ────────────────────────────────────────────────────────────────
+
+  it('shows "Take control" for an admin viewing a LIVE session as display', async () => {
+    const { w } = await mountView(
+      { status: 'LIVE', ownerId: 'someone-else' },
+      'display',
+      { authUser: makeUser({ roles: ['admin'] }) },
+    )
+    expect(w.find('[data-testid="projection-takeover"]').exists()).toBe(true)
+  })
+
+  it('shows "Take control" for the session owner viewing as display', async () => {
+    const { w } = await mountView(
+      { status: 'LIVE', ownerId: 'user-1' },
+      'display',
+      { authUser: makeUser({ id: 'user-1', roles: ['musician'] }) },
+    )
+    expect(w.find('[data-testid="projection-takeover"]').exists()).toBe(true)
+  })
+
+  it('hides "Take control" for a non-owner, non-admin viewer', async () => {
+    const { w } = await mountView(
+      { status: 'LIVE', ownerId: 'someone-else' },
+      'display',
+      { authUser: makeUser({ id: 'user-1', roles: ['musician'] }) },
+    )
+    expect(w.find('[data-testid="projection-takeover"]').exists()).toBe(false)
+  })
+
+  it('hides "Take control" when already the controller', async () => {
+    const { w } = await mountView(
+      { status: 'LIVE', ownerId: 'user-1' },
+      'controller',
+      { authUser: makeUser({ id: 'user-1' }) },
+    )
+    expect(w.find('[data-testid="projection-takeover"]').exists()).toBe(false)
+  })
+
+  it('hides "Take control" when the session is not LIVE', async () => {
+    const { w } = await mountView(
+      { status: 'NOT_STARTED', ownerId: 'user-1' },
+      'display',
+      { authUser: makeUser({ id: 'user-1', roles: ['admin'] }) },
+    )
+    expect(w.find('[data-testid="projection-takeover"]').exists()).toBe(false)
+  })
+
+  it('Take control calls projection.takeover() after confirmation', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const { w, projection } = await mountView(
+      { status: 'LIVE', ownerId: 'user-1' },
+      'display',
+      { authUser: makeUser({ id: 'user-1', roles: ['admin'] }) },
+    )
+    await w.find('[data-testid="projection-takeover"]').trigger('click')
+    await flushPromises()
+    expect(projection.takeover).toHaveBeenCalledWith('sess-1')
+  })
+
+  it('Take control does nothing when the user cancels the confirmation', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const { w, projection } = await mountView(
+      { status: 'LIVE', ownerId: 'user-1' },
+      'display',
+      { authUser: makeUser({ id: 'user-1', roles: ['admin'] }) },
+    )
+    await w.find('[data-testid="projection-takeover"]').trigger('click')
+    await flushPromises()
+    expect(projection.takeover).not.toHaveBeenCalled()
+  })
+
+  // ── control-transferred banner ──────────────────────────────────────────────
+
+  it('shows the taken-over banner instead of the view-only banner', async () => {
+    const { w, projection } = await mountView({}, 'display')
+    projection.takenOver = true
+    await w.vm.$nextTick()
+    expect(w.find('[data-testid="ctrl-takenover-banner"]').exists()).toBe(true)
+    expect(w.find('[data-testid="ctrl-viewonly-banner"]').exists()).toBe(false)
+  })
+
+  it('dismissing the taken-over banner calls dismissTakenOver', async () => {
+    const { w, projection } = await mountView({}, 'display')
+    projection.takenOver = true
+    await w.vm.$nextTick()
+    await w.find('[data-testid="ctrl-takenover-banner"] button').trigger('click')
+    expect(projection.dismissTakenOver).toHaveBeenCalledOnce()
   })
 })

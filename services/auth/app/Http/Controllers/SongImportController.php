@@ -81,9 +81,9 @@ class SongImportController
                 description: 'Import committed — counts of created/skipped songs.',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'created',   type: 'integer'),
-                        new OA\Property(property: 'skipped',   type: 'integer'),
-                        new OA\Property(property: 'total',     type: 'integer'),
+                        new OA\Property(property: 'created', type: 'integer'),
+                        new OA\Property(property: 'skipped', type: 'integer'),
+                        new OA\Property(property: 'total', type: 'integer'),
                         new OA\Property(property: 'songbooks', type: 'array', items: new OA\Items(type: 'string')),
                     ],
                     type: 'object',

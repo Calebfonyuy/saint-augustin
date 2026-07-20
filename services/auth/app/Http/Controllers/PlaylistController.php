@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\Song;
-use Illuminate\Database\Eloquent\Builder;
+use App\Services\PlaylistItemFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,9 +33,6 @@ use OpenApi\Attributes as OA;
 )]
 class PlaylistController
 {
-    /** Re-used by both Playlist and PlaylistItem validation. */
-    private const KEY_PATTERN = '/^[A-G][#b]?m?$/';
-
     // ── List + filter ─────────────────────────────────────────────────
 
     #[OA\Get(
@@ -275,13 +272,12 @@ class PlaylistController
             ]);
 
             foreach ($source->items as $item) {
-                PlaylistItem::create([
-                    'playlist_id' => $copy->id,
-                    'song_id'     => $item->song_id,
-                    'position'    => $item->position,
-                    'target_key'  => $item->target_key,
-                    'notes'       => $item->notes,
-                ]);
+                // replicate() copies every attribute (song + scripture fields
+                // alike) except the primary key, so a duplicated playlist
+                // preserves polymorphic items without enumerating columns.
+                $copyItem = $item->replicate();
+                $copyItem->playlist_id = $copy->id;
+                $copyItem->save();
             }
 
             return $copy;
@@ -370,23 +366,6 @@ class PlaylistController
     /** @return array<string, mixed> */
     private function formatItem(PlaylistItem $item): array
     {
-        $song = $item->song;
-
-        return [
-            'id'          => $item->id,
-            'song_id'     => $item->song_id,
-            'position'    => $item->position,
-            'target_key'  => $item->target_key,
-            'notes'       => $item->notes,
-            'song'        => $song ? [
-                'id'           => $song->id,
-                'title'        => $song->title,
-                'author'       => $song->author,
-                'original_key' => $song->original_key,
-                'tempo'        => $song->tempo,
-                'time_signature' => $song->time_signature,
-                'deleted'      => $song->trashed(),
-            ] : null,
-        ];
+        return PlaylistItemFormatter::format($item);
     }
 }

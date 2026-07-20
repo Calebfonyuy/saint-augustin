@@ -14,10 +14,11 @@ import { extractErrorMessage } from '@/api/client'
 import Icon from './Icon.vue'
 import type { ShareLink, ShareMode } from '@/types'
 
-const { t } = useI18n()
-
 const props = defineProps<{ playlistId: string; open: boolean }>()
+
 const emit = defineEmits<(e: 'close') => void>()
+
+const { t } = useI18n()
 
 const links = ref<ShareLink[]>([])
 const loading = ref(false)

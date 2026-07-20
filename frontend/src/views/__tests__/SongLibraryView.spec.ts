@@ -92,6 +92,34 @@ describe('SongLibraryView', () => {
     expect(w.text()).toContain('Amazing Grace')
   })
 
+  it('Project song opens the Go Live dialog scoped to the selected song', async () => {
+    const pinia = createTestingPinia({ stubActions: false, createSpy: vi.fn })
+    setActivePinia(pinia)
+    const songs = useSongsStore()
+    const songbooks = useSongbooksStore()
+    vi.spyOn(songs, 'fetchList').mockImplementation(async () => {
+      songs.list = [song('a', 'Amazing Grace')]
+    })
+    vi.spyOn(songbooks, 'fetchList').mockImplementation(async () => {
+      songbooks.list = [sb]
+    })
+    const w = mount(SongLibraryView, {
+      global: {
+        plugins: [router, pinia],
+        stubs: {
+          AppShell: { template: '<div><slot /></div>' },
+          GoLiveDialog: { template: '<div data-testid="go-live-stub" />', props: ['song', 'open'] },
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(w.find('[data-testid="go-live-stub"]').exists()).toBe(false)
+    await w.find('[data-testid="library-project"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="go-live-stub"]').exists()).toBe(true)
+  })
+
   it('debounces the search and re-fetches', async () => {
     const pinia = createTestingPinia({ stubActions: false, createSpy: vi.fn })
     setActivePinia(pinia)

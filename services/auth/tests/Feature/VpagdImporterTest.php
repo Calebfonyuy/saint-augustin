@@ -66,9 +66,9 @@ test('reuses an existing songbook across multiple imported songs', function () {
     $importer = new VpagdImporter();
 
     $importer->import(songs: [
-        makeParsed('First',  'Shared Book'),
+        makeParsed('First', 'Shared Book'),
         makeParsed('Second', 'Shared Book'),
-        makeParsed('Third',  'Shared Book'),
+        makeParsed('Third', 'Shared Book'),
     ]);
 
     expect(Songbook::where('name', 'Shared Book')->count())->toBe(1);
@@ -85,7 +85,7 @@ test('skips a song with the same case-insensitive title within the same songbook
 
     $result = $importer->import(songs: [
         makeParsed('amazing GRACE', 'Existing'),  // dup, different case
-        makeParsed('Brand New',     'Existing'),  // novel
+        makeParsed('Brand New', 'Existing'),  // novel
     ]);
 
     expect($result->created)->toBe(1);
@@ -144,8 +144,8 @@ test('lyrics body is composed from the parsed verses', function () {
             title: 'Lyric Test',
             verses: [
                 new ParsedVerse(text: 'first verse line', isChorus: false),
-                new ParsedVerse(text: 'chorus body',      isChorus: true),
-                new ParsedVerse(text: 'second verse',     isChorus: false),
+                new ParsedVerse(text: 'chorus body', isChorus: true),
+                new ParsedVerse(text: 'second verse', isChorus: false),
             ],
             songbookName: 'Test',
             songbookGuid: null,

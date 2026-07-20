@@ -174,7 +174,7 @@ test('lyrics() strips inline HTML-ish formatting tags', function () {
 
 test('lyrics() normalises CRLF line endings to LF', function () {
     $path = buildVpagdZip([
-        'Song_0.json' => "{Text:\"CRLF\",Verses:[{Text:\"a\\r\\nb\\r\\nc\"}]}",
+        'Song_0.json' => '{Text:"CRLF",Verses:[{Text:"a\\r\\nb\\r\\nc"}]}',
     ]);
 
     $lyrics = VpagdParser::parseFile($path)[0]->lyrics();

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
 /**
  * ShareLink model (SRS 3.3 / 7.1).
@@ -28,7 +27,9 @@ use Illuminate\Support\Str;
  */
 class ShareLink extends Model
 {
-    use HasFactory, HasUuids;
+    /** @use HasFactory<\Database\Factories\ShareLinkFactory> */
+    use HasFactory;
+    use HasUuids;
 
     public const MODE_MUSICIAN   = 'musician';
     public const MODE_PROJECTION = 'projection';
@@ -79,6 +80,7 @@ class ShareLink extends Model
         return true;
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<Playlist, $this> */
     public function playlist(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Playlist::class);

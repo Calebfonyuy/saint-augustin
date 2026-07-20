@@ -64,6 +64,14 @@ class FakeRedisClient {
     return 1;
   }
 
+  /** ioredis semantics: remaining seconds, -1 if no expiry, -2 if missing. */
+  async ttl(key: string): Promise<number> {
+    if (!this.gc(key)) return -2;
+    const e = this.store.get(key)!;
+    if (e.expiresAt === null) return -1;
+    return Math.ceil((e.expiresAt - Date.now()) / 1000);
+  }
+
   async sadd(key: string, ...members: string[]): Promise<number> {
     let set = this.sets.get(key);
     if (!set) {

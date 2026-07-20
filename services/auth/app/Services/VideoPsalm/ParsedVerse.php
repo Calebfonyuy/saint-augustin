@@ -7,5 +7,6 @@ final readonly class ParsedVerse
     public function __construct(
         public string $text,
         public bool $isChorus,
-    ) {}
+    ) {
+    }
 }

@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: calebfonyuy/staug-frontend:0.1
+          image: calebfonyuy/staug-frontend:0.2
           ports:
             - containerPort: 80
           env:

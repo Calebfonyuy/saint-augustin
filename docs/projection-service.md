@@ -3,7 +3,7 @@
 The Projection Service provides real-time slide control for live worship services. A worship leader (controller) drives a playlist of lyrics slides from their device; one or more projection displays (screens, secondary browsers) follow along via WebSocket.
 
 - **Runtime:** Node.js / NestJS 10 with Socket.IO
-- **Session storage:** Redis 7 (ephemeral — sessions expire automatically)
+- **Session storage:** Redis 7 — `TEMPORARY` sessions are ephemeral (TTL, self-cleaning); `PERSISTENT` sessions (the default) live indefinitely until explicitly ended or deleted
 - **Container port:** 3000
 - **Gateway paths:** `/api/projection/` (HTTP), `/ws/projection/` and `/socket.io/` (WebSocket)
 
@@ -13,11 +13,17 @@ The Projection Service provides real-time slide control for live worship service
 
 ### Session
 
-A **projection session** is a short-lived object stored in Redis that holds:
+A **projection session** is an object stored in Redis (`SessionState`) that holds:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | UUID | Unique session identifier |
+| `name` | string | Human-friendly label — falls back to `playlistName` if not set |
+| `status` | `'NOT_STARTED' \| 'LIVE' \| 'ENDED'` | Lifecycle stage — see below |
+| `kind` | `'TEMPORARY' \| 'PERSISTENT'` | Retention model — see below |
+| `ownerId` / `ownerName` | string \| null | The user who created the session; drives owner/admin authorization |
+| `scheduledStartAt` / `scheduledEndAt` | ISO string \| null | Informational — stored but not enforced; the actual LIVE transition happens via `/start` |
+| `startedAt` / `endedAt` | ISO string \| null | Set when the session enters LIVE / ENDED |
 | `playlistId` | string \| null | Source playlist (if launched from one) |
 | `playlistName` | string | Display name |
 | `slides` | `ProjectionSlide[]` | Ordered flat list of all slides |
@@ -26,7 +32,12 @@ A **projection session** is a short-lived object stored in Redis that holds:
 | `fontScale` | number | Font size multiplier (0.5–3.0) |
 | `createdAt` / `updatedAt` | ISO strings | Timestamps |
 
-Sessions have a configurable TTL (default 4 hours) that resets on every mutation. A session that is not being actively controlled will expire automatically, cleaning up Redis without any explicit teardown.
+**Lifecycle:** `NOT_STARTED → LIVE → ENDED` (via `/start` and `/end`).
+
+**Two kinds, two retention policies** (`SessionsService.create()`, defaults to `PERSISTENT` when `kind` is omitted):
+
+- **`PERSISTENT`** (default) — created `NOT_STARTED`, no slides required up front (can be loaded later via `/load`). No TTL while `NOT_STARTED` or `LIVE`, so it survives indefinitely until the leader explicitly ends or deletes it. Once `ENDED`, gets a 30-day TTL so a share link still resolves to an "ended" page for a while instead of 404ing immediately.
+- **`TEMPORARY`** (legacy, must be requested explicitly) — requires slides at creation time, enters `LIVE` immediately, and gets a fixed TTL (`SESSION_TTL_SECONDS`, default 4h) that's refreshed on every mutation and every persist — it self-cleans if abandoned, regardless of status.
 
 ### Slides
 
@@ -40,37 +51,58 @@ interface ProjectionSlide {
   songTitle: string
   section: string | null  // e.g. "Verse 1", "Chorus"
   body: string            // plain text lyrics for this section
+  kind?: 'song' | 'scripture'  // parent item kind (FR-PL-2); defaults to 'song'
+  reference?: string | null    // "Jean 3:16 · Segond" — heading on the first scripture slide
+  verses?: { number: number; text: string }[]  // scripture verses (FR-BI-8)
+  showReference?: boolean       // true on the first slide of a reading
 }
 ```
 
-The slide-building logic lives in `frontend/src/lib/projection/buildSlides.ts`. It splits ChordPro lyrics into sections and creates one `ProjectionSlide` per section.
+The slide-building logic lives in `frontend/src/lib/projection/buildSlides.ts`. It splits ChordPro lyrics into sections and creates one `ProjectionSlide` per song section.
+
+**Scripture readings (FR-PL-2 / FR-BI-8).** A playlist can interleave songs and scripture readings. `buildSlides` resolves each reading's verses via `GET /api/bible/resolve` (the pre-fetch — this also warms the server chapter cache) and `splitScriptureIntoSlides` groups them into auto-fit slides. `SlideRenderer.vue` renders scripture with small superscript verse numbers and the reference + translation label on the first slide only, shrinking the font (ResizeObserver auto-fit) to stay legible. The `SlideDto` carries optional `verses`/`showReference`; the gateway stores and broadcasts them unchanged (no server-side parsing). If a reading can't be resolved (offline, cold cache) it degrades to a single placeholder slide showing the reference.
 
 ### Control Token
 
-When a session is created the service returns a `controlToken` — a cryptographically random 24-byte base64url string. This token is stored in Redis under a separate key (`sa:proj:control-token:{sessionId}`) so it never appears in the broadcast state. Only the client that holds the control token can issue write events (next, previous, goto, blackout, font-scale). Token comparison uses a constant-time algorithm to avoid timing oracle attacks.
+When a session enters `LIVE` (immediately for `TEMPORARY`, or via `/start` for `PERSISTENT`) the service issues a `controlToken` — a cryptographically random 24-byte base64url string. This token is stored in Redis under a separate key (`sa:proj:control-token:{sessionId}`) so it never appears in the broadcast state. Only the client that holds the control token can issue write events (next, previous, goto, blackout, font-scale). Token comparison uses a constant-time algorithm to avoid timing oracle attacks.
+
+The frontend persists the control token client-side (per session, in `localStorage`) so a reload or tab close doesn't strand the leader in read-only mode:
+
+- **Reclaim** (`POST /sessions/:id/reclaim`) — re-confirms a previously-issued token is still valid, without rotating it. Called on mount if a matching token is found for the current session.
+- **Takeover** (`POST /sessions/:id/takeover`, owner or admin only) — force-rotates the control token and revokes any currently-connected controller sockets for that session (see below), then broadcasts `control-transferred` so the deposed client's UI flips to read-only in real time.
 
 ---
 
 ## HTTP API
 
+All routes except `GET /sessions/:id` and `GET /health` require a Bearer token, verified by calling the Laravel Auth Service's `/api/auth/me` (response cached 60s in Redis — see `AuthGuard`/`AuthService`). "Owner or admin" means the caller is the session's `ownerId` or has the `admin` role.
+
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/sessions` | — | Create a session; returns `{ sessionId, controlToken, state }` |
-| GET | `/sessions/:id` | — | Fetch current session state (used on initial display page load) |
-| DELETE | `/sessions/:id` | `X-Control-Token` header | End the session |
+| POST | `/sessions` | Bearer | Create a session; returns `{ sessionId, controlToken, state }`. `controlToken` is only non-null when the session is immediately `LIVE` (`TEMPORARY`) |
+| GET | `/sessions` | Bearer | List `NOT_STARTED` + `LIVE` sessions; `?mine=1` filters to the caller's own |
+| GET | `/sessions/:id` | — (public) | Fetch current session state — the `sessionId` itself is the read credential, used by display pages and share links |
+| POST | `/sessions/:id/start` | Owner or admin | `NOT_STARTED → LIVE`; returns a fresh `controlToken`. Requires slides already loaded |
+| POST | `/sessions/:id/end` | Owner or admin | `LIVE → ENDED`; clears the control token |
+| POST | `/sessions/:id/load` | Owner or admin | Attach/replace the slide deck |
+| POST | `/sessions/:id/reclaim` | Bearer | Body `{ token }`. Re-confirms the token still authorizes control — no rotation |
+| POST | `/sessions/:id/takeover` | Owner or admin | Rotates the control token, revokes connected controller sockets, broadcasts `control-transferred` |
+| DELETE | `/sessions/:id` | Owner or admin | Delete the session entirely |
 | GET | `/health` | — | Service health check |
 
 Session creation accepts:
 
 ```json
 {
+  "kind": "PERSISTENT",
+  "name": "Sunday 9:30 (optional — falls back to playlistName)",
   "playlistName": "Sunday 27 April",
   "playlistId": "uuid-optional",
-  "slides": [ ... ]
+  "slides": [ "... optional for PERSISTENT, required for TEMPORARY" ],
+  "scheduledStartAt": "2026-04-27T08:30:00Z",
+  "scheduledEndAt": "2026-04-27T10:00:00Z"
 }
 ```
-
-The HTTP API is intentionally unauthenticated at the user level. The service runs inside the church's private network and sessions are short-lived. The `sessionId` (UUID) acts as the read credential; the `controlToken` gates writes.
 
 ---
 
@@ -99,6 +131,7 @@ The `join` response includes the current `state` so a newly connected display is
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `state` | `SessionState` | Broadcast to every client in the room after any mutation |
+| `control-transferred` | `{ byName: string \| null }` | Broadcast after a REST `/takeover`. Every socket that was cached as `controller` for that room is server-side downgraded to `display` *before* this fires — the event is a UI signal, not the enforcement mechanism itself |
 
 The full state is sent on every change rather than a diff. This makes reconnection trivial — a client that drops and reconnects simply re-joins and receives the current state immediately.
 
@@ -107,13 +140,23 @@ The full state is sent on every change rather than a diff. This makes reconnecti
 ## Redis Storage Layout
 
 ```
-sa:proj:session:<sessionId>        JSON-encoded SessionState  (TTL: SESSION_TTL_SECONDS)
-sa:proj:control-token:<sessionId>  controlToken string        (same TTL)
+sa:proj:session:<sessionId>           JSON-encoded SessionState
+sa:proj:control-token:<sessionId>     controlToken string (LIVE only)
+sa:proj:sessions:active               SET of NOT_STARTED + LIVE session ids
+sa:proj:sessions:by-owner:<userId>    SET of session ids owned by that user
 ```
 
 Keeping the control token in a sibling key (rather than inside the state object) ensures it is never accidentally included in a WebSocket broadcast.
 
-Every mutation refreshes both keys' TTL atomically using a Redis pipeline.
+**TTL policy** (`SessionsService.ttlFor()`), applied to both the state and token keys together:
+
+| Kind | Status | TTL |
+|------|--------|-----|
+| `TEMPORARY` | any | `SESSION_TTL_SECONDS` (default 4h), refreshed on every persist |
+| `PERSISTENT` | `NOT_STARTED` / `LIVE` | none — survives indefinitely |
+| `PERSISTENT` | `ENDED` | 30 days |
+
+The `sessions:active` and `sessions:by-owner:*` sets are best-effort indexes for listing — stale entries (state expired but the set still references it) are pruned lazily on the next `list()` call.
 
 ---
 
@@ -124,21 +167,31 @@ src/
 ├── app.module.ts             Root NestJS module
 ├── main.ts                   Bootstrap (Socket.IO adapter, CORS, validation pipe)
 ├── health.controller.ts      GET /health
+├── auth/
+│   ├── auth.module.ts
+│   ├── auth.guard.ts          Verifies the Bearer token against the Auth Service
+│   ├── auth.service.ts        HTTP call to /api/auth/me, 60s Redis cache
+│   ├── auth.types.ts          AuthUser, isAdmin()
+│   └── current-user.decorator.ts
 ├── projection/
-│   ├── projection.module.ts
-│   └── projection.gateway.ts WebSocket gateway (Socket.IO)
+│   ├── projection.module.ts   imports SessionsModule (forwardRef — see sessions.module.ts)
+│   └── projection.gateway.ts  WebSocket gateway (Socket.IO) + handleTakeover()
 ├── redis/
 │   ├── redis.module.ts
 │   └── redis.service.ts      Thin ioredis wrapper
 └── sessions/
-    ├── sessions.module.ts
+    ├── sessions.module.ts     imports ProjectionModule (forwardRef, for the takeover→broadcast call)
     ├── sessions.controller.ts HTTP CRUD for sessions
     ├── sessions.service.ts    Session lifecycle + mutations
     ├── session.types.ts       SessionState interface
     └── dto/
         ├── create-session.dto.ts
+        ├── load-slides.dto.ts
+        ├── reclaim-session.dto.ts
         └── slide.dto.ts
 ```
+
+`SessionsModule` and `ProjectionModule` depend on each other (`SessionsController` needs `ProjectionGateway` to broadcast `control-transferred` after a takeover; `ProjectionGateway` needs `SessionsService` for everything else) — wired with NestJS's `forwardRef()` rather than an event bus, since it's the only cross-module call in the service.
 
 ---
 
@@ -149,4 +202,5 @@ src/
 | `PORT` | HTTP + WebSocket port | `3000` |
 | `REDIS_HOST` | Redis hostname | `redis` |
 | `REDIS_PORT` | Redis port | `6379` |
-| `SESSION_TTL_SECONDS` | Session expiry (seconds) | `14400` (4h) |
+| `SESSION_TTL_SECONDS` | `TEMPORARY` session expiry (seconds) — no effect on `PERSISTENT` sessions | `14400` (4h) |
+| `AUTH_SERVICE_URL` | Base URL of the Laravel Auth Service, used by `AuthGuard` to verify Bearer tokens via `/api/auth/me` | `http://auth-service:8000` |

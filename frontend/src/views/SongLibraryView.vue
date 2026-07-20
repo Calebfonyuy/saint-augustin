@@ -9,17 +9,17 @@ import KeyBadge from '@/components/KeyBadge.vue'
 import Icon from '@/components/Icon.vue'
 import ChordProPreview from '@/components/ChordProPreview.vue'
 import Toast from '@/components/Toast.vue'
+import GoLiveDialog from '@/components/GoLiveDialog.vue'
+import AddToPlaylistDialog from '@/components/AddToPlaylistDialog.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSongsStore } from '@/stores/songs'
 import { useSongbooksStore } from '@/stores/songbooks'
-import { useProjectionStore } from '@/stores/projection'
 import { extractErrorMessage } from '@/api/client'
 import type { Song } from '@/types'
 
 const auth = useAuthStore()
 const songs = useSongsStore()
 const songbooks = useSongbooksStore()
-const projection = useProjectionStore()
 const router = useRouter()
 const { t } = useI18n()
 
@@ -27,7 +27,9 @@ const query = ref('')
 const songbookFilter = ref<string>('')
 const selectedId = ref<string | null>(null)
 const errorToast = ref<string | null>(null)
-const projecting = ref(false)
+const successToast = ref<string | null>(null)
+const goLiveOpen = ref(false)
+const addToPlaylistOpen = ref(false)
 
 const selected = computed<Song | null>(
   () => songs.list.find((s) => s.id === selectedId.value) ?? null,
@@ -65,20 +67,30 @@ function songbookName(id: string): string {
   return songbooks.list.find((sb) => sb.id === id)?.name ?? '—'
 }
 
-/**
- * Open a projection session for the currently-selected song without
- * persisting a playlist. Routes to the controller view on success.
- */
-async function onProjectSong(): Promise<void> {
-  if (!selected.value || projecting.value) return
-  projecting.value = true
+/** Open the same Go Live dialog used by the playlist builder, scoped to the selected song. */
+function onProjectSong(): void {
+  if (!selected.value) return
+  goLiveOpen.value = true
+}
+
+function onAddToPlaylist(): void {
+  if (!selected.value) return
+  addToPlaylistOpen.value = true
+}
+
+function onAddedToPlaylist(payload: { playlistName: string; alreadyInPlaylist: boolean }): void {
+  addToPlaylistOpen.value = false
+  successToast.value = payload.alreadyInPlaylist
+    ? t('library.addToPlaylist.already', { name: payload.playlistName })
+    : t('library.addToPlaylist.added', { name: payload.playlistName })
+}
+
+async function onGoLiveLaunched(sessionId: string): Promise<void> {
+  goLiveOpen.value = false
   try {
-    const created = await projection.createFromSong(selected.value)
-    await router.push({ name: 'projection-control', params: { id: created.sessionId } })
+    await router.push({ name: 'projection-control', params: { id: sessionId } })
   } catch (err) {
     errorToast.value = extractErrorMessage(err, t('library.errors.project'))
-  } finally {
-    projecting.value = false
   }
 }
 </script>
@@ -176,13 +188,21 @@ async function onProjectSong(): Promise<void> {
           </router-link>
           <button
             type="button"
+            class="btn"
+            data-testid="library-add-to-playlist"
+            @click="onAddToPlaylist"
+          >
+            <Icon name="plus" />
+            {{ t('library.addToPlaylistAction') }}
+          </button>
+          <button
+            type="button"
             class="btn btn-primary"
             data-testid="library-project"
-            :disabled="projecting"
             @click="onProjectSong"
           >
             <Icon name="cast" />
-            {{ projecting ? t('library.starting') : t('library.projectSong') }}
+            {{ t('library.projectSong') }}
           </button>
           <router-link
             v-if="auth.canEditSongs"
@@ -206,6 +226,28 @@ async function onProjectSong(): Promise<void> {
       :message="errorToast"
       kind="error"
       @close="errorToast = null"
+    />
+    <Toast
+      v-if="successToast"
+      :message="successToast"
+      kind="success"
+      @close="successToast = null"
+    />
+
+    <GoLiveDialog
+      v-if="goLiveOpen && selected"
+      :song="selected"
+      :open="goLiveOpen"
+      @close="goLiveOpen = false"
+      @launched="onGoLiveLaunched"
+    />
+
+    <AddToPlaylistDialog
+      v-if="addToPlaylistOpen && selected"
+      :song="selected"
+      :open="addToPlaylistOpen"
+      @close="addToPlaylistOpen = false"
+      @added="onAddedToPlaylist"
     />
   </AppShell>
 </template>

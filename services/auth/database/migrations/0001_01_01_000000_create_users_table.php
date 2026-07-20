@@ -12,8 +12,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * Ref: https://laravel.com/docs/12.x/migrations
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {

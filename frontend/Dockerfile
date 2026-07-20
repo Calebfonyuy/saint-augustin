@@ -20,7 +20,7 @@ RUN npm run build
 
 FROM nginx:stable-alpine3.23
 
-ENV VITE_API_BASE_URL="http://staug-api:8080/api"
+ENV VITE_API_BASE_URL="http://staug-api:8080"
 ENV VITE_WS_URL="ws://staug-projection:3000/ws"
 ENV VITE_PROJECTION_BASE_URL="http://staug-projection:3000"
 

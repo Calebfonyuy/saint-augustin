@@ -20,7 +20,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Songbook extends Model
 {
-    use HasFactory, HasUuids;
+    /** @use HasFactory<\Database\Factories\SongbookFactory> */
+    use HasFactory;
+    use HasUuids;
 
     protected $fillable = [
         'name',
@@ -36,11 +38,13 @@ class Songbook extends Model
         ];
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\HasMany<Song, $this> */
     public function songs(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Song::class);
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<User, $this> */
     public function creator(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

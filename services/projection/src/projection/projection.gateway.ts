@@ -20,7 +20,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
-import { Server, Socket } from 'socket.io';
+import { Namespace, Server, Socket } from 'socket.io';
 import { SessionsService } from '../sessions/sessions.service';
 import { SessionState } from '../sessions/session.types';
 
@@ -166,6 +166,40 @@ export class ProjectionGateway
     return this.handleControllerMutation(client, (id) =>
       this.sessions.setFontScale(id, body?.scale ?? 1),
     );
+  }
+
+  // ── Takeover (triggered over REST by SessionsController) ─────────────
+
+  /**
+   * Called after a REST takeover rotates the control token. Two effects,
+   * both required:
+   *   1. Downgrade every socket in the room whose CACHED role is
+   *      'controller' back to 'display' — handleControllerMutation checks
+   *      this cached value, not Redis, on every write, so without this the
+   *      deposed client could keep mutating until it reconnects.
+   *   2. Broadcast control-transferred so the deposed client's own UI
+   *      flips to read-only immediately (client-side signal only — the
+   *      revocation above is what actually enforces it).
+   */
+  handleTakeover(sessionId: string, takenByName: string | null): void {
+    // NestJS injects the namespace-scoped Server when `namespace` is set on
+    // @WebSocketGateway — at runtime `this.server` is actually a Socket.IO
+    // Namespace, where `sockets`/`adapter` live directly on it, not nested
+    // under a `.sockets.*` sub-object the way they'd be on the root Server
+    // for the default namespace. The `Server` type doesn't reflect this, so
+    // cast to the real runtime type to reach them.
+    const namespace = this.server as unknown as Namespace;
+    const room = namespace.adapter.rooms.get(sessionId);
+    if (room) {
+      for (const socketId of room) {
+        const sock = namespace.sockets.get(socketId);
+        const data = sock?.data as SocketState | undefined;
+        if (sock && data?.role === 'controller') {
+          sock.data = { ...data, role: 'display' } satisfies SocketState;
+        }
+      }
+    }
+    this.server.to(sessionId).emit('control-transferred', { byName: takenByName });
   }
 
   /**

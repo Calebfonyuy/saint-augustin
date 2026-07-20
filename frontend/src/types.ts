@@ -155,13 +155,31 @@ export interface PlaylistItemSong {
   preview_url?: string | null
 }
 
+export type PlaylistItemType = 'song' | 'scripture'
+
+/** Resolved USFM scripture reference on a scripture playlist item (FR-PL-2). */
+export interface PlaylistItemScripture {
+  translation_id: string | null
+  book_code: string | null
+  start_chapter: number | null
+  start_verse: number | null
+  end_chapter: number | null
+  end_verse: number | null
+  /** Language-neutral label, e.g. "JHN 3:16-4:2". */
+  reference: string | null
+}
+
 export interface PlaylistItem {
   id: string
-  song_id: string
+  /** Discriminator: a `song` item has `song`; a `scripture` item has `scripture`. */
+  item_type: PlaylistItemType
+  /** Null for scripture items. */
+  song_id: string | null
   position: number
   target_key: string | null
   notes: string | null
   song: PlaylistItemSong | null
+  scripture: PlaylistItemScripture | null
 }
 
 export interface Playlist extends PlaylistSummary {
@@ -181,6 +199,64 @@ export interface PlaylistListQuery {
   mine?: boolean
   per_page?: number
   page?: number
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Stage 7 — Bible module (translations, books, reference resolution)
+ * Ref: services/auth/app/Http/Controllers/BibleController.php
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface BibleTranslation {
+  id: string
+  name: string
+  english_name?: string | null
+  language?: string | null
+  language_name?: string | null
+}
+
+export interface BibleSettings {
+  enabled_translations: BibleTranslation[]
+  default_translation_id: string | null
+}
+
+export interface BibleBook {
+  book_code: string
+  name: string
+  chapter_count: number
+}
+
+export interface ScriptureVerse {
+  chapter: number
+  number: number
+  text: string
+}
+
+/** Concrete parsed span returned by resolve, ready to store as an item. */
+export interface ScriptureRef {
+  book_code: string
+  start_chapter: number
+  start_verse: number
+  end_chapter: number
+  end_verse: number
+}
+
+export interface ResolvedScripture {
+  reference_label: string
+  translation_label: string
+  translation_id: string
+  verses: ScriptureVerse[]
+  reference: ScriptureRef
+}
+
+/** Query for GET /bible/resolve — either freeform (`q`) or discrete params. */
+export interface ScriptureQuery {
+  q?: string
+  translation_id?: string | null
+  book_code?: string
+  start_chapter?: number
+  start_verse?: number
+  end_chapter?: number | null
+  end_verse?: number | null
 }
 
 export type ShareMode = 'musician' | 'projection'
@@ -221,6 +297,14 @@ export interface ProjectionSlide {
   songTitle: string
   section: string | null
   body: string
+  /** Parent item kind (FR-PL-2/BI-8); omitted/'song' for song slides. */
+  kind?: 'song' | 'scripture'
+  /** Reference + translation label, shown as a heading on the first slide. */
+  reference?: string | null
+  /** Verses to render on a scripture slide (superscript numbers). */
+  verses?: Array<{ number: number; text: string }>
+  /** True on the first slide of a reading — show the reference heading. */
+  showReference?: boolean
 }
 
 export type ProjectionSessionStatus = 'NOT_STARTED' | 'LIVE' | 'ENDED'

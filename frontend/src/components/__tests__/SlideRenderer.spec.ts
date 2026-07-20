@@ -196,6 +196,37 @@ describe('SlideRenderer', () => {
     expect((w.find('.slide-inner').element as HTMLElement).style.textAlign).toBe('right')
   })
 
+  // ── Scripture rendering (FR-BI-8) ─────────────────────────────────────────────
+
+  function scriptureSlide(over: Partial<ProjectionSlide> = {}): ProjectionSlide {
+    return slide({
+      kind: 'scripture',
+      reference: 'Jean 3:16 · Segond',
+      showReference: true,
+      songTitle: 'Jean 3:16',
+      body: 'Car Dieu a tant aimé le monde',
+      verses: [{ number: 16, text: 'Car Dieu a tant aimé le monde' }],
+      ...over,
+    })
+  }
+
+  it('renders scripture verses with superscript numbers', () => {
+    const w = mount(SlideRenderer, { props: { slide: scriptureSlide() } })
+    expect(w.find('.slide-scripture').exists()).toBe(true)
+    expect(w.find('.slide-verse-num').text()).toBe('16')
+    expect(w.find('.slide-scripture').text()).toContain('Car Dieu a tant aimé le monde')
+    // Song-style line rendering is not used for scripture.
+    expect(w.find('.slide-body').exists()).toBe(false)
+  })
+
+  it('shows the reference heading on the first slide only', () => {
+    const first = mount(SlideRenderer, { props: { slide: scriptureSlide({ showReference: true }) } })
+    expect(first.find('.slide-reference').text()).toBe('Jean 3:16 · Segond')
+
+    const later = mount(SlideRenderer, { props: { slide: scriptureSlide({ showReference: false }) } })
+    expect(later.find('.slide-reference').exists()).toBe(false)
+  })
+
   // ── Font family ─────────────────────────────────────────────────────────────
 
   it('applies a custom font family string', () => {

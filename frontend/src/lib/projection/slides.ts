@@ -21,6 +21,12 @@
 // lines.
 import { CHORD_TOKEN_RE } from '@/lib/chordpro'
 
+/** A single verse on a scripture slide. */
+export interface SlideVerse {
+  number: number
+  text: string
+}
+
 /** Mirror of services/projection/src/sessions/dto/slide.dto.ts. */
 export interface Slide {
   id: string
@@ -29,6 +35,64 @@ export interface Slide {
   songTitle: string
   section: string | null
   body: string
+  /** Parent item kind (FR-PL-2). Omitted/'song' for song slides. */
+  kind?: 'song' | 'scripture'
+  /** Reference + translation label, shown as a heading on the first slide. */
+  reference?: string | null
+  /** Verses to render (scripture slides), with superscript numbers. */
+  verses?: SlideVerse[]
+  /** True on the first slide of a reading — show the reference heading. */
+  showReference?: boolean
+}
+
+/** Rough per-slide character budget for grouping verses (FR-BI-8 auto-fit). */
+const SCRIPTURE_SLIDE_CHAR_BUDGET = 240
+
+/**
+ * Split a resolved reading's verses into projection slides (SRS FR-BI-8).
+ * Verses are grouped greedily under a character budget so each slide stays
+ * legible; the reference label heading shows only on the first slide.
+ */
+export function splitScriptureIntoSlides(args: {
+  itemIndex: number
+  idPrefix: string
+  /** Heading label, e.g. "Jean 3:16 · Segond 1910". */
+  label: string
+  /** Footer/jump-list title, e.g. "Jean 3:16". */
+  title: string
+  verses: Array<{ number: number; text: string }>
+}): Slide[] {
+  const { itemIndex, idPrefix, label, title, verses } = args
+
+  const groups: SlideVerse[][] = []
+  let current: SlideVerse[] = []
+  let currentLen = 0
+
+  for (const v of verses) {
+    const verse = { number: v.number, text: v.text }
+    if (current.length > 0 && currentLen + verse.text.length > SCRIPTURE_SLIDE_CHAR_BUDGET) {
+      groups.push(current)
+      current = []
+      currentLen = 0
+    }
+    current.push(verse)
+    currentLen += verse.text.length
+  }
+  if (current.length > 0) groups.push(current)
+  if (groups.length === 0) groups.push([])
+
+  return groups.map((verseGroup, i) => ({
+    id: `${idPrefix}-${i}`,
+    itemIndex,
+    slideIndex: i,
+    songTitle: title,
+    section: null,
+    body: verseGroup.map((v) => v.text).join(' '),
+    kind: 'scripture' as const,
+    reference: label,
+    verses: verseGroup,
+    showReference: i === 0,
+  }))
 }
 
 /** A directive of the form `{name: value}` or `{name}`. */

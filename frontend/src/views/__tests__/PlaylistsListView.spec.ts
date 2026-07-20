@@ -115,32 +115,41 @@ describe('PlaylistsListView', () => {
     expect(fetchSpy.mock.calls[0][0]?.q).toBe('advent')
   })
 
-  it('routes to the new playlist after create', async () => {
+  it('opens the create modal and routes to the new playlist once it is created', async () => {
     const pinia = createTestingPinia({ stubActions: false, createSpy: vi.fn })
     setActivePinia(pinia)
     const playlists = usePlaylistsStore()
     vi.spyOn(playlists, 'fetchList').mockResolvedValue()
-    const createSpy = vi
-      .spyOn(playlists, 'create')
-      .mockResolvedValue(fullPlaylist('new-id', 'New Playlist'))
 
     const w = mount(PlaylistsListView, {
       global: {
         plugins: [router, pinia],
-        stubs: { AppShell: { template: '<div><slot /></div>' } },
+        stubs: {
+          AppShell: { template: '<div><slot /></div>' },
+          // Stub the modal — it has its own unit test. We only verify the
+          // view opens it and reacts to its `created` event.
+          CreatePlaylistModal: {
+            name: 'CreatePlaylistModal',
+            template: '<div data-testid="create-modal-stub" />',
+            emits: ['created', 'close'],
+          },
+        },
       },
     })
     await flushPromises()
 
-    await w.find('[data-testid="playlists-new-name"]').setValue('New Playlist')
+    expect(w.find('[data-testid="create-modal-stub"]').exists()).toBe(false)
     await w.find('[data-testid="playlists-create"]').trigger('click')
     await flushPromises()
+    expect(w.find('[data-testid="create-modal-stub"]').exists()).toBe(true)
 
-    expect(createSpy).toHaveBeenCalledWith({
-      name: 'New Playlist',
-      event_date: null,
-      tags: [],
-    })
+    // Simulate the modal reporting a newly-created playlist.
+    w.findComponent({ name: 'CreatePlaylistModal' }).vm.$emit(
+      'created',
+      fullPlaylist('new-id', 'New Playlist'),
+    )
+    await flushPromises()
+
     expect(router.currentRoute.value.path).toBe('/playlists/new-id')
   })
 

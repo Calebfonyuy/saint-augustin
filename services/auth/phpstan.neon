@@ -5,4 +5,3 @@ parameters:
     paths:
         - app/
     level: 6
-    checkMissingIterableValueType: false

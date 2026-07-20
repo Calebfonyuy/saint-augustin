@@ -3,9 +3,10 @@
 // Two creation modes:
 //   • TEMPORARY  — legacy path. Slides are required, session immediately
 //                  enters LIVE state, controlToken returned right away.
-//   • PERSISTENT — slides are optional (can be loaded later via the
-//                  /sessions/:id/load endpoint). Session enters NOT_STARTED.
-//                  A name is required; scheduledStart/End are optional.
+//   • PERSISTENT — the default when `kind` is omitted. Slides are optional
+//                  (can be loaded later via the /sessions/:id/load
+//                  endpoint). Session enters NOT_STARTED, no TTL. `name`
+//                  is optional too — falls back to playlistName.
 //
 // The service generates the sessionId and (on start) the controlToken that
 // gates write events on the WebSocket gateway.
@@ -25,7 +26,7 @@ import { SlideDto } from './slide.dto';
 import { SessionKind } from '../session.types';
 
 export class CreateSessionDto {
-  /** TEMPORARY (default) or PERSISTENT. */
+  /** TEMPORARY or PERSISTENT (default when omitted). */
   @IsOptional()
   @IsEnum(['TEMPORARY', 'PERSISTENT'])
   kind?: SessionKind;

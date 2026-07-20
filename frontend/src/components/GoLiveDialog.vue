@@ -1,11 +1,15 @@
 <script setup lang="ts">
-// Go-Live dialog — the worship leader's launch surface for projecting a
-// playlist. Three modes:
+// Go-Live dialog — the worship leader's launch surface for projecting either
+// a playlist or a single song (exactly one of the `playlist`/`song` props is
+// passed). Three modes:
 //   1. Temporary       — fire-and-forget session that dies on exit (legacy).
 //   2. Existing session — pick any session the caller can manage (their own,
 //                         or any session if they're an admin), push this
-//                         playlist's slides into it, and start it if it
-//                         isn't already LIVE.
+//                         playlist's/song's slides into it, and start it if
+//                         it isn't already LIVE. If it's already LIVE, the
+//                         caller lands on the controller in view-only mode
+//                         with the existing "Take control" affordance
+//                         available (no separate takeover step here).
 //   3. Persistent      — create a named/scheduled session, load the slides
 //                         into it, and (optionally) start projecting now.
 //
@@ -17,18 +21,21 @@ import Icon from './Icon.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useProjectionStore } from '@/stores/projection'
 import { extractErrorMessage } from '@/api/client'
-import type { Playlist } from '@/types'
-
-const { t } = useI18n()
+import type { Playlist, Song } from '@/types'
 
 const props = defineProps<{
-  playlist: Playlist
+  /** Provide exactly one of `playlist` / `song`. */
+  playlist?: Playlist
+  song?: Song
   open: boolean
 }>()
+
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'launched', sessionId: string): void
 }>()
+
+const { t } = useI18n()
 
 const auth = useAuthStore()
 const projection = useProjectionStore()
@@ -48,6 +55,9 @@ const startNow = ref(true)
 // Form state for "existing live" mode
 const selectedSessionId = ref<string>('')
 
+/** The display name of whichever source (playlist or song) was passed. */
+const sourceName = computed(() => props.playlist?.name ?? props.song?.title ?? '')
+
 /**
  * Any session the caller can push slides into:
  *   • Admins can manage any non-ENDED session.
@@ -64,7 +74,7 @@ const availableSessions = computed(() =>
 )
 
 onMounted(async () => {
-  sessionName.value = props.playlist.name
+  sessionName.value = sourceName.value
   try {
     // Admins need everyone's sessions; non-admins only ever see their own.
     await projection.fetchSessions({ mine: !auth.isAdmin })
@@ -78,12 +88,28 @@ function toIso(local: string): string | undefined {
   return new Date(local).toISOString()
 }
 
+/** Exactly one of `playlist`/`song` is provided — resolve the song safely
+ *  when we're not in playlist mode, instead of a non-null assertion. */
+function requiredSong(): Song {
+  if (!props.song) throw new Error('GoLiveDialog: no playlist or song was provided')
+  return props.song
+}
+
+/** Push this dialog's source (playlist or song) into an existing session. */
+async function loadSourceInto(sessionId: string): Promise<unknown> {
+  return props.playlist
+    ? projection.loadPlaylistInto(sessionId, props.playlist)
+    : projection.loadSongInto(sessionId, requiredSong())
+}
+
 async function onLaunch(): Promise<void> {
   error.value = null
   busy.value = true
   try {
     if (mode.value === 'temporary') {
-      const created = await projection.createFromPlaylist(props.playlist)
+      const created = props.playlist
+        ? await projection.createFromPlaylist(props.playlist)
+        : await projection.createFromSong(requiredSong())
       emit('launched', created.sessionId)
       return
     }
@@ -95,7 +121,7 @@ async function onLaunch(): Promise<void> {
       // Push slides first so the session is start-ready, then start it
       // if it's still NOT_STARTED. Already-LIVE sessions just take the
       // new deck and keep going.
-      await projection.loadPlaylistInto(selectedSessionId.value, props.playlist)
+      await loadSourceInto(selectedSessionId.value)
       const chosen = availableSessions.value.find(
         (s) => s.id === selectedSessionId.value,
       )
@@ -106,16 +132,16 @@ async function onLaunch(): Promise<void> {
       return
     }
     // persistent
-    const name = sessionName.value.trim() || props.playlist.name
+    const name = sessionName.value.trim() || sourceName.value
     const created = await projection.createPersistent({
       name,
-      playlistName: props.playlist.name,
-      playlistId: props.playlist.id,
+      playlistName: sourceName.value,
+      playlistId: props.playlist?.id,
       scheduledStartAt: toIso(startAt.value),
       scheduledEndAt: toIso(endAt.value),
     })
     // Attach the slides now so the session is start-ready.
-    await projection.loadPlaylistInto(created.sessionId, props.playlist)
+    await loadSourceInto(created.sessionId)
     if (startNow.value) {
       const started = await projection.startPersistent(created.sessionId)
       emit('launched', started.sessionId)
@@ -210,7 +236,7 @@ async function onLaunch(): Promise<void> {
           <p
             v-else-if="
               selectedSessionId &&
-              availableSessions.find((s) => s.id === selectedSessionId)?.status ===
+                availableSessions.find((s) => s.id === selectedSessionId)?.status ===
                 'NOT_STARTED'
             "
             class="text-[11px] text-text-faint"

@@ -3,15 +3,13 @@
  * Shared header bar for the admin section: title, tab strip, optional CTA.
  * Mirrors the prototype's admin layout (proto-screens.jsx — AdminScreen).
  *
- * The Settings tab is still a placeholder (no screen yet). Tabs without a
- * `to` are rendered disabled so the navigation chrome stays stable as
+ * The Settings tab points at the Bible settings page (Stage 7). Tabs without
+ * a `to` are rendered disabled so the navigation chrome stays stable as
  * later phases land.
  */
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-
-const { t } = useI18n()
 
 defineProps<{
   /** Active tab id — controls underline and text color. */
@@ -21,6 +19,8 @@ defineProps<{
   /** Subtitle hint shown after the title. */
   subtitle?: string
 }>()
+
+const { t } = useI18n()
 
 const router = useRouter()
 
@@ -34,7 +34,7 @@ const tabs = computed<Tab[]>(() => [
   { id: 'users', label: t('admin.tabs.users'), to: '/admin/users' },
   { id: 'songbooks', label: t('admin.tabs.songbooks'), to: '/admin/songbooks' },
   { id: 'import', label: t('admin.tabs.import'), to: '/admin/import' },
-  { id: 'settings', label: t('admin.tabs.settings') },
+  { id: 'settings', label: t('admin.tabs.settings'), to: '/admin/bible' },
 ])
 
 function goTab(tab: Tab): void {

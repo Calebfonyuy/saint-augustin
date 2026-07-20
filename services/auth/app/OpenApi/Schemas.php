@@ -236,16 +236,33 @@ use OpenApi\Attributes as OA;
     type: 'object',
 )]
 #[OA\Schema(
+    schema: 'PlaylistItemScripture',
+    description: 'Resolved USFM scripture reference embedded inside a scripture playlist item. `reference` is the language-neutral label; the localized book name is applied by the Bible module.',
+    required: ['book_code', 'start_chapter', 'start_verse'],
+    properties: [
+        new OA\Property(property: 'translation_id', type: 'string', nullable: true, example: 'BSB', description: 'Bible translation id (HelloAO). Null falls back to the workspace default at render time.'),
+        new OA\Property(property: 'book_code', type: 'string', example: 'JHN', description: 'USFM book code.'),
+        new OA\Property(property: 'start_chapter', type: 'integer', example: 3),
+        new OA\Property(property: 'start_verse', type: 'integer', example: 16),
+        new OA\Property(property: 'end_chapter', type: 'integer', nullable: true, example: 4, description: 'End chapter for a cross-chapter range; null for a single chapter.'),
+        new OA\Property(property: 'end_verse', type: 'integer', nullable: true, example: 2, description: 'End verse of the range; null for a single verse.'),
+        new OA\Property(property: 'reference', type: 'string', example: 'JHN 3:16-4:2', description: 'Composed USFM-style label.'),
+    ],
+    type: 'object',
+)]
+#[OA\Schema(
     schema: 'PlaylistItem',
-    description: 'A single song slot within a playlist.',
-    required: ['id', 'song_id', 'position'],
+    description: 'A single slot within a playlist. Polymorphic: a `song` item carries a `song` block; a `scripture` item carries a `scripture` block.',
+    required: ['id', 'item_type', 'position'],
     properties: [
         new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-        new OA\Property(property: 'song_id', type: 'string', format: 'uuid'),
+        new OA\Property(property: 'item_type', type: 'string', enum: ['song', 'scripture'], example: 'song', description: 'Discriminator. Determines whether `song` or `scripture` is populated.'),
+        new OA\Property(property: 'song_id', type: 'string', format: 'uuid', nullable: true, description: 'Null for scripture items.'),
         new OA\Property(property: 'position', type: 'integer', example: 0, description: 'Zero-based position within the playlist.'),
-        new OA\Property(property: 'target_key', type: 'string', nullable: true, example: 'D', description: "Transpose target key for this performance. Overrides the song's original_key."),
+        new OA\Property(property: 'target_key', type: 'string', nullable: true, example: 'D', description: "Transpose target key for this performance (song items only). Overrides the song's original_key."),
         new OA\Property(property: 'notes', type: 'string', nullable: true, example: 'Start with just piano.'),
         new OA\Property(property: 'song', nullable: true, ref: '#/components/schemas/PlaylistItemSong'),
+        new OA\Property(property: 'scripture', nullable: true, ref: '#/components/schemas/PlaylistItemScripture'),
     ],
     type: 'object',
 )]
@@ -330,22 +347,36 @@ use OpenApi\Attributes as OA;
 )]
 #[OA\Schema(
     schema: 'PlaylistItemInput',
-    description: 'Payload for adding a song to a playlist.',
-    required: ['song_id'],
+    description: 'Payload for adding an item to a playlist. `item_type` (default `song`) selects the shape: a `song` item requires `song_id`; a `scripture` item requires `book_code`, `start_chapter`, and `start_verse`. Fields belonging to the other type are ignored.',
     properties: [
-        new OA\Property(property: 'song_id', type: 'string', format: 'uuid', description: 'ID of the song to add.'),
+        new OA\Property(property: 'item_type', type: 'string', enum: ['song', 'scripture'], default: 'song', description: 'Item discriminator.'),
         new OA\Property(property: 'position', type: 'integer', nullable: true, example: 2, description: 'Zero-based insertion index. Defaults to end of list; subsequent items shift down.'),
-        new OA\Property(property: 'target_key', type: 'string', nullable: true, example: 'D', description: "Transpose target key (e.g. C, Am, F#). Overrides the song's original_key for this slot."),
         new OA\Property(property: 'notes', type: 'string', nullable: true, example: 'Start with just piano.'),
+        // Song shape
+        new OA\Property(property: 'song_id', type: 'string', format: 'uuid', description: 'Required for a song item. ID of the song to add.'),
+        new OA\Property(property: 'target_key', type: 'string', nullable: true, example: 'D', description: 'Song items only. Transpose target key (e.g. C, Am, F#).'),
+        // Scripture shape
+        new OA\Property(property: 'translation_id', type: 'string', nullable: true, example: 'BSB', description: 'Scripture items only. Optional translation id.'),
+        new OA\Property(property: 'book_code', type: 'string', example: 'JHN', description: 'Required for a scripture item. USFM book code.'),
+        new OA\Property(property: 'start_chapter', type: 'integer', example: 3, description: 'Required for a scripture item.'),
+        new OA\Property(property: 'start_verse', type: 'integer', example: 16, description: 'Required for a scripture item.'),
+        new OA\Property(property: 'end_chapter', type: 'integer', nullable: true, example: 4, description: 'Scripture items only. End chapter for a cross-chapter range.'),
+        new OA\Property(property: 'end_verse', type: 'integer', nullable: true, example: 2, description: 'Scripture items only. End verse; required when end_chapter is given.'),
     ],
     type: 'object',
 )]
 #[OA\Schema(
     schema: 'PlaylistItemUpdateInput',
-    description: 'Partial update for a playlist item. Only `target_key` and `notes` are editable after insertion.',
+    description: 'Partial update for a playlist item. `item_type` is fixed at creation. For a song item, `target_key` and `notes` are editable; for a scripture item, the reference fields and `notes` are editable.',
     properties: [
-        new OA\Property(property: 'target_key', type: 'string', nullable: true, example: 'Am'),
         new OA\Property(property: 'notes', type: 'string', nullable: true, example: 'Capo 2.'),
+        new OA\Property(property: 'target_key', type: 'string', nullable: true, example: 'Am', description: 'Song items only.'),
+        new OA\Property(property: 'translation_id', type: 'string', nullable: true, example: 'BSB', description: 'Scripture items only.'),
+        new OA\Property(property: 'book_code', type: 'string', example: 'JHN', description: 'Scripture items only.'),
+        new OA\Property(property: 'start_chapter', type: 'integer', example: 3, description: 'Scripture items only.'),
+        new OA\Property(property: 'start_verse', type: 'integer', example: 16, description: 'Scripture items only.'),
+        new OA\Property(property: 'end_chapter', type: 'integer', nullable: true, description: 'Scripture items only.'),
+        new OA\Property(property: 'end_verse', type: 'integer', nullable: true, description: 'Scripture items only.'),
     ],
     type: 'object',
 )]
@@ -458,4 +489,6 @@ use OpenApi\Attributes as OA;
     ],
     type: 'object',
 )]
-class Schemas {}
+class Schemas
+{
+}

@@ -22,6 +22,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppShell from '@/components/AppShell.vue'
 import AdminTabs from '@/components/admin/AdminTabs.vue'
+import StaugPanel from '@/components/admin/StaugPanel.vue'
 import Icon from '@/components/Icon.vue'
 import Toast from '@/components/Toast.vue'
 import {
@@ -232,6 +233,9 @@ function startOver(): void {
             {{ t('adminImport.maxSize') }}
           </div>
         </div>
+
+        <!-- STAUG interchange (import a signed archive / queue a full export) -->
+        <StaugPanel @notify="({ kind, message }) => notify(kind, message)" />
       </section>
 
       <!-- Stage 3: post-import success card -->

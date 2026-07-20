@@ -241,7 +241,7 @@
     "fullName": "Full name",
     "fullNamePlaceholder": "e.g. Jonah Pereira",
     "email": "Email",
-    "emailPlaceholder": "name@staug.app",
+    "emailPlaceholder": "name{'@'}staug.app",
     "emailHint": "The email is the user's primary identifier and cannot be changed here.",
     "rolesHint": "Pick one or more. An Admin can manage users, songbooks, and settings.",
     "roles": {
@@ -258,7 +258,9 @@
     "resendWithRoles": "Resend with new roles",
     "saveChanges": "Save changes",
     "confirmCancelInvite": "Cancel this invitation? The link will stop working.",
-    "confirmDelete": "Remove {email} from the workspace? They will lose access."
+    "confirmDelete": "Remove {email} from the workspace? They will lose access.",
+    "cantRemoveSelf": "You can't remove your own account. Ask another admin to do it.",
+    "cantRemoveOwnAdminRole": "You can't remove your own admin role. Ask another admin to do it."
   },
   "dashboard": {
     "welcome": "{greeting}, {name}.",
@@ -286,12 +288,36 @@
     "noMatches": "No songs match your search.",
     "switchMusician": "Switch to musician view",
     "projectSong": "Project song",
-    "starting": "Starting…",
+    "addToPlaylistAction": "Add to playlist",
     "selectToPreview": "Select a song to preview",
+    "addToPlaylist": {
+      "added": "Added to \"{name}\".",
+      "already": "Already in \"{name}\"."
+    },
     "errors": {
       "load": "Failed to load songs.",
       "project": "Could not start projection."
     }
+  },
+  "createPlaylist": {
+    "title": "New playlist",
+    "nameLabel": "Name",
+    "namePlaceholder": "Sunday 9:30 — Advent II",
+    "dateLabel": "Event date",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "Add a tag…",
+    "tagsHint": "Press Enter or comma to add a tag.",
+    "removeTag": "Remove tag {tag}",
+    "nameRequired": "Give the playlist a name.",
+    "error": "Could not create playlist."
+  },
+  "addToPlaylist": {
+    "title": "Add to playlist",
+    "searchPlaceholder": "Search your playlists…",
+    "newPlaylist": "New playlist",
+    "empty": "No playlists yet — create one.",
+    "errorLoad": "Could not load playlists.",
+    "errorAdd": "Could not add the song."
   },
   "songEditor": {
     "createSong": "Create song",
@@ -358,6 +384,7 @@
     "searchPlaceholder": "Search by name or tag…",
     "tagFilterPlaceholder": "Filter by tag",
     "onlyMine": "Only mine",
+    "newPlaylist": "New playlist",
     "newName": "New playlist name",
     "newNamePlaceholder": "Sunday 9:30 — Advent II",
     "eventDate": "Event date",
@@ -391,7 +418,13 @@
     "export": "Export",
     "exportPdf": "PDF",
     "exportText": "Plain text",
+    "exportStaug": "STAUG archive",
     "addSongs": "Add songs",
+    "alreadyAdded": "\"{name}\" is already in this playlist.",
+    "scripture": "Scripture",
+    "scriptureReading": "Scripture reading",
+    "addReading": "Add reading",
+    "readingAdded": "Added \"{ref}\".",
     "pickerPlaceholder": "Search the library…",
     "noSongsMatch": "No songs match.",
     "emptyPart1": "Drag songs in from the right, or click the",
@@ -490,10 +523,15 @@
     "fullscreenTip": "Fullscreen (F)",
     "exitFullscreenTip": "Exit fullscreen (F)",
     "confirmEnd": "End this projection session? Displays will disconnect.",
+    "takeControl": "Take control",
+    "confirmTakeover": "Take control of this session? The current controller will be switched to view-only.",
+    "reclaimedBanner": "Reconnected — you're back in control.",
+    "takenOverNotice": "Another device has taken control of this session. You're now in view-only mode.",
     "errors": {
       "copy": "Could not copy — long-press the link instead.",
       "connect": "Could not connect to the projection session.",
-      "end": "Could not end session."
+      "end": "Could not end session.",
+      "takeover": "Could not take control of this session."
     }
   },
   "projectionDisplay": {
@@ -566,6 +604,67 @@
       "resend": "Could not resend invitation.",
       "cancelInvite": "Could not cancel invitation.",
       "resetLink": "Could not send reset link."
+    }
+  },
+  "addReading": {
+    "title": "Add a scripture reading",
+    "translation": "Translation",
+    "modeFreeform": "Type reference",
+    "modePicker": "Pick book",
+    "freeformPlaceholder": "e.g. Jean 3:16-4:2",
+    "preview": "Preview",
+    "resolving": "Resolving…",
+    "add": "Add reading",
+    "range": "Range",
+    "to": "to",
+    "unconfigured": "No Bible translations are enabled yet. An admin can enable them under Administration → Settings.",
+    "errors": {
+      "empty": "Enter a reference first.",
+      "resolve": "Could not resolve that reference.",
+      "add": "Could not add the reading."
+    }
+  },
+  "bibleSettings": {
+    "subtitle": "Bible translations",
+    "title": "Bible translations",
+    "intro": "Enable the translations your team uses and choose a default. Scripture text is fetched on demand from a public-domain source and never stored.",
+    "none": "No translations are available right now.",
+    "default": "Default",
+    "saved": "Bible settings saved.",
+    "errors": {
+      "load": "Could not load Bible settings.",
+      "save": "Could not save Bible settings."
+    }
+  },
+  "staug": {
+    "title": "STAUG interchange",
+    "intro": "STAUG is SaintAugustin's signed archive format for moving content between instances. Import a signed archive (existing songs are never overwritten), or queue a full-library export.",
+    "import": {
+      "title": "Import a STAUG archive",
+      "choose": "Choose archive…",
+      "parsing": "Verifying…",
+      "create": "{n} to create",
+      "skip": "{n} already present",
+      "conflict": "{n} conflicts (imported as new)",
+      "commit": "Import",
+      "importing": "Importing…",
+      "another": "Import another"
+    },
+    "result": "Imported {created} · skipped {skipped} · {conflicted} conflicts.",
+    "export": {
+      "title": "Full library export",
+      "hint": "Builds a signed archive of every song and songbook. You'll get an email with a download link when it's ready.",
+      "action": "Export full library",
+      "queuing": "Queuing…"
+    },
+    "toast": {
+      "imported": "Imported {created}, skipped {skipped}, {conflicted} conflicts.",
+      "exportQueued": "Export queued — you'll get an email with the download link."
+    },
+    "errors": {
+      "preview": "Could not read the archive. Is it a valid signed STAUG file?",
+      "import": "Import failed.",
+      "export": "Could not start the export."
     }
   },
   "adminImport": {
@@ -648,5 +747,10 @@
       "profileUpdated": "Profile updated.",
       "passwordChanged": "Password changed. Other devices have been signed out."
     }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "The page you're looking for doesn't exist or has moved.",
+    "backHome": "Back to dashboard"
   }
 }

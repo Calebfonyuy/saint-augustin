@@ -20,7 +20,8 @@ final readonly class ImportResult
         public int $skipped,
         public int $total,
         public array $songbooks,
-    ) {}
+    ) {
+    }
 
     /** @return array<string, mixed> */
     public function toArray(): array

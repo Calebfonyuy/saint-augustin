@@ -21,8 +21,7 @@ use Illuminate\Support\Facades\Schema;
  * stay in playlists by design — the editor will surface a "(deleted)"
  * badge but the item row keeps its slot.
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('playlist_items', function (Blueprint $table) {

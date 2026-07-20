@@ -23,7 +23,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Invitation extends Model
 {
-    use HasFactory, HasUuids;
+    /** @use HasFactory<\Database\Factories\InvitationFactory> */
+    use HasFactory;
+    use HasUuids;
 
     protected $fillable = [
         'email',
@@ -45,6 +47,7 @@ class Invitation extends Model
 
     // ── Relationships ─────────────────────────────────────────────────
 
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<User, $this> */
     public function invitedBy(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by');

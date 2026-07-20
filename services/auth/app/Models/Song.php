@@ -30,7 +30,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Song extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    /** @use HasFactory<\Database\Factories\SongFactory> */
+    use HasFactory;
+    use HasUuids;
+    use SoftDeletes;
 
     protected $fillable = [
         'title',
@@ -58,16 +61,19 @@ class Song extends Model
 
     // ── Relationships ─────────────────────────────────────────────────
 
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<Songbook, $this> */
     public function songbook(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Songbook::class);
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<User, $this> */
     public function creator(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\HasMany<SongSheet, $this> */
     public function sheets(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(SongSheet::class)->orderByDesc('created_at');

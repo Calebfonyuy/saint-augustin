@@ -18,14 +18,23 @@
 //   POST   /sessions/:id/end       End a LIVE session. Owner or admin only.
 //   POST   /sessions/:id/load      Attach / replace the slide deck. Owner or
 //                                  admin only.
+//   POST   /sessions/:id/reclaim   Re-confirm a previously-issued control
+//                                  token still works, without rotating it.
+//                                  Body: { token }. Auth required (token
+//                                  possession is the actual authority check).
+//   POST   /sessions/:id/takeover  Force-rotate the control token and
+//                                  revoke any connected controller sockets.
+//                                  Owner or admin only.
 //   DELETE /sessions/:id           Delete the session. Owner or admin only.
 
 import {
   Body,
   Controller,
   Delete,
+  forwardRef,
   Get,
   HttpCode,
+  Inject,
   Param,
   Post,
   Query,
@@ -34,13 +43,19 @@ import {
 import { AuthGuard } from '../auth/auth.guard';
 import { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { ProjectionGateway } from '../projection/projection.gateway';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { LoadSlidesDto } from './dto/load-slides.dto';
+import { ReclaimSessionDto } from './dto/reclaim-session.dto';
 import { SessionsService } from './sessions.service';
 
 @Controller('sessions')
 export class SessionsController {
-  constructor(private readonly sessions: SessionsService) {}
+  constructor(
+    private readonly sessions: SessionsService,
+    @Inject(forwardRef(() => ProjectionGateway))
+    private readonly gateway: ProjectionGateway,
+  ) {}
 
   @Post()
   @HttpCode(201)
@@ -97,6 +112,21 @@ export class SessionsController {
   ) {
     const state = await this.sessions.loadSlides(id, user, dto);
     return { state };
+  }
+
+  @Post(':id/reclaim')
+  @UseGuards(AuthGuard)
+  async reclaim(@Param('id') id: string, @Body() dto: ReclaimSessionDto) {
+    const state = await this.sessions.reclaim(id, dto.token);
+    return { sessionId: state.id, controlToken: dto.token, state };
+  }
+
+  @Post(':id/takeover')
+  @UseGuards(AuthGuard)
+  async takeover(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    const { state, controlToken } = await this.sessions.takeover(id, user);
+    this.gateway.handleTakeover(id, user.display_name);
+    return { sessionId: state.id, controlToken, state };
   }
 
   @Delete(':id')

@@ -25,9 +25,14 @@
  * Connection lifecycle:
  *   • If the projection store already holds the controlToken (we just
  *     came from "Go Live") we connect as controller immediately.
- *   • If the page was reloaded and we lost the in-memory token, we
- *     connect as a read-only display so the leader still sees state,
- *     and a banner tells them to start a new session from the builder.
+ *   • Otherwise, we first try to reclaim control using a token persisted
+ *     in localStorage from an earlier visit (projection.tryReclaim) — if
+ *     that succeeds a dismissible "reconnected" banner appears.
+ *   • If neither applies, we connect as a read-only display. An
+ *     owner/admin viewing a LIVE session this way sees a "Take control"
+ *     button; using it rotates the control token and force-demotes the
+ *     previous controller (which sees a "taken over" banner in real time
+ *     via the control-transferred socket event).
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -37,15 +42,25 @@ import Icon from '@/components/Icon.vue'
 import SlideRenderer from '@/components/SlideRenderer.vue'
 import Toast from '@/components/Toast.vue'
 import { useProjectionStore } from '@/stores/projection'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const projection = useProjectionStore()
+const auth = useAuthStore()
 const { t } = useI18n()
 
 const sessionId = computed(() => route.params.id as string)
 const error = ref<string | null>(null)
 const isFullscreen = ref(false)
+const reclaimedNotice = ref(false)
+
+const canTakeover = computed(
+  () =>
+    projection.role !== 'controller' &&
+    projection.state?.status === 'LIVE' &&
+    (auth.isAdmin || projection.state?.ownerId === auth.user?.id),
+)
 
 const displayUrl = computed(() => {
   if (!sessionId.value) return ''
@@ -137,12 +152,17 @@ onMounted(async () => {
     projection.sessionId === sessionId.value &&
     projection.state?.id === sessionId.value
   if (!alreadyConnected) {
-    const result = await projection.connect({
-      sessionId: sessionId.value,
-      controlToken: projection.controlToken ?? undefined,
-    })
-    if (!result.ok) {
-      error.value = result.error || t('projectionControl.errors.connect')
+    const { reclaimed } = await projection.tryReclaim(sessionId.value)
+    if (reclaimed) {
+      reclaimedNotice.value = true
+    } else {
+      const result = await projection.connect({
+        sessionId: sessionId.value,
+        controlToken: projection.controlToken ?? undefined,
+      })
+      if (!result.ok) {
+        error.value = result.error || t('projectionControl.errors.connect')
+      }
     }
   }
 })
@@ -161,6 +181,15 @@ async function endSession(): Promise<void> {
     await router.push('/sessions')
   } catch (err) {
     error.value = err instanceof Error ? err.message : t('projectionControl.errors.end')
+  }
+}
+
+async function takeoverSession(): Promise<void> {
+  if (!confirm(t('projectionControl.confirmTakeover'))) return
+  try {
+    await projection.takeover(sessionId.value)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : t('projectionControl.errors.takeover')
   }
 }
 </script>
@@ -201,6 +230,15 @@ async function endSession(): Promise<void> {
             <Icon name="cast" /> {{ t('projectionControl.openDisplay') }}
           </a>
           <button
+            v-if="canTakeover"
+            type="button"
+            class="btn btn-danger"
+            data-testid="projection-takeover"
+            @click="takeoverSession"
+          >
+            {{ t('projectionControl.takeControl') }}
+          </button>
+          <button
             v-if="projection.role === 'controller'"
             type="button"
             class="btn btn-danger"
@@ -212,9 +250,25 @@ async function endSession(): Promise<void> {
         </div>
       </div>
 
-      <!-- ── View-only banner ──────────────────────────────────────── -->
+      <!-- ── Banners (mutually exclusive, most-specific first) ─────── -->
       <div
-        v-if="projection.role !== 'controller'"
+        v-if="projection.takenOver"
+        class="px-6 py-2 bg-bg-sunken text-[12px] text-danger border-b border-border flex items-center justify-between"
+        data-testid="ctrl-takenover-banner"
+      >
+        <span>{{ t('projectionControl.takenOverNotice') }}</span>
+        <button type="button" class="text-text-faint hover:text-text-muted" @click="projection.dismissTakenOver()">✕</button>
+      </div>
+      <div
+        v-else-if="reclaimedNotice"
+        class="px-6 py-2 bg-accent-soft text-[12px] text-accent border-b border-border flex items-center justify-between"
+        data-testid="ctrl-reclaimed-banner"
+      >
+        <span>{{ t('projectionControl.reclaimedBanner') }}</span>
+        <button type="button" class="text-text-faint hover:text-text-muted" @click="reclaimedNotice = false">✕</button>
+      </div>
+      <div
+        v-else-if="projection.role !== 'controller'"
         class="px-6 py-2 bg-bg-sunken text-[12px] text-text-muted border-b border-border"
         data-testid="ctrl-viewonly-banner"
       >

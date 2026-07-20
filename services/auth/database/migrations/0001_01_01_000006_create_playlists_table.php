@@ -20,8 +20,7 @@ use Illuminate\Support\Facades\Schema;
  * `tags` is a JSONB array (mirrors songs.tags) so we can reuse the same
  * `whereJsonContains` filtering pattern.
  */
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('playlists', function (Blueprint $table) {

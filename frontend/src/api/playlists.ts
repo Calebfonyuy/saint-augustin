@@ -51,7 +51,7 @@ export async function duplicatePlaylist(id: string, name?: string): Promise<Play
  * uses the apiClient for blob retrieval and saves via an anchor. */
 export async function downloadPlaylistExport(
   id: string,
-  format: 'pdf' | 'txt',
+  format: 'pdf' | 'txt' | 'staug',
 ): Promise<{ blob: Blob; filename: string }> {
   const response = await apiClient.get<Blob>(`/playlists/${id}/export`, {
     params: { format },
@@ -60,26 +60,51 @@ export async function downloadPlaylistExport(
 
   const dispo = (response.headers['content-disposition'] as string | undefined) ?? ''
   const match = /filename="?([^"]+)"?/.exec(dispo)
-  const filename = match?.[1] ?? `playlist.${format}`
+  const ext = format === 'staug' ? 'staug.zip' : format
+  const filename = match?.[1] ?? `playlist.${ext}`
 
   return { blob: response.data, filename }
 }
 
 // ── Playlist items ───────────────────────────────────────────────────
 
-export interface AddItemInput {
+export interface SongItemInput {
+  item_type?: 'song'
   song_id: string
   position?: number
   target_key?: string | null
   notes?: string | null
 }
 
+/** A scripture reading item (Stage 7). The backend accepts this shape on
+ *  POST /playlists/{id}/items (Stage 5). */
+export interface ScriptureItemInput {
+  item_type: 'scripture'
+  translation_id?: string | null
+  book_code: string
+  start_chapter: number
+  start_verse: number
+  end_chapter?: number | null
+  end_verse?: number | null
+  position?: number
+  notes?: string | null
+}
+
+export type AddItemInput = SongItemInput | ScriptureItemInput
+
+/** Result of adding a song. `created` is false when the song was already in
+ *  the playlist and the server returned the existing item as a no-op (200). */
+export interface AddItemResult {
+  item: PlaylistItem
+  created: boolean
+}
+
 export async function addPlaylistItem(
   playlistId: string,
   input: AddItemInput,
-): Promise<PlaylistItem> {
-  const { data } = await apiClient.post<PlaylistItem>(`/playlists/${playlistId}/items`, input)
-  return data
+): Promise<AddItemResult> {
+  const res = await apiClient.post<PlaylistItem>(`/playlists/${playlistId}/items`, input)
+  return { item: res.data, created: res.status === 201 }
 }
 
 export async function updatePlaylistItem(

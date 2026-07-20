@@ -5,10 +5,12 @@ import type { Playlist, PlaylistItem, Song } from '@/types'
 function item(over: Partial<PlaylistItem> = {}): PlaylistItem {
   return {
     id: 'item-1',
+    item_type: 'song',
     song_id: 'song-1',
     position: 0,
     target_key: null,
     notes: null,
+    scripture: null,
     song: {
       id: 'song-1',
       title: 'Amazing Grace',
@@ -44,6 +46,11 @@ const failingFetch = vi.fn(
     throw new Error(`unexpected fetch for ${id}`)
   },
 )
+
+/** A scripture resolver that always fails — exercises the offline fallback. */
+const failingScripture = vi.fn(async (): Promise<never> => {
+  throw new Error('scripture resolution unavailable')
+})
 
 describe('buildSlidesForPlaylist', () => {
   it('flattens items into slides ordered by playlist position', async () => {
@@ -91,10 +98,12 @@ describe('buildSlidesForPlaylist', () => {
     // construct that shape to verify the build falls back to a fetch.
     const slim: PlaylistItem = {
       id: 'a',
+      item_type: 'song',
       song_id: 'song-1',
       position: 0,
       target_key: null,
       notes: null,
+      scripture: null,
       song: {
         id: 'song-1',
         title: 'Slim Stub',
@@ -140,10 +149,12 @@ describe('buildSlidesForPlaylist', () => {
   it('de-dupes fetches when the same song appears twice in a playlist', async () => {
     const slim = (id: string): PlaylistItem => ({
       id,
+      item_type: 'song',
       song_id: 'song-1',
       position: id === 'first' ? 0 : 1,
       target_key: null,
       notes: null,
+      scripture: null,
       song: {
         id: 'song-1',
         title: 'Slim',
@@ -300,5 +311,113 @@ describe('buildSlidesForPlaylist', () => {
     const slides = await buildSlidesForPlaylist(pl, { fetchSong: failingFetch })
     const indexes = [...new Set(slides.map((s) => s.itemIndex))]
     expect(indexes).toEqual([0, 1])
+  })
+
+  it('falls back to a single placeholder slide when resolution fails (offline)', async () => {
+    const scriptureItem = item({
+      id: 'read-1',
+      item_type: 'scripture',
+      song_id: null,
+      song: null,
+      scripture: {
+        translation_id: 'BSB',
+        book_code: 'JHN',
+        start_chapter: 3,
+        start_verse: 16,
+        end_chapter: 4,
+        end_verse: 2,
+        reference: 'JHN 3:16-4:2',
+      },
+    })
+    const pl = playlist([scriptureItem])
+
+    const slides = await buildSlidesForPlaylist(pl, {
+      fetchSong: failingFetch,
+      fetchScripture: failingScripture,
+    })
+
+    expect(slides).toHaveLength(1)
+    expect(slides[0]).toMatchObject({
+      itemIndex: 0,
+      slideIndex: 0,
+      kind: 'scripture',
+      reference: 'JHN 3:16-4:2',
+      songTitle: 'JHN 3:16-4:2',
+      body: 'JHN 3:16-4:2',
+      showReference: true,
+    })
+  })
+
+  it('resolves scripture verses via fetchScripture (pre-fetch) and renders them', async () => {
+    const scriptureItem = item({
+      id: 'read-1',
+      position: 0,
+      item_type: 'scripture',
+      song_id: null,
+      song: null,
+      scripture: {
+        translation_id: 'LSG',
+        book_code: 'JHN',
+        start_chapter: 3,
+        start_verse: 16,
+        end_chapter: 3,
+        end_verse: 17,
+        reference: 'Jean 3:16-17',
+      },
+    })
+    const fetchScripture = vi.fn(async () => ({
+      reference_label: 'Jean 3:16-17',
+      translation_label: 'Segond',
+      translation_id: 'LSG',
+      verses: [
+        { chapter: 3, number: 16, text: 'a' },
+        { chapter: 3, number: 17, text: 'b' },
+      ],
+      reference: { book_code: 'JHN', start_chapter: 3, start_verse: 16, end_chapter: 3, end_verse: 17 },
+    }))
+
+    const slides = await buildSlidesForPlaylist(playlist([scriptureItem]), {
+      fetchSong: failingFetch,
+      fetchScripture,
+    })
+
+    expect(fetchScripture).toHaveBeenCalledTimes(1)
+    expect(slides[0].kind).toBe('scripture')
+    expect(slides[0].verses).toHaveLength(2)
+    expect(slides[0].reference).toBe('Jean 3:16-17 · Segond')
+    expect(slides[0].showReference).toBe(true)
+  })
+
+  it('interleaves song and scripture slides in playlist order', async () => {
+    const fetchScripture = vi.fn(async () => ({
+      reference_label: 'Psaume 23',
+      translation_label: 'Segond',
+      translation_id: 'LSG',
+      verses: [{ chapter: 23, number: 1, text: "L'Éternel est mon berger" }],
+      reference: { book_code: 'PSA', start_chapter: 23, start_verse: 1, end_chapter: 23, end_verse: 1 },
+    }))
+    const pl = playlist([
+      item({ id: 'song-a', position: 0 }),
+      item({
+        id: 'read-1',
+        position: 1,
+        item_type: 'scripture',
+        song_id: null,
+        song: null,
+        scripture: {
+          translation_id: 'LSG',
+          book_code: 'PSA',
+          start_chapter: 23,
+          start_verse: 1,
+          end_chapter: null,
+          end_verse: null,
+          reference: 'Psaume 23',
+        },
+      }),
+    ])
+
+    const slides = await buildSlidesForPlaylist(pl, { fetchSong: failingFetch, fetchScripture })
+    const kindsByItem = [0, 1].map((idx) => slides.find((s) => s.itemIndex === idx)?.kind)
+    expect(kindsByItem).toEqual(['song', 'scripture'])
   })
 })

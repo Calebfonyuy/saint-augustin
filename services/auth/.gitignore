@@ -5,6 +5,10 @@
 /.env.production
 /storage/*.key
 /storage/logs/*.log
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/views/
+/storage/framework/testing/
 /bootstrap/cache/*.php
 /.phpunit.result.cache
 /phpunit.xml

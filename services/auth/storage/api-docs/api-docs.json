@@ -249,6 +249,241 @@
                 ]
             }
         },
+        "/bible/settings": {
+            "get": {
+                "tags": [
+                    "Bible"
+                ],
+                "summary": "Get the workspace Bible settings",
+                "description": "Returns the enabled translations and the default translation id. Any authenticated user.",
+                "operationId": "3326f77a7038ab8230e0b41ea415dfe2",
+                "responses": {
+                    "200": {
+                        "description": "Settings"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Bible"
+                ],
+                "summary": "Save the workspace Bible settings (admin)",
+                "description": "Persists the enabled translations + default and repopulates the book-structure cache. Requires the `admin` role.",
+                "operationId": "7ef12c081949ffe9b700bb3cd216edb1",
+                "responses": {
+                    "200": {
+                        "description": "Saved"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "502": {
+                        "description": "Bible API unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/bible/books": {
+            "get": {
+                "tags": [
+                    "Bible"
+                ],
+                "summary": "List a translation's books (from the structure cache)",
+                "description": "Returns the localized book names + chapter counts for the picker. `translation` defaults to the workspace default.",
+                "operationId": "c7792700596be6d3f48c8dff6c5d03a2",
+                "parameters": [
+                    {
+                        "name": "translation",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book list"
+                    },
+                    "422": {
+                        "description": "No translation"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/bible/resolve": {
+            "get": {
+                "tags": [
+                    "Bible"
+                ],
+                "summary": "Resolve a scripture reference to its verses",
+                "description": "Accepts either a freeform reference (`q`, e.g. \"Jean 3:16-4:2\") or discrete params (`book_code`, `start_chapter`, `start_verse`, and optional `end_chapter`/`end_verse`). `translation_id` defaults to the workspace default. Returns the localized label, translation label, and the verse list. Warms the Redis chapter cache (projection pre-fetch).",
+                "operationId": "8efe36f1e3ee7bca9ed329fc2ef99ebc",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "translation_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "book_code",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "start_chapter",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start_verse",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Resolved verses"
+                    },
+                    "422": {
+                        "description": "Unparseable/invalid reference or no translation"
+                    },
+                    "502": {
+                        "description": "Bible API unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/bible/translations/available": {
+            "get": {
+                "tags": [
+                    "Bible"
+                ],
+                "summary": "List available Bible translations (admin)",
+                "description": "Proxies HelloAO available_translations, filtered to the configured languages (incl. French). Requires the `admin` role.",
+                "operationId": "ccef61f8b69279cc8086bb99d3716250",
+                "responses": {
+                    "200": {
+                        "description": "Available translations"
+                    },
+                    "502": {
+                        "description": "Bible API unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/exports/full": {
+            "post": {
+                "tags": [
+                    "Exports"
+                ],
+                "summary": "Queue a full-library STAUG export",
+                "description": "Queues a background job that builds a signed STAUG archive of every song and songbook and emails the requesting admin a 48h presigned download link. Only one full export may run at a time — a concurrent request returns 409. Requires the `admin` role.",
+                "operationId": "71f9058a2617ac3e1f5d96972d2988b5",
+                "responses": {
+                    "202": {
+                        "description": "Export queued",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Export queued."
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "queued"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An export is already in progress",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/auth/invitations": {
             "get": {
                 "tags": [
@@ -1276,7 +1511,8 @@
                             "default": "pdf",
                             "enum": [
                                 "pdf",
-                                "txt"
+                                "txt",
+                                "staug"
                             ]
                         }
                     }
@@ -1350,7 +1586,7 @@
                     "Playlist Items"
                 ],
                 "summary": "Add a song to a playlist",
-                "description": "Inserts a song into the playlist at the given position (defaults to end). Subsequent items shift down by one. Requires ownership or the `admin` role.",
+                "description": "Inserts a song into the playlist at the given position (defaults to end). Subsequent items shift down by one. If the song is already in the playlist, nothing is inserted and the existing item is returned with 200. Requires ownership or the `admin` role.",
                 "operationId": "1f9ed3c17c71d18538589f6a41b39bba",
                 "parameters": [
                     {
@@ -1374,6 +1610,16 @@
                     }
                 },
                 "responses": {
+                    "200": {
+                        "description": "Song already in the playlist — the existing item is returned unchanged (no-op)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlaylistItem"
+                                }
+                            }
+                        }
+                    },
                     "201": {
                         "description": "Item added",
                         "content": {
@@ -3162,6 +3408,87 @@
                 ]
             }
         },
+        "/songbooks/{id}/export": {
+            "get": {
+                "tags": [
+                    "Songbooks"
+                ],
+                "summary": "Export a songbook as a STAUG archive",
+                "description": "Downloads a signed STAUG ZIP containing the songbook and every song in it. Any authenticated user may export a songbook they can see.",
+                "operationId": "d02a54df57f6cf19fee36038ec8f4fbc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "staug",
+                            "enum": [
+                                "staug"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "STAUG archive download",
+                        "content": {
+                            "application/zip": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Songbook not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Unsupported format",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/auth/status": {
             "get": {
                 "tags": [
@@ -3196,6 +3523,203 @@
                         }
                     }
                 }
+            }
+        },
+        "/imports/staug": {
+            "post": {
+                "tags": [
+                    "Imports"
+                ],
+                "summary": "Import (or preview) a signed STAUG archive",
+                "description": "Accepts a multipart upload of a `.staug`/`.zip` archive. The manifest signature is verified first — an invalid or unsigned archive returns 422 without writing anything. With `dry_run=true` the response lists the per-song action (create/skip/conflict). Committing is strictly non-destructive: existing songs are matched by id + title and never overwritten. Requires the `admin` role.",
+                "operationId": "0994d04412dfff1dff3ebc948ac4281a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "description": "The signed STAUG ZIP archive.",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "dry_run": {
+                                        "description": "If true, only preview the per-song actions; nothing is persisted.",
+                                        "type": "boolean",
+                                        "default": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Preview (dry run) — per-song action and per-songbook counts.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "example": "playlist"
+                                        },
+                                        "songs": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "action": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "create",
+                                                            "skip",
+                                                            "conflict"
+                                                        ]
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "songbooks": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Import committed — created/skipped/conflicted counts.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "created": {
+                                            "type": "integer"
+                                        },
+                                        "skipped": {
+                                            "type": "integer"
+                                        },
+                                        "conflicted": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        },
+                                        "songbooks": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin role required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "File missing/too large, or the archive is invalid or unsigned",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/tags": {
+            "get": {
+                "tags": [
+                    "Tags"
+                ],
+                "summary": "List all tags in use",
+                "description": "Returns the sorted, distinct union of tags used on songs and playlists. Soft-deleted songs are excluded. Any authenticated user may call this; it backs the tag autocomplete on playlist and song forms.",
+                "operationId": "8767fe41ed2e75df7ce6f99c8aeb47cb",
+                "responses": {
+                    "200": {
+                        "description": "Distinct tag list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "example": [
+                                                "advent",
+                                                "communion",
+                                                "easter"
+                                            ]
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/users": {
@@ -3991,11 +4515,58 @@
                 },
                 "type": "object"
             },
+            "PlaylistItemScripture": {
+                "description": "Resolved USFM scripture reference embedded inside a scripture playlist item. `reference` is the language-neutral label; the localized book name is applied by the Bible module.",
+                "required": [
+                    "book_code",
+                    "start_chapter",
+                    "start_verse"
+                ],
+                "properties": {
+                    "translation_id": {
+                        "description": "Bible translation id (HelloAO). Null falls back to the workspace default at render time.",
+                        "type": "string",
+                        "example": "BSB",
+                        "nullable": true
+                    },
+                    "book_code": {
+                        "description": "USFM book code.",
+                        "type": "string",
+                        "example": "JHN"
+                    },
+                    "start_chapter": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "start_verse": {
+                        "type": "integer",
+                        "example": 16
+                    },
+                    "end_chapter": {
+                        "description": "End chapter for a cross-chapter range; null for a single chapter.",
+                        "type": "integer",
+                        "example": 4,
+                        "nullable": true
+                    },
+                    "end_verse": {
+                        "description": "End verse of the range; null for a single verse.",
+                        "type": "integer",
+                        "example": 2,
+                        "nullable": true
+                    },
+                    "reference": {
+                        "description": "Composed USFM-style label.",
+                        "type": "string",
+                        "example": "JHN 3:16-4:2"
+                    }
+                },
+                "type": "object"
+            },
             "PlaylistItem": {
-                "description": "A single song slot within a playlist.",
+                "description": "A single slot within a playlist. Polymorphic: a `song` item carries a `song` block; a `scripture` item carries a `scripture` block.",
                 "required": [
                     "id",
-                    "song_id",
+                    "item_type",
                     "position"
                 ],
                 "properties": {
@@ -4003,9 +4574,20 @@
                         "type": "string",
                         "format": "uuid"
                     },
-                    "song_id": {
+                    "item_type": {
+                        "description": "Discriminator. Determines whether `song` or `scripture` is populated.",
                         "type": "string",
-                        "format": "uuid"
+                        "example": "song",
+                        "enum": [
+                            "song",
+                            "scripture"
+                        ]
+                    },
+                    "song_id": {
+                        "description": "Null for scripture items.",
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
                     },
                     "position": {
                         "description": "Zero-based position within the playlist.",
@@ -4013,7 +4595,7 @@
                         "example": 0
                     },
                     "target_key": {
-                        "description": "Transpose target key for this performance. Overrides the song's original_key.",
+                        "description": "Transpose target key for this performance (song items only). Overrides the song's original_key.",
                         "type": "string",
                         "example": "D",
                         "nullable": true
@@ -4027,6 +4609,14 @@
                         "oneOf": [
                             {
                                 "$ref": "#/components/schemas/PlaylistItemSong"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "scripture": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/PlaylistItemScripture"
                             }
                         ],
                         "nullable": true
@@ -4232,15 +4822,16 @@
                 "type": "object"
             },
             "PlaylistItemInput": {
-                "description": "Payload for adding a song to a playlist.",
-                "required": [
-                    "song_id"
-                ],
+                "description": "Payload for adding an item to a playlist. `item_type` (default `song`) selects the shape: a `song` item requires `song_id`; a `scripture` item requires `book_code`, `start_chapter`, and `start_verse`. Fields belonging to the other type are ignored.",
                 "properties": {
-                    "song_id": {
-                        "description": "ID of the song to add.",
+                    "item_type": {
+                        "description": "Item discriminator.",
                         "type": "string",
-                        "format": "uuid"
+                        "default": "song",
+                        "enum": [
+                            "song",
+                            "scripture"
+                        ]
                     },
                     "position": {
                         "description": "Zero-based insertion index. Defaults to end of list; subsequent items shift down.",
@@ -4248,31 +4839,101 @@
                         "example": 2,
                         "nullable": true
                     },
+                    "notes": {
+                        "type": "string",
+                        "example": "Start with just piano.",
+                        "nullable": true
+                    },
+                    "song_id": {
+                        "description": "Required for a song item. ID of the song to add.",
+                        "type": "string",
+                        "format": "uuid"
+                    },
                     "target_key": {
-                        "description": "Transpose target key (e.g. C, Am, F#). Overrides the song's original_key for this slot.",
+                        "description": "Song items only. Transpose target key (e.g. C, Am, F#).",
                         "type": "string",
                         "example": "D",
                         "nullable": true
                     },
-                    "notes": {
+                    "translation_id": {
+                        "description": "Scripture items only. Optional translation id.",
                         "type": "string",
-                        "example": "Start with just piano.",
+                        "example": "BSB",
+                        "nullable": true
+                    },
+                    "book_code": {
+                        "description": "Required for a scripture item. USFM book code.",
+                        "type": "string",
+                        "example": "JHN"
+                    },
+                    "start_chapter": {
+                        "description": "Required for a scripture item.",
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "start_verse": {
+                        "description": "Required for a scripture item.",
+                        "type": "integer",
+                        "example": 16
+                    },
+                    "end_chapter": {
+                        "description": "Scripture items only. End chapter for a cross-chapter range.",
+                        "type": "integer",
+                        "example": 4,
+                        "nullable": true
+                    },
+                    "end_verse": {
+                        "description": "Scripture items only. End verse; required when end_chapter is given.",
+                        "type": "integer",
+                        "example": 2,
                         "nullable": true
                     }
                 },
                 "type": "object"
             },
             "PlaylistItemUpdateInput": {
-                "description": "Partial update for a playlist item. Only `target_key` and `notes` are editable after insertion.",
+                "description": "Partial update for a playlist item. `item_type` is fixed at creation. For a song item, `target_key` and `notes` are editable; for a scripture item, the reference fields and `notes` are editable.",
                 "properties": {
+                    "notes": {
+                        "type": "string",
+                        "example": "Capo 2.",
+                        "nullable": true
+                    },
                     "target_key": {
+                        "description": "Song items only.",
                         "type": "string",
                         "example": "Am",
                         "nullable": true
                     },
-                    "notes": {
+                    "translation_id": {
+                        "description": "Scripture items only.",
                         "type": "string",
-                        "example": "Capo 2.",
+                        "example": "BSB",
+                        "nullable": true
+                    },
+                    "book_code": {
+                        "description": "Scripture items only.",
+                        "type": "string",
+                        "example": "JHN"
+                    },
+                    "start_chapter": {
+                        "description": "Scripture items only.",
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "start_verse": {
+                        "description": "Scripture items only.",
+                        "type": "integer",
+                        "example": 16
+                    },
+                    "end_chapter": {
+                        "description": "Scripture items only.",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "end_verse": {
+                        "description": "Scripture items only.",
+                        "type": "integer",
                         "nullable": true
                     }
                 },
@@ -4556,6 +5217,14 @@
             "description": "Login, logout, and token refresh endpoints."
         },
         {
+            "name": "Bible",
+            "description": "Bible translations, books, and reference resolution."
+        },
+        {
+            "name": "Exports",
+            "description": "Bulk library exports."
+        },
+        {
             "name": "Invitations",
             "description": "Admin-issued invitation management and invitation-based user registration."
         },
@@ -4589,7 +5258,11 @@
         },
         {
             "name": "Songbooks",
-            "description": "Songbook (song collection) management."
+            "description": "Songbook CRUD and export."
+        },
+        {
+            "name": "Tags",
+            "description": "Cross-entity tag suggestions for autocomplete."
         },
         {
             "name": "Users",

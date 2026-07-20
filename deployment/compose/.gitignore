@@ -1,0 +1,4 @@
+# Populated production env (with secrets) must never land in the repo.
+# The committed template is .env.prod.example.
+.env.prod
+.env.prod.local

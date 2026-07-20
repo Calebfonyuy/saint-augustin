@@ -11,12 +11,14 @@ import type { Role, User } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
-  // Hydrate the token synchronously from localStorage on store creation so the
-  // router's beforeEach guard sees `isAuthenticated` as true on a hard refresh
-  // — otherwise the initial navigation runs before App.vue's onMounted has had
-  // a chance to call init(), and the user gets bounced to /login on every reload.
+  // Hydrate the token synchronously from localStorage on store creation so
+  // `isAuthenticated` is correct immediately on a hard refresh, before
+  // init()/ready() has resolved. Role-dependent checks (isAdmin,
+  // canEditSongs) still need `user`, which only init() populates — the
+  // router guard awaits ready() for those.
   const token = ref<string | null>(getStoredToken())
   const initializing = ref(false)
+  let initPromise: Promise<void> | null = null
 
   const isAuthenticated = computed(() => !!token.value)
   const hasRole = (r: Role) => computed(() => user.value?.roles.includes(r) ?? false)
@@ -81,6 +83,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Idempotent auth bootstrap — safe to call from multiple places (main.ts,
+   * the router guard) during one page load. Returns the same in-flight/
+   * settled promise every time so /auth/refresh only fires once. Resolves
+   * (never rejects) immediately when there's no stored token.
+   */
+  function ready(): Promise<void> {
+    if (!initPromise) {
+      initPromise = init()
+    }
+    return initPromise
+  }
+
   return {
     user,
     token,
@@ -94,6 +109,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     clearLocal,
     init,
+    ready,
     updateProfile,
   }
 })

@@ -1,0 +1,295 @@
+# =============================================================================
+# SaintAugustin — Production Docker Compose (single-node)
+#
+# A lightweight, single-host production deployment alternative to Kubernetes
+# (see ../kubernetes/). Distinct from the repo-root docker-compose.yml, which
+# is for local development (build contexts, permissive defaults).
+#
+# Differences from the dev compose:
+#   • Pinned image tags only — no build contexts. Images are pulled from the
+#     registry; build + push them first (see README.md / docs/SETUP.md).
+#   • APP_VERSION is REQUIRED (fail-closed) — no `:latest` fallback.
+#   • Secrets are REQUIRED via the `${VAR:?...}` form — no insecure inline
+#     defaults. Copy .env.prod.example → .env.prod and fill it in.
+#   • Health checks + `restart: unless-stopped` on every long-running service.
+#   • Postgres and Redis are NOT published to the host (internal network only).
+#
+# Usage:
+#   cp .env.prod.example .env.prod        # then edit — set every REPLACE_ME
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# Ref: https://docs.docker.com/compose/compose-file/
+# =============================================================================
+
+services:
+
+  # ===========================================================================
+  # INFRASTRUCTURE
+  # ===========================================================================
+
+  postgres:
+    image: postgres:16.14-alpine
+    container_name: staug-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      # Consumed by docker/postgres/init-databases.sh to create the auth DB.
+      DB_AUTH_NAME: ${DB_AUTH_NAME:-saintaugustin_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    # Internal only — not published to the host.
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: staug-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: staug-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
+    volumes:
+      - minio_data:/data
+    ports:
+      # S3 API — must be reachable by browsers for presigned song-sheet URLs.
+      - "${MINIO_API_PORT:-9000}:9000"
+      # Web console — restrict or drop the publish in a locked-down install.
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:9000/minio/health/live || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # One-shot: create the bucket, expose the public/ prefix, and set the
+  # exports/ lifecycle rule (48h) so full-DB export objects auto-expire in
+  # step with the 48h presigned link the export job emails. Mirrors the
+  # Kubernetes minio-init Job in ../kubernetes/05_minio.yaml.
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    container_name: staug-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
+      MINIO_BUCKET: ${MINIO_BUCKET:-saintaugustin}
+    entrypoint: >
+      /bin/sh -c "
+        set -eu;
+        until mc alias set local http://minio:9000 \"$$MINIO_ROOT_USER\" \"$$MINIO_ROOT_PASSWORD\" >/dev/null 2>&1; do
+          echo 'waiting for minio...'; sleep 2;
+        done;
+        mc mb --ignore-existing \"local/$$MINIO_BUCKET\";
+        mc anonymous set download \"local/$$MINIO_BUCKET/public\" || true;
+        mc ilm rule add \"local/$$MINIO_BUCKET\" --expire-days 2 --prefix 'exports/' \
+          || mc ilm add --expiry-days 2 --prefix 'exports/' \"local/$$MINIO_BUCKET\" \
+          || echo 'warning: could not set exports/ lifecycle rule';
+        echo '>>> bucket ready (exports/ auto-expire after 2 days).';
+      "
+    restart: "no"
+
+  # ===========================================================================
+  # BACKEND SERVICES
+  # ===========================================================================
+
+  # One-shot schema migration + seed. Runs to completion before the API and
+  # worker start (mirrors the Kubernetes auth-migrate Job). Re-running on a
+  # redeploy is safe: `migrate` is idempotent and the seeders are guarded.
+  migrate:
+    image: calebfonyuy/staug-api:${APP_VERSION:?APP_VERSION must be set (e.g. 0.2)}
+    container_name: staug-migrate
+    working_dir: /var/www/html
+    command: ["/bin/sh", "-c", "php artisan migrate --force && php artisan db:seed --force"]
+    environment: &auth-service-env
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_NAME: ${APP_NAME:-SaintAugustin}
+      APP_KEY: ${APP_KEY:?APP_KEY must be set (php artisan key:generate --show)}
+      APP_URL: ${APP_URL:?APP_URL must be set}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:?APP_FRONTEND_URL must be set}
+      APP_PROJECTION_URL: ${APP_PROJECTION_URL:-}
+      # Database
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: ${DB_AUTH_NAME:-saintaugustin_db}
+      DB_USERNAME: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      # Redis — cache + queue + session
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      CACHE_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      SESSION_DRIVER: redis
+      # Auth
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      # STAUG data-interchange archive signing (HMAC). DR-critical.
+      STAUG_SIGNING_KEY: ${STAUG_SIGNING_KEY:?STAUG_SIGNING_KEY must be set}
+      # Bible module — HelloAO Free Use Bible API (public domain, no key)
+      BIBLE_API_BASE: ${BIBLE_API_BASE:-https://bible.helloao.org/api}
+      # Object storage (MinIO). MINIO_ENDPOINT must be browser-reachable for
+      # presigned song-sheet / export URLs.
+      FILESYSTEM_DISK: minio
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:?MINIO_ENDPOINT must be set (browser-reachable)}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
+      MINIO_BUCKET: ${MINIO_BUCKET:-saintaugustin}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      SONG_SHEET_URL_TTL: ${SONG_SHEET_URL_TTL:-15}
+      # Upload caps (MB)
+      UPLOAD_IMPORT_MAX_MB: ${UPLOAD_IMPORT_MAX_MB:-100}
+      UPLOAD_SHEET_MAX_MB: ${UPLOAD_SHEET_MAX_MB:-10}
+      # Mail
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_HOST: ${MAIL_HOST:?MAIL_HOST must be set}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SCHEME: ${MAIL_SCHEME:-tls}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@saintaugustin.local}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-SaintAugustin}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  auth-service:
+    image: calebfonyuy/staug-api:${APP_VERSION:?APP_VERSION must be set (e.g. 0.2)}
+    container_name: staug-api
+    restart: unless-stopped
+    working_dir: /var/www/html
+    environment: *auth-service-env
+    ports:
+      - "${AUTH_SERVICE_PORT:-8000}:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Background job processor — required for queued jobs (e.g. the STAUG
+  # full-DB export). Shares the auth image + env; runs queue:work instead of
+  # serving HTTP. Without it, dispatched jobs sit in Redis and never run.
+  queue-worker:
+    image: calebfonyuy/staug-api:${APP_VERSION:?APP_VERSION must be set (e.g. 0.2)}
+    container_name: staug-queue-worker
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: ["php", "artisan", "queue:work", "redis", "--tries=3", "--backoff=5", "--sleep=3"]
+    environment: *auth-service-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  projection-service:
+    image: calebfonyuy/staug-projection:${APP_VERSION:?APP_VERSION must be set (e.g. 0.2)}
+    container_name: staug-projection
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-14400}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:?AUTH_SERVICE_URL must be set (internal auth URL)}
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "${PROJECTION_SERVICE_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ===========================================================================
+  # FRONTEND
+  # ===========================================================================
+
+  frontend:
+    image: calebfonyuy/staug-frontend:${APP_VERSION:?APP_VERSION must be set (e.g. 0.2)}
+    container_name: staug-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    environment:
+      # Injected into /app/config.js at container start (see frontend/entrypoint.sh).
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:?VITE_API_BASE_URL must be set}
+      VITE_WS_URL: ${VITE_WS_URL:?VITE_WS_URL must be set}
+      VITE_PROJECTION_BASE_URL: ${VITE_PROJECTION_BASE_URL:?VITE_PROJECTION_BASE_URL must be set}
+    depends_on:
+      - auth-service
+      - projection-service
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+
+volumes:
+  postgres_data:
+    name: staug_postgres_data
+    driver: local
+  redis_data:
+    name: staug_redis_data
+    driver: local
+  minio_data:
+    name: staug_minio_data
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+
+networks:
+  default:
+    name: staug-prod-network
+    driver: bridge
