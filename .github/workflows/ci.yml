@@ -97,7 +97,7 @@ jobs:
           extensions: pdo_pgsql, redis, mbstring, zip, intl
           tools: composer:v2
 
-      - run: composer install --no-interaction --prefer-dist
+      - run: composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction --no-progress
       - run: vendor/bin/pint --test
       - run: vendor/bin/phpstan analyse
       - run: vendor/bin/pest

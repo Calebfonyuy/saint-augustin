@@ -8,13 +8,6 @@ FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
 
-# Create storage directories for Laravel to avoid composer exit code 1 errors when running artisan commands in the next stage.
-RUN mkdir -p storage/framework/cache/data \
-    && mkdir -p storage/framework/sessions \
-    && mkdir -p storage/framework/views \
-    && mkdir -p storage/logs \
-    && mkdir -p bootstrap/cache
-
 RUN composer install \
         --no-dev \
         --no-scripts \
