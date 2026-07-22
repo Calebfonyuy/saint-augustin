@@ -23,10 +23,10 @@ Required environment variables:
 
 | Variable | Purpose | Example |
 |---|---|---|
-| `VITE_API_BASE_URL` | Base URL for REST API calls | `http://localhost:8080/api` |
-| `VITE_WS_URL` | Socket.IO server URL for projection | `http://localhost:8080` |
+| `API_BASE_URL` | Base URL for REST API calls | `http://localhost:8080/api` |
+| `PROJECTION_WS_URL` | Socket.IO server URL for projection | `http://localhost:8080` |
 
-`VITE_API_BASE_URL` should point at the Nginx gateway (port 8080), not at individual services. The gateway routes `/api/auth/*`, `/api/songs`, etc. to the right service internally.
+`API_BASE_URL` should point at the Nginx gateway (port 8080), not at individual services. The gateway routes `/api/auth/*`, `/api/songs`, etc. to the right service internally.
 
 Install dependencies:
 

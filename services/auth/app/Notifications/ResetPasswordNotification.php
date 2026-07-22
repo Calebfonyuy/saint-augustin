@@ -8,7 +8,7 @@ use Illuminate\Notifications\Notification;
 /**
  * Sends the password-reset link to the user's email.
  *
- * The reset URL points to the frontend app (APP_FRONTEND_URL), not the API,
+ * The reset URL points to the frontend app (FRONTEND_URL), not the API,
  * so the user lands on the Vue reset-password page with token and email
  * pre-filled as query parameters.
  *

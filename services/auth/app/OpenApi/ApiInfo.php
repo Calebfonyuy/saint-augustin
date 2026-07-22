@@ -17,7 +17,7 @@ use OpenApi\Attributes as OA;
     description: 'Authentication, user management, and role assignment for the SaintAugustin worship platform.',
     contact: new OA\Contact(
         name: 'SaintAugustin',
-        email: 'admin@saintaugustin.local',
+        email: 'saintaugustin@suuynyuy.com',
     ),
 )]
 #[OA\Server(

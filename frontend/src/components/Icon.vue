@@ -21,6 +21,8 @@ defineProps<{
     | 'logout'
     | 'arrow-left'
     | 'arrow-right'
+    | 'chevrons-left'
+    | 'chevrons-right'
     | 'menu'
   size?: number
 }>()
@@ -99,6 +101,14 @@ defineProps<{
     </template>
     <template v-else-if="name === 'arrow-right'">
       <path d="M3 8h10M10 5l3 3-3 3" />
+    </template>
+    <template v-else-if="name === 'chevrons-left'">
+      <path d="M8 4L4 8l4 4" />
+      <path d="M13 4L9 8l4 4" />
+    </template>
+    <template v-else-if="name === 'chevrons-right'">
+      <path d="M3 4l4 4-4 4" />
+      <path d="M8 4l4 4-4 4" />
     </template>
     <template v-else-if="name === 'menu'">
       <path d="M2 4h12M2 8h12M2 12h12" />

@@ -155,6 +155,27 @@ test('per_page caps at 100', function () {
         ->assertJsonValidationErrors(['per_page']);
 });
 
+test('per_page rejects non-numeric values other than "all"', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->getJson('/api/songs?per_page=lots')
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['per_page']);
+});
+
+test('per_page=all returns every matching song unpaginated', function () {
+    Song::factory()->count(5)->create();
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->getJson('/api/songs?per_page=all')
+        ->assertOk()
+        ->assertJsonCount(5, 'data')
+        ->assertJsonPath('meta.current_page', 1)
+        ->assertJsonPath('meta.last_page', 1)
+        ->assertJsonPath('meta.total', 5)
+        ->assertJsonPath('meta.per_page', 5);
+});
+
 // ── show ─────────────────────────────────────────────────────────────
 
 test('show returns a single song', function () {

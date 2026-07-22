@@ -24,7 +24,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 ROOT_ENV = ROOT / ".env"
-AUTH_ENV = ROOT / "services" / "auth" / ".env"
 
 # PASSWORD_ALPHABET = string.ascii_letters + string.digits + "!@#$%^&*"
 PASSWORD_ALPHABET = string.ascii_letters + string.digits
@@ -77,11 +76,6 @@ def apply_secrets(write: bool) -> None:
     root_content = set_env_value(root_content, "MINIO_ROOT_PASSWORD", minio_password)
     root_content = set_env_value(root_content, "APP_KEY", laravel_app_key)
 
-    # ── services/auth/.env ────────────────────────────────────────────────────
-    auth_content = load(AUTH_ENV)
-    auth_content = set_env_value(auth_content, "APP_KEY", laravel_app_key)
-    auth_content = set_env_value(auth_content, "DB_PASSWORD", postgres_password)
-
     # ── Output ────────────────────────────────────────────────────────────────
     print("Generated secrets:")
     print(f"  POSTGRES_PASSWORD   = {postgres_password}")
@@ -91,9 +85,7 @@ def apply_secrets(write: bool) -> None:
 
     if write:
         save(ROOT_ENV, root_content)
-        save(AUTH_ENV, auth_content)
         print(f"Written: {ROOT_ENV}")
-        print(f"Written: {AUTH_ENV}")
     else:
         print("Dry-run mode — pass --write to apply changes.")
 

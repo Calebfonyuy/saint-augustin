@@ -13,7 +13,7 @@
 
 return [
 
-    'default' => env('FILESYSTEM_DISK', 'local'),
+    'default' => env('FILESYSTEM_DISK', 'minio'),
 
     'disks' => [
 
@@ -36,15 +36,26 @@ return [
         // MinIO does not support virtual-hosted–style buckets out of the box.
         'minio' => [
             'driver'                  => 's3',
-            'key'                     => env('MINIO_ACCESS_KEY', env('MINIO_ROOT_USER', 'minioadmin')),
-            'secret'                  => env('MINIO_SECRET_KEY', env('MINIO_ROOT_PASSWORD', 'minioadmin_changeme')),
-            'region'                  => env('MINIO_REGION', 'us-east-1'),
-            'bucket'                  => env('MINIO_BUCKET', 'saintaugustin'),
-            'endpoint'                => env('MINIO_ENDPOINT', 'http://minio:9000'),
+            'key'                     => env('AWS_ACCESS_KEY_ID', env('MINIO_ROOT_USER', 'minioadmin')),
+            'secret'                  => env('AWS_SECRET_ACCESS_KEY', env('MINIO_ROOT_PASSWORD', 'minioadmin_changeme')),
+            'region'                  => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'bucket'                  => env('AWS_BUCKET', 'saintaugustin'),
+            'endpoint'                => env('AWS_ENDPOINT', 'http://minio:9000'),
             'use_path_style_endpoint' => true,
             'throw'                   => true,
         ],
 
+        // AWS S3 (optional). If you want to use a real S3 bucket instead of MinIO,
+        // set the following env vars and use `FILESYSTEM_DISK=s3` in .env.
+        's3' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'url' => env('AWS_URL'),
+            'endpoint' => env('AWS_ENDPOINT'),
+        ],
     ],
 
     'links' => [

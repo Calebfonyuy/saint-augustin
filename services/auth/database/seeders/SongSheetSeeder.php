@@ -59,7 +59,7 @@ class SongSheetSeeder extends Seeder
             return;
         }
 
-        $disk = Storage::disk('minio');
+        $disk = Storage::disk(config('filesystems.default'));
         $this->ensureBucketExists($disk);
         $uploaderId = User::where('email', 'admin@saintaugustin.local')->value('id');
 

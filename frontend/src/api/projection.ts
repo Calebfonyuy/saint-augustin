@@ -18,7 +18,7 @@ import type {
 } from '@/types'
 
 const PROJECTION_BASE_URL =
-  window.config?.VITE_PROJECTION_BASE_URL || 'http://localhost:3000'
+  window.config?.PROJECTION_URL || 'http://localhost:3000'
 const BASE = '/sessions'
 
 const projectionClient: AxiosInstance = axios.create({

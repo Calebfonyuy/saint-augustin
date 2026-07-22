@@ -155,7 +155,7 @@ class SongSheetController
         $key = sprintf('song-sheets/%s/%s.%s', $song->id, (string) Str::uuid(), $extension);
 
         // Stream the upload into MinIO. Storage::putFileAs returns the path on success.
-        Storage::disk('minio')->putFileAs(
+        Storage::disk(config('filesystems.default'))->putFileAs(
             dirname($key),
             $upload,
             basename($key),

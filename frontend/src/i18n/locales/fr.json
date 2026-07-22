@@ -294,6 +294,16 @@
       "added": "Ajouté à « {name} ».",
       "already": "Déjà dans « {name} »."
     },
+    "pagination": {
+      "perPageLabel": "Chants par page",
+      "all": "Tous",
+      "firstPage": "Première page",
+      "previousPage": "Page précédente",
+      "nextPage": "Page suivante",
+      "lastPage": "Dernière page",
+      "pageOf": "Page {page} sur {last}",
+      "allCount": "Tous les {count} chants"
+    },
     "errors": {
       "load": "Échec du chargement des chants.",
       "project": "Impossible de démarrer la projection."

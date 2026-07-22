@@ -35,13 +35,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       # Consumed by docker/postgres/init-databases.sh to create the auth DB.
-      DB_AUTH_NAME: ${DB_AUTH_NAME:-saintaugustin_db}
+      POSTGRES_DB_NAME: ${POSTGRES_DB_NAME:-saintaugustin_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ../../docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+      - ./init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
     # Internal only — not published to the host.
     expose:
-      - "5432"
+      - "${POSTGRES_PORT:-5432}"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
@@ -56,7 +56,7 @@ services:
     volumes:
       - redis_data:/data
     expose:
-      - "6379"
+      - "${REDIS_PORT:-6379}"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -69,8 +69,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:?MINIO_ROOT_USER must be set}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:?MINIO_ROOT_PASSWORD must be set}
     volumes:
       - minio_data:/data
     ports:
@@ -95,19 +95,19 @@ services:
       minio:
         condition: service_healthy
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
-      MINIO_BUCKET: ${MINIO_BUCKET:-saintaugustin}
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:?MINIO_ROOT_USER must be set}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:?MINIO_ROOT_PASSWORD must be set}
+      AWS_BUCKET: ${AWS_BUCKET:-saintaugustin}
     entrypoint: >
       /bin/sh -c "
         set -eu;
-        until mc alias set local http://minio:9000 \"$$MINIO_ROOT_USER\" \"$$MINIO_ROOT_PASSWORD\" >/dev/null 2>&1; do
+        until mc alias set local http://minio:9000 \"$$AWS_ACCESS_KEY_ID\" \"$$AWS_SECRET_ACCESS_KEY\" >/dev/null 2>&1; do
           echo 'waiting for minio...'; sleep 2;
         done;
-        mc mb --ignore-existing \"local/$$MINIO_BUCKET\";
-        mc anonymous set download \"local/$$MINIO_BUCKET/public\" || true;
-        mc ilm rule add \"local/$$MINIO_BUCKET\" --expire-days 2 --prefix 'exports/' \
-          || mc ilm add --expiry-days 2 --prefix 'exports/' \"local/$$MINIO_BUCKET\" \
+        mc mb --ignore-existing \"local/$$AWS_BUCKET\";
+        mc anonymous set download \"local/$$AWS_BUCKET/public\" || true;
+        mc ilm rule add \"local/$$AWS_BUCKET\" --expire-days 2 --prefix 'exports/' \
+          || mc ilm add --expiry-days 2 --prefix 'exports/' \"local/$$AWS_BUCKET\" \
           || echo 'warning: could not set exports/ lifecycle rule';
         echo '>>> bucket ready (exports/ auto-expire after 2 days).';
       "
@@ -127,39 +127,38 @@ services:
     command: ["/bin/sh", "-c", "php artisan migrate --force && php artisan db:seed --force"]
     environment: &auth-service-env
       APP_ENV: production
-      APP_DEBUG: "false"
+      APP_DEBUG: false
       APP_NAME: ${APP_NAME:-SaintAugustin}
       APP_KEY: ${APP_KEY:?APP_KEY must be set (php artisan key:generate --show)}
-      APP_URL: ${APP_URL:?APP_URL must be set}
-      APP_FRONTEND_URL: ${APP_FRONTEND_URL:?APP_FRONTEND_URL must be set}
-      APP_PROJECTION_URL: ${APP_PROJECTION_URL:-}
+      APP_URL: ${API_BASE_URL:?API_BASE_URL must be set}
+      FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL must be set}
+      PROJECTION_URL: ${PROJECTION_URL:-}
       # Database
       DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_DATABASE: ${DB_AUTH_NAME:-saintaugustin_db}
+      DB_HOST: ${POSTGRES_HOST:-postgres}
+      DB_PORT: "${POSTGRES_PORT:-5432}"
+      DB_DATABASE: ${POSTGRES_DB_NAME:-saintaugustin_db}
       DB_USERNAME: ${POSTGRES_USER:?POSTGRES_USER must be set}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       # Redis — cache + queue + session
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: "${REDIS_PORT:-6379}"
       CACHE_DRIVER: redis
       QUEUE_CONNECTION: redis
       SESSION_DRIVER: redis
       # Auth
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       # STAUG data-interchange archive signing (HMAC). DR-critical.
       STAUG_SIGNING_KEY: ${STAUG_SIGNING_KEY:?STAUG_SIGNING_KEY must be set}
       # Bible module — HelloAO Free Use Bible API (public domain, no key)
       BIBLE_API_BASE: ${BIBLE_API_BASE:-https://bible.helloao.org/api}
-      # Object storage (MinIO). MINIO_ENDPOINT must be browser-reachable for
+      # Object storage. AWS_ENDPOINT must be browser-reachable for
       # presigned song-sheet / export URLs.
-      FILESYSTEM_DISK: minio
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT:?MINIO_ENDPOINT must be set (browser-reachable)}
-      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set}
-      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
-      MINIO_BUCKET: ${MINIO_BUCKET:-saintaugustin}
-      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      FILESYSTEM_DISK: ${FILESYSTEM_DISK:-s3}
+      AWS_ENDPOINT: ${AWS_ENDPOINT:?AWS_ENDPOINT must be set (browser-reachable)}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID must be set}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY must be set}
+      AWS_BUCKET: ${AWS_BUCKET:-saintaugustin}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
       SONG_SHEET_URL_TTL: ${SONG_SHEET_URL_TTL:-15}
       # Upload caps (MB)
       UPLOAD_IMPORT_MAX_MB: ${UPLOAD_IMPORT_MAX_MB:-100}
@@ -185,7 +184,7 @@ services:
     working_dir: /var/www/html
     environment: *auth-service-env
     ports:
-      - "${AUTH_SERVICE_PORT:-8000}:80"
+      - "${API_PORT:-8000}:80"
     depends_on:
       postgres:
         condition: service_healthy
@@ -228,11 +227,11 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: "3000"
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
+      PORT: ${PROJECTION_SERVICE_PORT:-3000}
+      REDIS_HOST: "${REDIS_HOST:-redis}"
+      REDIS_PORT: "${REDIS_PORT:-6379}"
       SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-14400}
-      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:?AUTH_SERVICE_URL must be set (internal auth URL)}
+      AUTH_SERVICE_URL: ${API_BASE_URL:?API_BASE_URL must be set (internal auth URL)}
     depends_on:
       redis:
         condition: service_healthy
@@ -257,9 +256,9 @@ services:
       - "${FRONTEND_PORT:-8080}:80"
     environment:
       # Injected into /app/config.js at container start (see frontend/entrypoint.sh).
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:?VITE_API_BASE_URL must be set}
-      VITE_WS_URL: ${VITE_WS_URL:?VITE_WS_URL must be set}
-      VITE_PROJECTION_BASE_URL: ${VITE_PROJECTION_BASE_URL:?VITE_PROJECTION_BASE_URL must be set}
+      API_BASE_URL: ${API_BASE_URL:?API_BASE_URL must be set}
+      PROJECTION_WS_URL: ${PROJECTION_WS_URL:?PROJECTION_WS_URL must be set}
+      PROJECTION_URL: ${PROJECTION_URL:?PROJECTION_URL must be set}
     depends_on:
       - auth-service
       - projection-service

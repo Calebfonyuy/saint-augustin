@@ -7,8 +7,8 @@ declare module '*.vue' {
 }
 
 interface ImportMetaEnv {
-  readonly VITE_API_BASE_URL: string
-  readonly VITE_WS_URL: string
+  readonly API_BASE_URL: string
+  readonly PROJECTION_WS_URL: string
 }
 
 interface ImportMeta {

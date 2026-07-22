@@ -46,7 +46,7 @@ class FullExportJob implements ShouldQueue
 
                 $stream = fopen($tmp, 'r');
                 try {
-                    Storage::disk('minio')->put($key, $stream);
+                    Storage::disk(config('filesystems.default'))->put($key, $stream);
                 } finally {
                     if (is_resource($stream)) {
                         fclose($stream);
@@ -81,7 +81,7 @@ class FullExportJob implements ShouldQueue
      */
     private function presignedUrl(string $key, int $ttlHours): string
     {
-        $disk = Storage::disk('minio');
+        $disk = Storage::disk(config('filesystems.default'));
 
         return config('filesystems.disks.minio.driver') === 's3'
             ? $disk->temporaryUrl($key, now()->addHours($ttlHours))

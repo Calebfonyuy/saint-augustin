@@ -8,7 +8,7 @@ use Illuminate\Notifications\Notification;
 /**
  * Sends an invitation email with a one-time registration link.
  *
- * The link points to the Vue frontend: APP_FRONTEND_URL/register?token={token}
+ * The link points to the Vue frontend: FRONTEND_URL/register?token={token}
  * where the frontend pre-fills the email and sends it back with the form.
  *
  * Expiry is set by INVITATION_EXPIRE_HOURS (default 48).

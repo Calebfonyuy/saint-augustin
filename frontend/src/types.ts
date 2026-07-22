@@ -4,9 +4,9 @@
 declare global {
   interface Window {
     config?: {
-      VITE_API_BASE_URL?: string
-      VITE_PROJECTION_BASE_URL?: string
-      VITE_WS_URL?: string
+      API_BASE_URL?: string
+      PROJECTION_URL?: string
+      PROJECTION_WS_URL?: string
     }
   }
 }
@@ -82,7 +82,7 @@ export interface SongListQuery {
   key?: string
   tag?: string
   trashed?: 'with' | 'only'
-  per_page?: number
+  per_page?: number | 'all'
   page?: number
 }
 
