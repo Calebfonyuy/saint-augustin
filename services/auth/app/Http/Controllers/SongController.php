@@ -53,7 +53,19 @@ class SongController
             new OA\Parameter(name: 'key', in: 'query', required: false, description: 'Filter by original key (e.g. C, Am, F#)', schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'tag', in: 'query', required: false, description: 'Filter by tag', schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'trashed', in: 'query', required: false, description: 'One of: with, only', schema: new OA\Schema(type: 'string', enum: ['with', 'only'])),
-            new OA\Parameter(name: 'per_page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 25, maximum: 100)),
+            new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                required: false,
+                description: 'Results per page (1-100), or `all` to return every match unpaginated.',
+                schema: new OA\Schema(
+                    oneOf: [
+                        new OA\Schema(type: 'integer', minimum: 1, maximum: 100),
+                        new OA\Schema(type: 'string', enum: ['all']),
+                    ],
+                    default: 25,
+                ),
+            ),
             new OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 1)),
         ],
         responses: [
@@ -74,7 +86,14 @@ class SongController
             'key'      => ['sometimes', 'string', 'regex:'.self::KEY_PATTERN],
             'tag'      => ['sometimes', 'string', 'max:64'],
             'trashed'  => ['sometimes', 'in:with,only'],
-            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'per_page' => ['sometimes', function ($attribute, $value, $fail) {
+                if ($value === 'all') {
+                    return;
+                }
+                if (! is_numeric($value) || (int) $value < 1 || (int) $value > 100) {
+                    $fail('The per_page field must be an integer between 1 and 100, or "all".');
+                }
+            }],
             'page'     => ['sometimes', 'integer', 'min:1'],
         ]);
 
@@ -108,8 +127,23 @@ class SongController
             $query->whereJsonContains('tags', $validated['tag']);
         }
 
-        $perPage = (int) ($validated['per_page'] ?? 25);
-        $paginator = $query->orderBy('title')->paginate($perPage);
+        $perPageParam = $validated['per_page'] ?? 25;
+
+        if ($perPageParam === 'all') {
+            $songs = $query->orderBy('title')->get();
+
+            return response()->json([
+                'data' => $songs->map(fn (Song $s) => $this->formatSong($s))->all(),
+                'meta' => [
+                    'current_page' => 1,
+                    'per_page'     => $songs->count(),
+                    'total'        => $songs->count(),
+                    'last_page'    => 1,
+                ],
+            ]);
+        }
+
+        $paginator = $query->orderBy('title')->paginate((int) $perPageParam);
 
         return response()->json([
             'data' => $paginator->getCollection()->map(fn (Song $s) => $this->formatSong($s))->all(),

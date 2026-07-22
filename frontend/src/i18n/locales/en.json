@@ -294,6 +294,16 @@
       "added": "Added to \"{name}\".",
       "already": "Already in \"{name}\"."
     },
+    "pagination": {
+      "perPageLabel": "Songs per page",
+      "all": "All",
+      "firstPage": "First page",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "lastPage": "Last page",
+      "pageOf": "Page {page} of {last}",
+      "allCount": "All {count} songs"
+    },
     "errors": {
       "load": "Failed to load songs.",
       "project": "Could not start projection."

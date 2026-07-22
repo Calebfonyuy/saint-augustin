@@ -82,7 +82,7 @@ export interface SongListQuery {
   key?: string
   tag?: string
   trashed?: 'with' | 'only'
-  per_page?: number
+  per_page?: number | 'all'
   page?: number
 }
 

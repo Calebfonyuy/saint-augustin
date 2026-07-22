@@ -31,6 +31,11 @@ const successToast = ref<string | null>(null)
 const goLiveOpen = ref(false)
 const addToPlaylistOpen = ref(false)
 
+const page = ref(1)
+const perPage = ref<'25' | '50' | '100' | 'all'>('25')
+const isAll = computed(() => perPage.value === 'all')
+const lastPage = computed(() => songs.meta?.last_page ?? 1)
+
 const selected = computed<Song | null>(
   () => songs.list.find((s) => s.id === selectedId.value) ?? null,
 )
@@ -40,8 +45,10 @@ async function refresh() {
     await songs.fetchList({
       q: query.value || undefined,
       songbook: songbookFilter.value || undefined,
-      per_page: 50,
+      per_page: isAll.value ? 'all' : Number(perPage.value),
+      page: isAll.value ? undefined : page.value,
     })
+    if (songs.meta && !isAll.value) page.value = songs.meta.current_page
     if (!selectedId.value && songs.list.length) selectedId.value = songs.list[0].id
     // If the current selection is no longer in the list (e.g. after filter), reset.
     if (selectedId.value && !songs.list.some((s) => s.id === selectedId.value)) {
@@ -52,12 +59,40 @@ async function refresh() {
   }
 }
 
+function goToPage(target: number): void {
+  if (isAll.value) return
+  const clamped = Math.min(Math.max(target, 1), lastPage.value)
+  if (clamped === page.value) return
+  page.value = clamped
+  refresh()
+}
+function goToFirstPage(): void {
+  goToPage(1)
+}
+function goToPreviousPage(): void {
+  goToPage(page.value - 1)
+}
+function goToNextPage(): void {
+  goToPage(page.value + 1)
+}
+function goToLastPage(): void {
+  goToPage(lastPage.value)
+}
+
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 watch(query, () => {
+  page.value = 1
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(refresh, 250)
 })
-watch(songbookFilter, refresh)
+watch(songbookFilter, () => {
+  page.value = 1
+  refresh()
+})
+watch(perPage, () => {
+  page.value = 1
+  refresh()
+})
 
 onMounted(async () => {
   await Promise.all([refresh(), songbooks.fetchList()])
@@ -122,17 +157,31 @@ async function onGoLiveLaunched(sessionId: string): Promise<void> {
               data-testid="library-search"
             />
           </div>
-          <select
-            v-if="songbooks.list.length > 1"
-            v-model="songbookFilter"
-            class="input mt-2 text-[12px]"
-            data-testid="library-songbook-filter"
-          >
-            <option value="">{{ t('library.allSongbooks') }}</option>
-            <option v-for="sb in songbooks.list" :key="sb.id" :value="sb.id">
-              {{ sb.name }}
-            </option>
-          </select>
+          <div class="flex gap-2 mt-2">
+            <select
+              v-if="songbooks.list.length > 1"
+              v-model="songbookFilter"
+              class="input text-[12px]"
+              data-testid="library-songbook-filter"
+            >
+              <option value="">{{ t('library.allSongbooks') }}</option>
+              <option v-for="sb in songbooks.list" :key="sb.id" :value="sb.id">
+                {{ sb.name }}
+              </option>
+            </select>
+            <select
+              v-model="perPage"
+              class="input text-[12px]"
+              style="max-width: 84px"
+              :aria-label="t('library.pagination.perPageLabel')"
+              data-testid="library-per-page"
+            >
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">{{ t('library.pagination.all') }}</option>
+            </select>
+          </div>
         </div>
         <div class="overflow-auto flex-1" data-testid="library-list">
           <div v-if="songs.loading && songs.list.length === 0" class="p-5 text-[13px] text-text-faint">
@@ -162,6 +211,67 @@ async function onGoLiveLaunched(sessionId: string): Promise<void> {
               </div>
               <KeyBadge :musical-key="s.original_key" />
             </div>
+          </div>
+        </div>
+        <div
+          v-if="songs.meta"
+          class="px-4 py-2 border-t border-border flex items-center justify-between gap-2 text-text-faint"
+          data-testid="library-pagination"
+        >
+          <div class="flex items-center gap-1">
+            <button
+              type="button"
+              class="btn btn-ghost"
+              style="padding: 4px 6px"
+              :disabled="isAll || page <= 1"
+              :aria-label="t('library.pagination.firstPage')"
+              data-testid="library-page-first"
+              @click="goToFirstPage"
+            >
+              <Icon name="chevrons-left" />
+            </button>
+            <button
+              type="button"
+              class="btn btn-ghost"
+              style="padding: 4px 6px"
+              :disabled="isAll || page <= 1"
+              :aria-label="t('library.pagination.previousPage')"
+              data-testid="library-page-prev"
+              @click="goToPreviousPage"
+            >
+              <Icon name="arrow-left" />
+            </button>
+          </div>
+          <div class="text-[11.5px]" data-testid="library-page-indicator">
+            {{
+              isAll
+                ? t('library.pagination.allCount', { count: songs.meta.total })
+                : t('library.pagination.pageOf', { page, last: lastPage })
+            }}
+          </div>
+          <div class="flex items-center gap-1">
+            <button
+              type="button"
+              class="btn btn-ghost"
+              style="padding: 4px 6px"
+              :disabled="isAll || page >= lastPage"
+              :aria-label="t('library.pagination.nextPage')"
+              data-testid="library-page-next"
+              @click="goToNextPage"
+            >
+              <Icon name="arrow-right" />
+            </button>
+            <button
+              type="button"
+              class="btn btn-ghost"
+              style="padding: 4px 6px"
+              :disabled="isAll || page >= lastPage"
+              :aria-label="t('library.pagination.lastPage')"
+              data-testid="library-page-last"
+              @click="goToLastPage"
+            >
+              <Icon name="chevrons-right" />
+            </button>
           </div>
         </div>
       </div>
