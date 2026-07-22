@@ -65,13 +65,13 @@ test('the job writes a full archive to MinIO, emails the admin, and releases the
 
     (new FullExportJob($admin->id))->handle(app(StaugArchiveWriter::class));
 
-    $files = Storage::disk('minio')->files('exports');
+    $files = Storage::disk(config('filesystems.default'))->files('exports');
     expect($files)->toHaveCount(1);
     expect($files[0])->toContain('staug-full-');
 
     // The uploaded object is a valid type:"full" STAUG archive.
     $tmp = tempnam(sys_get_temp_dir(), 'full-');
-    file_put_contents($tmp, Storage::disk('minio')->get($files[0]));
+    file_put_contents($tmp, Storage::disk(config('filesystems.default'))->get($files[0]));
     expect(app(StaugArchiveReader::class)->open($tmp)->type)->toBe('full');
     @unlink($tmp);
 

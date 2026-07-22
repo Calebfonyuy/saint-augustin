@@ -62,7 +62,7 @@ interface MutationResult {
 
 /** Resolve the gateway socket URL. Falls back to localhost in dev. */
 function resolveSocketUrl(): string {
-  const wsUrl = window.config?.VITE_PROJECTION_BASE_URL;
+  const wsUrl = window.config?.PROJECTION_URL;
   if (wsUrl) {
     // socket.io-client accepts both ws:// and http:// — prefer http:// so
     // the polling transport works during the upgrade dance.

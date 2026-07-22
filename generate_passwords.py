@@ -5,7 +5,6 @@ Generate and inject secrets into .env files for SaintAugustin.
 Secrets generated:
   - POSTGRES_PASSWORD  (shared: root .env + services/auth/.env DB_PASSWORD)
   - MINIO_ROOT_PASSWORD
-  - JWT_SECRET         (shared: root .env + services/auth/.env)
   - APP_KEY            (Laravel base64-encoded 32-byte key, services/auth/.env only)
 
 Google OAuth credentials are intentionally left untouched.
@@ -34,11 +33,6 @@ PASSWORD_LENGTH = 32
 
 def generate_password(length: int = PASSWORD_LENGTH) -> str:
     return "".join(secrets.choice(PASSWORD_ALPHABET) for _ in range(length))
-
-
-def generate_jwt_secret(length: int = 64) -> str:
-    """URL-safe base64 token, long enough for HS256/HS512."""
-    return secrets.token_urlsafe(length)
 
 
 def generate_laravel_app_key() -> str:
@@ -75,27 +69,23 @@ def apply_secrets(write: bool) -> None:
     # ── Generate ──────────────────────────────────────────────────────────────
     postgres_password = generate_password()
     minio_password = generate_password()
-    jwt_secret = generate_jwt_secret()
     laravel_app_key = generate_laravel_app_key()
 
     # ── Root .env ─────────────────────────────────────────────────────────────
     root_content = load(ROOT_ENV)
     root_content = set_env_value(root_content, "POSTGRES_PASSWORD", postgres_password)
     root_content = set_env_value(root_content, "MINIO_ROOT_PASSWORD", minio_password)
-    root_content = set_env_value(root_content, "JWT_SECRET", jwt_secret)
     root_content = set_env_value(root_content, "APP_KEY", laravel_app_key)
 
     # ── services/auth/.env ────────────────────────────────────────────────────
     auth_content = load(AUTH_ENV)
     auth_content = set_env_value(auth_content, "APP_KEY", laravel_app_key)
     auth_content = set_env_value(auth_content, "DB_PASSWORD", postgres_password)
-    auth_content = set_env_value(auth_content, "JWT_SECRET", jwt_secret)
 
     # ── Output ────────────────────────────────────────────────────────────────
     print("Generated secrets:")
     print(f"  POSTGRES_PASSWORD   = {postgres_password}")
     print(f"  MINIO_ROOT_PASSWORD = {minio_password}")
-    print(f"  JWT_SECRET          = {jwt_secret}")
     print(f"  APP_KEY             = {laravel_app_key}")
     print()
 

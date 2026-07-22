@@ -17,7 +17,7 @@ SaintAugustin's local development environment is fully containerised via Docker 
 | `staug-projection` | Built from `services/projection` | 3000 | Projection Service |
 | `staug-frontend` | Built from `frontend` | 5173 | Static SPA served by its own Nginx (`frontend/nginx.conf`) |
 
-There is no separate API gateway container — the frontend calls the Auth Service and Projection Service directly via `VITE_API_BASE_URL` / `VITE_WS_URL` / `VITE_PROJECTION_BASE_URL` (CORS-enabled on the Laravel side). `docker/nginx/default.conf` documents a gateway routing layout that is not currently deployed in `docker-compose.yml`.
+There is no separate API gateway container — the frontend calls the Auth Service and Projection Service directly via `API_BASE_URL` / `PROJECTION_WS_URL` / `PROJECTION_URL` (CORS-enabled on the Laravel side). `docker/nginx/default.conf` documents a gateway routing layout that is not currently deployed in `docker-compose.yml`.
 
 Startup order is enforced via `depends_on` with `condition: service_healthy` checks on PostgreSQL, Redis, and MinIO.
 
@@ -132,7 +132,7 @@ services are exposed via NodePort:
 | `08_frontend_service.yaml` | Frontend Deployment | 31000 |
 
 - **Config vs. secrets split.** Non-secret env lives in the `staug-config`
-  ConfigMap; passwords, `APP_KEY`, `JWT_SECRET`, `STAUG_SIGNING_KEY`, and SMTP
+  ConfigMap; passwords, `APP_KEY`,`STAUG_SIGNING_KEY`, and SMTP
   credentials live in the `staug-secrets` Secret. Every Deployment/Job pulls
   both via `envFrom`.
 - **Storage.** PostgreSQL and MinIO use `storageClassName: manual` with

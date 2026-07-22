@@ -56,7 +56,6 @@ cp services/auth/.env.example services/auth/.env
 Edit `.env` and change at minimum:
 - `POSTGRES_PASSWORD` — pick a dev password
 - `MINIO_ROOT_PASSWORD` — pick a dev password
-- `JWT_SECRET` — at least 32 random characters
 - `STAUG_SIGNING_KEY` — at least 32 random characters (`openssl rand -base64 32`); DR-critical, keep it backed up
 
 ## Step 4: Install Application Dependencies
@@ -113,7 +112,7 @@ docker compose exec auth-service php artisan db:seed
 ## Step 8: Verify Everything Works
 
 ```bash
-# Auth Service health (host port from AUTH_SERVICE_PORT, default 8000)
+# Auth Service health (host port from API_PORT, default 8000)
 curl http://localhost:8000/health
 # Expected: {"status":"ok"}  (or similar Laravel health response)
 
@@ -239,7 +238,7 @@ docker push calebfonyuy/staug-frontend:$APP_VERSION
 
 ```bash
 cp deployment/kubernetes/01_t_secrets.example.yaml deployment/kubernetes/secrets.yaml
-$EDITOR deployment/kubernetes/secrets.yaml          # fill APP_KEY, JWT_SECRET,
+$EDITOR deployment/kubernetes/secrets.yaml          # fill APP_KEY,
                                                     # STAUG_SIGNING_KEY, DB/MinIO/SMTP
 # Review non-secret values (URLs, NodePorts) in 02_configmap.yaml, then:
 kubectl apply -f deployment/kubernetes/00_namespace.yaml
@@ -303,7 +302,7 @@ docker compose up -d postgres           # recreates with init
 ```
 
 **Frontend can't reach the backend:**
-Check that all services are healthy, and that `VITE_API_BASE_URL` / `VITE_WS_URL` / `VITE_PROJECTION_BASE_URL` in `.env` point at the Auth/Projection service ports:
+Check that all services are healthy, and that `API_BASE_URL` / `PROJECTION_WS_URL` / `PROJECTION_URL` in `.env` point at the Auth/Projection service ports:
 ```bash
 docker compose ps
 docker compose logs auth-service

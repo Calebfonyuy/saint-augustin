@@ -79,7 +79,7 @@ test('admins can upload a PDF and the file lands on the minio disk', function ()
 
     $sheet = SongSheet::where('song_id', $song->id)->firstOrFail();
     expect($sheet->uploaded_by)->toBe($admin->id);
-    Storage::disk('minio')->assertExists($sheet->storage_path);
+    Storage::disk(config('filesystems.default'))->assertExists($sheet->storage_path);
 });
 
 test('musicians can upload a PNG image', function () {
@@ -199,14 +199,14 @@ test('admins can delete a sheet and the underlying file is removed', function ()
     $this->actingAs($admin)->post("/api/songs/{$song->id}/sheets", ['file' => $file]);
 
     $sheet = SongSheet::where('song_id', $song->id)->firstOrFail();
-    Storage::disk('minio')->assertExists($sheet->storage_path);
+    Storage::disk(config('filesystems.default'))->assertExists($sheet->storage_path);
 
     $this->actingAs($admin)
         ->deleteJson("/api/sheets/{$sheet->id}")
         ->assertStatus(204);
 
     expect(SongSheet::find($sheet->id))->toBeNull();
-    Storage::disk('minio')->assertMissing($sheet->storage_path);
+    Storage::disk(config('filesystems.default'))->assertMissing($sheet->storage_path);
 });
 
 test('deleting a missing sheet returns 404', function () {

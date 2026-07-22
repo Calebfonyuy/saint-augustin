@@ -60,11 +60,11 @@ Verify:
 
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.prod ps
-curl -fsS http://<host>:${AUTH_SERVICE_PORT:-8000}/health
+curl -fsS http://<host>:${API_PORT:-8000}/health
 # confirm the exports/ lifecycle rule landed:
 docker run --rm --network staug-prod-network \
   -e MC_HOST_local="http://$MINIO_ROOT_USER:$MINIO_ROOT_PASSWORD@minio:9000" \
-  minio/mc:RELEASE.2025-08-13T08-35-41Z ilm ls local/${MINIO_BUCKET:-saintaugustin}
+  minio/mc:RELEASE.2025-08-13T08-35-41Z ilm ls local/${AWS_BUCKET:-saintaugustin}
 ```
 
 ## Day-2
@@ -86,7 +86,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod down -v        # 
 
 - **Plain HTTP.** Terminate TLS at a reverse proxy in front of this stack
   (the [`apache-VM/`](../apache-VM/) path shows one way with Apache + certbot).
-- **`MINIO_ENDPOINT` must be browser-reachable** — presigned song-sheet and
+- **`AWS_ENDPOINT` must be browser-reachable** — presigned song-sheet and
   export URLs are handed to the browser, not proxied through the API.
 - **Backups.** The named volumes (`staug_postgres_data`, `staug_minio_data`)
   hold the only copies. Snapshot them on a schedule.

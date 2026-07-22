@@ -1,2 +1,0 @@
-# Populated config (with secrets) must never land in the repo.
-config.sh

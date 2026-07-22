@@ -23,7 +23,7 @@ Frontend     Auth Service    Projection           │
 └──────────────────────────────────────┘
 ```
 
-The frontend calls the Auth Service and Projection Service directly (`VITE_API_BASE_URL`, `VITE_WS_URL`, `VITE_PROJECTION_BASE_URL`; CORS-enabled on the Laravel side) — there is no separate API gateway container in the current stack. `docker/nginx/default.conf` still documents a path-based gateway routing layout (see below) as a design reference, but it is not deployed in `docker-compose.yml` today.
+The frontend calls the Auth Service and Projection Service directly (`API_BASE_URL`, `PROJECTION_WS_URL`, `PROJECTION_URL`; CORS-enabled on the Laravel side) — there is no separate API gateway container in the current stack. `docker/nginx/default.conf` still documents a path-based gateway routing layout (see below) as a design reference, but it is not deployed in `docker-compose.yml` today.
 
 | Path prefix        | Upstream            |
 |--------------------|---------------------|

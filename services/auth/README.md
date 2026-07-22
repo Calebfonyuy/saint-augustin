@@ -31,7 +31,6 @@ Open `.env` and set at minimum:
 | `DB_PASSWORD` | DB password | *(see root .env.example)* |
 | `REDIS_HOST` | Redis host | `127.0.0.1` |
 | `REDIS_PORT` | Redis port | `6379` |
-| `JWT_SECRET` | 32+ char random string | `php artisan key:generate --show` |
 | `APP_URL` | Base URL of this service | `http://localhost:8001` |
 
 Generate the application key:

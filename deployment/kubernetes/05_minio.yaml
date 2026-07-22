@@ -148,11 +148,11 @@ spec:
                 secretKeyRef:
                   name: staug-secrets
                   key: MINIO_ROOT_PASSWORD
-            - name: MINIO_BUCKET
+            - name: AWS_BUCKET
               valueFrom:
                 configMapKeyRef:
                   name: staug-config
-                  key: MINIO_BUCKET
+                  key: AWS_BUCKET
           command:
             - /bin/sh
             - -c
@@ -161,13 +161,13 @@ spec:
               until mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; do
                 echo "waiting for minio..."; sleep 2
               done
-              mc mb --ignore-existing "local/$MINIO_BUCKET"
-              mc anonymous set download "local/$MINIO_BUCKET/public" || true
+              mc mb --ignore-existing "local/$AWS_BUCKET"
+              mc anonymous set download "local/$AWS_BUCKET/public" || true
               # Expire full-DB exports after 48h (FR-DF-3). The 48h object
               # lifetime is aligned to the 48h presigned link the export job
               # emails, so link and object die together. Newer `mc` uses
               # `ilm rule add`; older builds use `ilm add` — try both.
-              mc ilm rule add "local/$MINIO_BUCKET" --expire-days 2 --prefix 'exports/' \
-                || mc ilm add --expiry-days 2 --prefix 'exports/' "local/$MINIO_BUCKET" \
+              mc ilm rule add "local/$AWS_BUCKET" --expire-days 2 --prefix 'exports/' \
+                || mc ilm add --expiry-days 2 --prefix 'exports/' "local/$AWS_BUCKET" \
                 || echo "warning: could not set exports/ lifecycle rule"
               echo "bucket ready"

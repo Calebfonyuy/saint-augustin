@@ -83,7 +83,7 @@ The `auth` store persists the Bearer token to `localStorage` so sessions survive
 
 ## API Layer
 
-All HTTP calls go through `src/api/client.ts`, which is an Axios instance pre-configured with the base URL (`VITE_API_BASE_URL`) and an interceptor that attaches the `Authorization: Bearer {token}` header from the auth store on every request.
+All HTTP calls go through `src/api/client.ts`, which is an Axios instance pre-configured with the base URL (`API_BASE_URL`) and an interceptor that attaches the `Authorization: Bearer {token}` header from the auth store on every request.
 
 Resource modules:
 
@@ -263,5 +263,5 @@ Test files live alongside the code they test in `__tests__` subdirectories.
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_API_BASE_URL` | REST API base URL — Auth Service directly, no gateway (e.g. `http://localhost:8000/api`) |
-| `VITE_WS_URL` | WebSocket base URL (e.g. `ws://localhost:8000`) |
+| `API_BASE_URL` | REST API base URL — Auth Service directly, no gateway (e.g. `http://localhost:8000/api`) |
+| `PROJECTION_WS_URL` | WebSocket base URL (e.g. `ws://localhost:8000`) |

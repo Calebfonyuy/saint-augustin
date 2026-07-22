@@ -202,8 +202,8 @@ v0.1 phases (see `docs/overview.md` for detail):
 | **1** | Auth, Songs, Songbooks, frontend shell | ✅ Done |
 | **2** | Musician view, ChordPro parser, song sheets (MinIO) | ✅ Done |
 | **3** | Playlists, Playlist Builder, share links, PDF export | ✅ Done |
-| **4** | Live projection (WebSocket sessions, slide renderer) | 🔄 In progress |
-| **5+** | Import service, mobile optimisation, offline mode | ⬜ Planned |
+| **4** | Live projection (WebSocket sessions, slide renderer) | ✅ Done |
+| **5+** | Import service, mobile optimisation, offline mode | ✅ Done |
 
 v0.2 (defect fixes, Bible workstream, STAUG data-interchange) is tracked separately — see `SaintAugustin_Implementation_v0.2.md` (Drive) and this repo's `v0.2/stage-N-*` branches.
 
