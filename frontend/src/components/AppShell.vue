@@ -126,10 +126,10 @@ function goToAccount() {
         :aria-hidden="mobileOpen ? 'false' : undefined"
       >
         <div class="px-[16px] pt-[18px] pb-2 flex items-center justify-between">
-          <BrandMark />
+          <BrandMark :size="70" :path=" '/logo-128.png'" />
           <button
             type="button"
-            class="md:hidden p-1 rounded text-text-faint hover:text-text"
+            class="p-1 rounded md:hidden text-text-faint hover:text-text"
             :aria-label="t('common.closeMenu')"
             @click="mobileOpen = false"
           >
@@ -165,7 +165,7 @@ function goToAccount() {
       <!-- Backdrop: only present below md and only when drawer is open. -->
       <div
         v-if="mobileOpen"
-        class="md:hidden fixed inset-0 z-30 bg-black/40"
+        class="fixed inset-0 z-30 md:hidden bg-black/40"
         aria-hidden="true"
         @click="mobileOpen = false"
       />
@@ -173,7 +173,7 @@ function goToAccount() {
       <main class="flex flex-col min-w-0 min-h-0 overflow-hidden">
         <!-- Mobile-only top bar with the hamburger trigger. -->
         <div
-          class="md:hidden flex items-center gap-3 px-3 h-12 border-b border-border shrink-0"
+          class="flex items-center h-12 gap-3 px-3 border-b md:hidden border-border shrink-0"
         >
           <button
             type="button"
@@ -219,7 +219,7 @@ function goToAccount() {
           <Icon name="logout" />
         </button>
       </div>
-      <div class="flex items-center gap-3 min-w-0">
+      <div class="flex items-center min-w-0 gap-3">
         <div class="hidden sm:block text-[11px] text-text-faint truncate">
           &copy; {{ year }} STAUG &middot; Saint Augustin &middot; {{ t('common.allRightsReserved') }}
         </div>

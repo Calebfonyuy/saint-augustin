@@ -1,13 +1,13 @@
 <script setup lang="ts">
-defineProps<{ size?: number }>()
+defineProps<{ size?: number; path?: string }>()
 </script>
 
 <template>
   <span class="inline-flex items-center gap-[10px] text-text">
     <img
-      src="/logo-96.png"
-      :width="size ?? 20"
-      :height="size ?? 20"
+      :src="path ?? '/logo-128.png'"
+      :width="size ?? 40"
+      :height="size ?? 40"
       alt=""
       class="rounded-full shrink-0"
     />

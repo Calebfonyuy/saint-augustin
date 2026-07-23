@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
     <template v-if="isNotStarted">
       <div class="waiting-screen" data-testid="display-not-started">
         <div class="waiting-inner">
-          <BrandMark :size="44" class="waiting-brand" />
+          <BrandMark :size="100" :path=" '/logo-512.png'" class="waiting-brand" />
           <p class="waiting-headline" data-testid="display-not-started-name">
             {{ projection.state?.name ?? t('projectionDisplay.fallbackName') }}
           </p>
@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
     <template v-else>
       <div class="waiting-screen" data-testid="display-waiting">
         <div class="waiting-inner">
-          <BrandMark :size="44" class="waiting-brand" />
+          <BrandMark :size="100" :path=" '/logo-512.png'" class="waiting-brand" />
           <p class="waiting-label">{{ t('projectionDisplay.waiting') }}</p>
           <p class="waiting-session" data-testid="display-session-id">
             {{ sessionId }}
