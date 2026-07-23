@@ -24,6 +24,9 @@ defineProps<{
     | 'chevrons-left'
     | 'chevrons-right'
     | 'menu'
+    | 'sun'
+    | 'moon'
+    | 'monitor'
   size?: number
 }>()
 </script>
@@ -112,6 +115,17 @@ defineProps<{
     </template>
     <template v-else-if="name === 'menu'">
       <path d="M2 4h12M2 8h12M2 12h12" />
+    </template>
+    <template v-else-if="name === 'sun'">
+      <circle cx="8" cy="8" r="3" />
+      <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06" />
+    </template>
+    <template v-else-if="name === 'moon'">
+      <path d="M13.5 9.5A5.5 5.5 0 016.5 2.5a5.5 5.5 0 107 7z" />
+    </template>
+    <template v-else-if="name === 'monitor'">
+      <rect x="2" y="3" width="12" height="8" rx="1" />
+      <path d="M6 14h4M8 11v3" />
     </template>
   </svg>
 </template>

@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
     <template v-if="isNotStarted">
       <div class="waiting-screen" data-testid="display-not-started">
         <div class="waiting-inner">
-          <BrandMark :size="44" class="waiting-brand" />
+          <BrandMark :size="100" :path=" '/logo-512.png'" class="waiting-brand" />
           <p class="waiting-headline" data-testid="display-not-started-name">
             {{ projection.state?.name ?? t('projectionDisplay.fallbackName') }}
           </p>
@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
     <template v-else>
       <div class="waiting-screen" data-testid="display-waiting">
         <div class="waiting-inner">
-          <BrandMark :size="44" class="waiting-brand" />
+          <BrandMark :size="100" :path=" '/logo-512.png'" class="waiting-brand" />
           <p class="waiting-label">{{ t('projectionDisplay.waiting') }}</p>
           <p class="waiting-session" data-testid="display-session-id">
             {{ sessionId }}
@@ -283,7 +283,8 @@ onBeforeUnmount(() => {
   animation: waiting-pulse 3s ease-in-out infinite;
 }
 .waiting-brand {
-  /* The BrandMark's currentColor inherits fg from the root. */
+  /* Recolors the "STAUG" wordmark text to match fg; the logo image itself
+     is fixed-color and won't adapt to the slide's background/foreground. */
   color: inherit;
 }
 .waiting-label {

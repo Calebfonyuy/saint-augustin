@@ -7,6 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import BrandMark from '@/components/BrandMark.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/api/client'
 
@@ -37,30 +38,31 @@ async function onSubmit() {
 
 <template>
   <div
-    class="relative w-full h-full overflow-y-auto grid grid-cols-1 md:grid-cols-2 bg-bg text-text"
+    class="relative grid w-full h-full grid-cols-1 overflow-y-auto md:grid-cols-2 bg-bg text-text"
   >
-    <div class="fixed top-3 right-3 z-20">
+    <div class="fixed z-20 top-3 right-3 flex items-center gap-2">
+      <ThemeSwitcher direction="down" align="right" />
       <LanguageSwitcher direction="down" align="right" />
     </div>
     <aside
       class="p-6 md:p-12 bg-bg-sunken md:border-r border-border flex flex-col justify-between md:min-h-[240px]"
     >
-      <BrandMark :size="22" />
+      <BrandMark :size="100" :path=" '/logo-512.png'" />
       <div class="mt-6 md:mt-auto">
         <div class="font-display font-medium text-[30px] leading-[1.1] md:text-[44px] lg:text-[48px]">
           Qui cantat,<br />
-          <em class="text-accent not-italic italic">bis orat.</em>
+          <em class="italic not-italic text-accent">bis orat.</em>
         </div>
         <div class="text-[14px] md:text-[15px] text-text-muted mt-3 md:mt-4 max-w-[360px]">
           {{ t('auth.login.taglineSub') }}
         </div>
       </div>
     </aside>
-    <section class="p-6 md:p-14 flex flex-col justify-center">
+    <section class="flex flex-col justify-center p-6 md:p-14">
       <form class="max-w-[340px] w-full mx-auto md:mx-0" novalidate @submit.prevent="onSubmit">
         <h1 class="font-display font-semibold text-[26px] md:text-[32px]">{{ t('auth.login.title') }}</h1>
         <p class="text-[13px] text-text-faint mt-[6px]">{{ t('auth.login.subtitle') }}</p>
-        <div class="mt-7 flex flex-col gap-3">
+        <div class="flex flex-col gap-3 mt-7">
           <div>
             <label for="login-email" class="field-label">{{ t('auth.login.email') }}</label>
             <input
@@ -88,7 +90,7 @@ async function onSubmit() {
           <p v-if="error" data-testid="login-error" class="field-error">{{ error }}</p>
           <button
             type="submit"
-            class="btn btn-primary justify-center"
+            class="justify-center btn btn-primary"
             style="padding: 11px 14px; font-size: 14px"
             :disabled="submitting"
           >

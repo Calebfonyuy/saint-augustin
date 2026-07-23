@@ -27,91 +27,91 @@ services:
   # INFRASTRUCTURE
   # ===========================================================================
 
-  postgres:
-    image: postgres:16.14-alpine
-    container_name: staug-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
-      # Consumed by docker/postgres/init-databases.sh to create the auth DB.
-      POSTGRES_DB_NAME: ${POSTGRES_DB_NAME:-saintaugustin_db}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
-    # Internal only — not published to the host.
-    expose:
-      - "${POSTGRES_PORT:-5432}"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # postgres:
+  #   image: postgres:16.14-alpine
+  #   container_name: staug-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+  #     # Consumed by docker/postgres/init-databases.sh to create the auth DB.
+  #     POSTGRES_DB_NAME: ${POSTGRES_DB_NAME:-saintaugustin_db}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #     - ./init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+  #   # Internal only — not published to the host.
+  #   expose:
+  #     - "${POSTGRES_PORT:-5432}"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
-  redis:
-    image: redis:7.4-alpine
-    container_name: staug-redis
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - redis_data:/data
-    expose:
-      - "${REDIS_PORT:-6379}"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # redis:
+  #   image: redis:7.4-alpine
+  #   container_name: staug-redis
+  #   restart: unless-stopped
+  #   command: ["redis-server", "--appendonly", "yes"]
+  #   volumes:
+  #     - redis_data:/data
+  #   expose:
+  #     - "${REDIS_PORT:-6379}"
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
-  minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
-    container_name: staug-minio
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:?MINIO_ROOT_USER must be set}
-      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:?MINIO_ROOT_PASSWORD must be set}
-    volumes:
-      - minio_data:/data
-    ports:
-      # S3 API — must be reachable by browsers for presigned song-sheet URLs.
-      - "${MINIO_API_PORT:-9000}:9000"
-      # Web console — restrict or drop the publish in a locked-down install.
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:9000/minio/health/live || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
+  # minio:
+  #   image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+  #   container_name: staug-minio
+  #   restart: unless-stopped
+  #   command: server /data --console-address ":9001"
+  #   environment:
+  #     MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:?MINIO_ROOT_USER must be set}
+  #     MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:?MINIO_ROOT_PASSWORD must be set}
+  #   volumes:
+  #     - minio_data:/data
+  #   ports:
+  #     # S3 API — must be reachable by browsers for presigned song-sheet URLs.
+  #     - "${MINIO_API_PORT:-9000}:9000"
+  #     # Web console — restrict or drop the publish in a locked-down install.
+  #     - "${MINIO_CONSOLE_PORT:-9001}:9001"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://127.0.0.1:9000/minio/health/live || exit 1"]
+  #     interval: 15s
+  #     timeout: 5s
+  #     retries: 5
 
   # One-shot: create the bucket, expose the public/ prefix, and set the
   # exports/ lifecycle rule (48h) so full-DB export objects auto-expire in
   # step with the 48h presigned link the export job emails. Mirrors the
   # Kubernetes minio-init Job in ../kubernetes/05_minio.yaml.
-  minio-init:
-    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
-    container_name: staug-minio-init
-    depends_on:
-      minio:
-        condition: service_healthy
-    environment:
-      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:?MINIO_ROOT_USER must be set}
-      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:?MINIO_ROOT_PASSWORD must be set}
-      AWS_BUCKET: ${AWS_BUCKET:-saintaugustin}
-    entrypoint: >
-      /bin/sh -c "
-        set -eu;
-        until mc alias set local http://minio:9000 \"$$AWS_ACCESS_KEY_ID\" \"$$AWS_SECRET_ACCESS_KEY\" >/dev/null 2>&1; do
-          echo 'waiting for minio...'; sleep 2;
-        done;
-        mc mb --ignore-existing \"local/$$AWS_BUCKET\";
-        mc anonymous set download \"local/$$AWS_BUCKET/public\" || true;
-        mc ilm rule add \"local/$$AWS_BUCKET\" --expire-days 2 --prefix 'exports/' \
-          || mc ilm add --expiry-days 2 --prefix 'exports/' \"local/$$AWS_BUCKET\" \
-          || echo 'warning: could not set exports/ lifecycle rule';
-        echo '>>> bucket ready (exports/ auto-expire after 2 days).';
-      "
-    restart: "no"
+  # minio-init:
+  #   image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+  #   container_name: staug-minio-init
+  #   depends_on:
+  #     minio:
+  #       condition: service_healthy
+  #   environment:
+  #     MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:?MINIO_ROOT_USER must be set}
+  #     MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:?MINIO_ROOT_PASSWORD must be set}
+  #     AWS_BUCKET: ${AWS_BUCKET:-saintaugustin}
+  #   entrypoint: >
+  #     /bin/sh -c "
+  #       set -eu;
+  #       until mc alias set local http://minio:9000 \"$$AWS_ACCESS_KEY_ID\" \"$$AWS_SECRET_ACCESS_KEY\" >/dev/null 2>&1; do
+  #         echo 'waiting for minio...'; sleep 2;
+  #       done;
+  #       mc mb --ignore-existing \"local/$$AWS_BUCKET\";
+  #       mc anonymous set download \"local/$$AWS_BUCKET/public\" || true;
+  #       mc ilm rule add \"local/$$AWS_BUCKET\" --expire-days 2 --prefix 'exports/' \
+  #         || mc ilm add --expiry-days 2 --prefix 'exports/' \"local/$$AWS_BUCKET\" \
+  #         || echo 'warning: could not set exports/ lifecycle rule';
+  #       echo '>>> bucket ready (exports/ auto-expire after 2 days).';
+  #     "
+  #   restart: "no"
 
   # ===========================================================================
   # BACKEND SERVICES
@@ -124,7 +124,7 @@ services:
     image: calebfonyuy/staug-api:${APP_VERSION:?APP_VERSION must be set (e.g. 0.2)}
     container_name: staug-migrate
     working_dir: /var/www/html
-    command: ["/bin/sh", "-c", "php artisan migrate --force && php artisan db:seed --force"]
+    command: ["/bin/sh", "-c", "php artisan db:wipe --force &&php artisan migrate --force && php artisan db:seed --force"]
     environment: &auth-service-env
       APP_ENV: production
       APP_DEBUG: false
@@ -227,7 +227,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: ${PROJECTION_SERVICE_PORT:-3000}
+      PORT: 3000
       REDIS_HOST: "${REDIS_HOST:-redis}"
       REDIS_PORT: "${REDIS_PORT:-6379}"
       SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-14400}

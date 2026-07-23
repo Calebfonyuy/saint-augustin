@@ -12,6 +12,10 @@
     "or": "ou",
     "allRightsReserved": "Tous droits réservés",
     "language": "Langue",
+    "theme": "Thème",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "themeSystem": "Système",
     "cancel": "Annuler",
     "close": "Fermer",
     "copy": "Copier",
@@ -727,6 +731,10 @@
     "signedInAs": "Connecté en tant que",
     "noRoles": "Aucun rôle",
     "emailRolesHint": "L'e-mail et les rôles ne peuvent être modifiés que par un administrateur.",
+    "appearance": {
+      "title": "Apparence",
+      "subtitle": "Choisissez le thème de couleurs. « Système » suit les réglages de votre appareil."
+    },
     "profile": {
       "title": "Profil",
       "subtitle": "C'est le nom affiché dans la barre latérale, sur les playlists partagées et dans les listes admin.",

@@ -8,6 +8,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import BrandMark from '@/components/BrandMark.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 import * as invitationsApi from '@/api/invitations'
 import { extractErrorMessage } from '@/api/client'
 import type { Invitation } from '@/types'
@@ -73,7 +74,8 @@ async function onSubmit() {
   <div
     class="relative w-full h-full overflow-y-auto grid grid-cols-1 md:grid-cols-2 bg-bg text-text"
   >
-    <div class="fixed top-3 right-3 z-20">
+    <div class="fixed top-3 right-3 z-20 flex items-center gap-2">
+      <ThemeSwitcher direction="down" align="right" />
       <LanguageSwitcher direction="down" align="right" />
     </div>
     <aside class="p-6 md:p-12 bg-bg-sunken md:border-r border-border flex flex-col justify-between md:min-h-[240px]">

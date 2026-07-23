@@ -7,6 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import BrandMark from '@/components/BrandMark.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 import * as passwordApi from '@/api/password'
 import { extractErrorMessage } from '@/api/client'
 
@@ -53,7 +54,8 @@ async function onSubmit() {
 
 <template>
   <div class="relative w-full h-full overflow-y-auto bg-bg text-text">
-    <div class="fixed top-3 right-3 z-20">
+    <div class="fixed top-3 right-3 z-20 flex items-center gap-2">
+      <ThemeSwitcher direction="down" align="right" />
       <LanguageSwitcher direction="down" align="right" />
     </div>
     <div class="min-h-full grid place-items-center p-4 sm:p-8">

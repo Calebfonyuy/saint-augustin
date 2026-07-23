@@ -12,6 +12,10 @@
     "or": "or",
     "allRightsReserved": "All rights reserved",
     "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
     "cancel": "Cancel",
     "close": "Close",
     "copy": "Copy",
@@ -727,6 +731,10 @@
     "signedInAs": "Signed in as",
     "noRoles": "No roles",
     "emailRolesHint": "Email and roles can only be changed by an administrator.",
+    "appearance": {
+      "title": "Appearance",
+      "subtitle": "Choose the colour scheme. System follows your device settings."
+    },
     "profile": {
       "title": "Profile",
       "subtitle": "This is the name shown in the sidebar, on shared playlists, and in admin lists.",
