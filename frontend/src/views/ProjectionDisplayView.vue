@@ -283,7 +283,8 @@ onBeforeUnmount(() => {
   animation: waiting-pulse 3s ease-in-out infinite;
 }
 .waiting-brand {
-  /* The BrandMark's currentColor inherits fg from the root. */
+  /* Recolors the "STAUG" wordmark text to match fg; the logo image itself
+     is fixed-color and won't adapt to the slide's background/foreground. */
   color: inherit;
 }
 .waiting-label {
