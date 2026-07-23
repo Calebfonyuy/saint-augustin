@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n'
 import ChordProPreview from '@/components/ChordProPreview.vue'
 import KeyBadge from '@/components/KeyBadge.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 import { resolveSharedPlaylist } from '@/api/shareLinks'
 import type { SharedPlaylistResponse } from '@/types'
 
@@ -64,7 +65,8 @@ function stripChords(lyrics: string): string {
     class="relative w-full h-full overflow-y-auto"
     :class="isProjection ? 'bg-black text-white' : 'bg-bg text-text'"
   >
-    <div class="fixed top-3 right-3 z-20">
+    <div class="fixed top-3 right-3 z-20 flex items-center gap-2">
+      <ThemeSwitcher direction="down" align="right" />
       <LanguageSwitcher direction="down" align="right" />
     </div>
     <div v-if="loading" class="grid place-items-center min-h-full text-text-faint p-6">

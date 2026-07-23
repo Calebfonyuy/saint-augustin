@@ -26,6 +26,7 @@ import { useAuthStore } from '@/stores/auth'
 import BrandMark from './BrandMark.vue'
 import Icon from './Icon.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
+import ThemeSwitcher from './ThemeSwitcher.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -223,6 +224,7 @@ function goToAccount() {
         <div class="hidden sm:block text-[11px] text-text-faint truncate">
           &copy; {{ year }} STAUG &middot; Saint Augustin &middot; {{ t('common.allRightsReserved') }}
         </div>
+        <ThemeSwitcher direction="up" align="right" />
         <LanguageSwitcher direction="up" align="right" />
       </div>
     </footer>

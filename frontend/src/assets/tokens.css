@@ -3,8 +3,8 @@
 
    Exposes CSS custom properties consumed by Tailwind utility classes and by
    the hand-authored component styles in main.css. Dark mode is enabled by
-   adding `.dark` to an ancestor (used for the Projection Controller/Display
-   surfaces in later phases).
+   adding the `.dark` class to <html>, driven app-wide by the theme store
+   (src/stores/theme.ts) with light / dark / system modes.
 */
 
 @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
@@ -55,6 +55,8 @@
   --accent-soft: oklch(28% 0.06 270);
   --accent-fg: oklch(14% 0.008 65);
   --chord: oklch(72% 0.14 35);
+  --success: oklch(68% 0.13 150);
+  --danger: oklch(66% 0.17 25);
 }
 
 [data-density='compact'] {

@@ -16,12 +16,23 @@ import axios from 'axios'
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppShell from '@/components/AppShell.vue'
+import Icon from '@/components/Icon.vue'
 import Toast from '@/components/Toast.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore, THEME_MODES, type ThemeMode } from '@/stores/theme'
 import { extractErrorMessage } from '@/api/client'
 
 const auth = useAuthStore()
+const theme = useThemeStore()
 const { t } = useI18n()
+
+// ── Appearance (colour scheme) ────────────────────────────────────────
+const themeOptions: { mode: ThemeMode; icon: 'sun' | 'moon' | 'monitor'; label: string }[] =
+  THEME_MODES.map((mode) => ({
+    mode,
+    icon: mode === 'light' ? 'sun' : mode === 'dark' ? 'moon' : 'monitor',
+    label: `common.theme${mode[0].toUpperCase()}${mode.slice(1)}`,
+  }))
 
 // ── Profile (display name) ────────────────────────────────────────────
 const profileForm = reactive({ display_name: auth.user?.display_name ?? '' })
@@ -187,6 +198,36 @@ const roleSummary = computed(() => {
         <div class="text-[12px] text-text-faint mt-[2px]">{{ roleSummary }}</div>
         <div class="text-[12px] text-text-faint mt-[8px]">
           {{ t('account.emailRolesHint') }}
+        </div>
+      </section>
+
+      <!-- Appearance (colour scheme) -->
+      <section class="card p-5">
+        <h2 class="font-display font-semibold text-[16px]">{{ t('account.appearance.title') }}</h2>
+        <p class="text-[12px] text-text-faint mt-[2px]">
+          {{ t('account.appearance.subtitle') }}
+        </p>
+        <div
+          class="mt-4 inline-flex rounded-[8px] border border-border bg-bg-sunken p-[3px] gap-[3px]"
+          role="radiogroup"
+          :aria-label="t('account.appearance.title')"
+        >
+          <button
+            v-for="opt in themeOptions"
+            :key="opt.mode"
+            type="button"
+            role="radio"
+            :aria-checked="theme.mode === opt.mode"
+            :data-testid="`theme-option-${opt.mode}`"
+            class="flex items-center gap-[7px] px-[14px] py-[7px] rounded-[6px] text-[13px] font-medium transition-colors"
+            :class="theme.mode === opt.mode
+              ? 'bg-bg-raised text-accent shadow-sm'
+              : 'text-text-muted hover:text-text'"
+            @click="theme.setMode(opt.mode)"
+          >
+            <Icon :name="opt.icon" :size="14" />
+            <span>{{ t(opt.label) }}</span>
+          </button>
         </div>
       </section>
 

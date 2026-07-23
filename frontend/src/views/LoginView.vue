@@ -7,6 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import BrandMark from '@/components/BrandMark.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/api/client'
 
@@ -39,7 +40,8 @@ async function onSubmit() {
   <div
     class="relative grid w-full h-full grid-cols-1 overflow-y-auto md:grid-cols-2 bg-bg text-text"
   >
-    <div class="fixed z-20 top-3 right-3">
+    <div class="fixed z-20 top-3 right-3 flex items-center gap-2">
+      <ThemeSwitcher direction="down" align="right" />
       <LanguageSwitcher direction="down" align="right" />
     </div>
     <aside

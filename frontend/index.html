@@ -7,6 +7,23 @@
     <link rel="apple-touch-icon" sizes="152x152" href="/logo-152.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SaintAugustin</title>
+    <!-- Apply the persisted colour scheme before first paint to avoid a
+         light-mode flash. The theme store (src/stores/theme.ts) takes over
+         reactively once the app mounts. Keep the storage key + logic in sync. -->
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem('staug.theme') || 'system'
+          var dark =
+            mode === 'dark' ||
+            (mode === 'system' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+        } catch (e) {
+          /* localStorage/matchMedia unavailable — default to light. */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

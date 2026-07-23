@@ -7,6 +7,7 @@ import router from './router'
 import i18n from './i18n'
 import { installUnauthorizedHandler } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import './assets/main.css'
 
 const app = createApp(App)
@@ -37,5 +38,11 @@ installUnauthorizedHandler(() => {
 // those checks, so this doesn't reintroduce the refresh-to-dashboard bounce.
 const auth = useAuthStore()
 void auth.ready()
+
+// Instantiate the theme store so its watcher reflects the resolved colour
+// scheme onto <html> and it starts tracking OS `prefers-color-scheme` changes
+// for `system` mode. The inline script in index.html already set the initial
+// class, so this doesn't cause a flash.
+useThemeStore()
 
 app.mount('#app')
